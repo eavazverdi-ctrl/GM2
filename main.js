@@ -1,7 +1,7 @@
 // Import Firebase and config
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc,
+  getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -13,6 +13,7 @@ const roomsCollection = collection(db, 'rooms');
 // --- User Identity ---
 const USER_ID_KEY = 'chat_user_id_v2';
 const USERNAME_KEY = 'chat_username_v2';
+const CREATOR_PASSWORD = '2025';
 
 const getUserId = () => {
   let userId = localStorage.getItem(USER_ID_KEY);
@@ -40,7 +41,7 @@ const settingsBtn = document.getElementById('settings-btn');
 const createRoomModal = document.getElementById('create-room-modal');
 const createRoomForm = document.getElementById('create-room-form');
 const newRoomNameInput = document.getElementById('new-room-name');
-const newRoomPasswordInput = document.getElementById('new-room-password');
+const creatorPasswordInput = document.getElementById('creator-password-input');
 const cancelCreateRoomBtn = document.getElementById('cancel-create-room');
 
 const passwordModal = document.getElementById('password-modal');
@@ -56,6 +57,7 @@ const settingsOkBtn = document.getElementById('settings-ok-btn');
 const chatContainer = document.getElementById('chat-container');
 const chatRoomName = document.getElementById('chat-room-name');
 const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
+const chatSettingsBtn = document.getElementById('chat-settings-btn');
 const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
 const messageForm = document.getElementById('message-form');
@@ -63,9 +65,32 @@ const messageInput = document.getElementById('message-input');
 const sendButton = document.getElementById('send-button');
 const sendButtonIcon = sendButton.querySelector('svg');
 
+// Chat Settings Modals
+const chatSettingsModal = document.getElementById('chat-settings-modal');
+const cancelChatSettings = document.getElementById('cancel-chat-settings');
+const openChangeNameModalBtn = document.getElementById('open-change-name-modal-btn');
+const openSetPasswordModalBtn = document.getElementById('open-set-password-modal-btn');
+
+const changeRoomNameModal = document.getElementById('change-room-name-modal');
+const changeRoomNameForm = document.getElementById('change-room-name-form');
+const newRoomNameInputForChange = document.getElementById('new-room-name-input');
+const currentPasswordForNameInput = document.getElementById('current-password-for-name');
+const changeNameStatus = document.getElementById('change-name-status');
+
+const setRoomPasswordModal = document.getElementById('set-room-password-modal');
+const setRoomPasswordForm = document.getElementById('set-room-password-form');
+const newPasswordInput = document.getElementById('new-password-input');
+const currentPasswordForPassInput = document.getElementById('current-password-for-pass');
+const setPasswordStatus = document.getElementById('set-password-status');
+const cancelBtns = document.querySelectorAll('.cancel-btn');
+
+
 // --- View Management ---
 const showView = (viewId) => {
-  [lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal].forEach(el => {
+  [
+    lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
+    chatSettingsModal, changeRoomNameModal, setRoomPasswordModal
+  ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
     } else {
@@ -168,7 +193,7 @@ const renderMessages = (messages) => {
     const li = document.createElement('li');
     li.className = `w-full flex ${isUser ? 'justify-end' : 'justify-start'}`;
 
-    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none shadow';
+    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-bl-none' : 'bg-white text-black rounded-br-none shadow';
     const nameColor = isUser ? 'text-blue-200' : 'text-gray-500';
 
     const textContent = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -217,13 +242,20 @@ cancelCreateRoomBtn.addEventListener('click', () => showView('lobby-container'))
 createRoomForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = newRoomNameInput.value.trim();
-  const password = newRoomPasswordInput.value.trim();
+  const creatorPassword = creatorPasswordInput.value;
+
+  if (creatorPassword !== CREATOR_PASSWORD) {
+    alert('رمز سازنده اشتباه است.');
+    creatorPasswordInput.value = '';
+    creatorPasswordInput.focus();
+    return;
+  }
   if (!name) return;
 
   try {
     await addDoc(roomsCollection, {
       name,
-      password: password || null,
+      password: null, // Rooms are created without a password by default
       createdAt: serverTimestamp(),
     });
     showView('lobby-container');
@@ -289,6 +321,97 @@ messageInput.addEventListener('input', () => {
   sendButton.disabled = !hasText;
   sendButtonIcon.classList.toggle('text-blue-500', hasText);
   sendButtonIcon.classList.toggle('text-gray-400', !hasText);
+});
+
+// --- Chat Settings Listeners ---
+chatSettingsBtn.addEventListener('click', () => showView('chat-settings-modal'));
+cancelChatSettings.addEventListener('click', () => showView('chat-container'));
+openChangeNameModalBtn.addEventListener('click', () => {
+  changeRoomNameForm.reset();
+  changeNameStatus.textContent = '';
+  showView('change-room-name-modal');
+});
+openSetPasswordModalBtn.addEventListener('click', () => {
+  setRoomPasswordForm.reset();
+  setPasswordStatus.textContent = '';
+  showView('set-room-password-modal');
+});
+cancelBtns.forEach(btn => {
+  btn.addEventListener('click', () => showView('chat-settings-modal'));
+});
+
+changeRoomNameForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentRoomId) return;
+
+  const newName = newRoomNameInputForChange.value.trim();
+  const currentPassword = currentPasswordForNameInput.value;
+  changeNameStatus.textContent = 'در حال بررسی...';
+  changeNameStatus.classList.remove('text-red-600', 'text-green-600');
+
+  try {
+    const roomRef = doc(db, 'rooms', currentRoomId);
+    const roomDoc = await getDoc(roomRef);
+    if (!roomDoc.exists()) { throw new Error("اتاق یافت نشد."); }
+
+    const roomData = roomDoc.data();
+    const correctPassword = roomData.password || CREATOR_PASSWORD;
+
+    if (currentPassword !== correctPassword) {
+      changeNameStatus.textContent = 'رمز فعلی اشتباه است.';
+      changeNameStatus.classList.add('text-red-600');
+      return;
+    }
+
+    await updateDoc(roomRef, { name: newName });
+    changeNameStatus.textContent = 'نام با موفقیت تغییر کرد.';
+    changeNameStatus.classList.add('text-green-600');
+    chatRoomName.textContent = newName;
+
+    setTimeout(() => { showView('chat-settings-modal'); }, 1500);
+  } catch (error) {
+    console.error("Error changing room name:", error);
+    changeNameStatus.textContent = error.message || 'خطا در تغییر نام.';
+    changeNameStatus.classList.add('text-red-600');
+  }
+});
+
+setRoomPasswordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentRoomId) return;
+
+  const newPassword = newPasswordInput.value.trim();
+  const currentPassword = currentPasswordForPassInput.value;
+  setPasswordStatus.textContent = 'در حال بررسی...';
+  setPasswordStatus.classList.remove('text-red-600', 'text-green-600');
+
+  try {
+    const roomRef = doc(db, 'rooms', currentRoomId);
+    const roomDoc = await getDoc(roomRef);
+    if (!roomDoc.exists()) { throw new Error("اتاق یافت نشد."); }
+
+    const roomData = roomDoc.data();
+    const correctPassword = roomData.password || CREATOR_PASSWORD;
+
+    if (currentPassword !== correctPassword) {
+      setPasswordStatus.textContent = 'رمز فعلی اشتباه است.';
+      setPasswordStatus.classList.add('text-red-600');
+      return;
+    }
+
+    await updateDoc(roomRef, { password: newPassword || null });
+    setPasswordStatus.textContent = 'رمز با موفقیت به‌روز شد.';
+    setPasswordStatus.classList.add('text-green-600');
+    
+    // Invalidate access grant since password has changed
+    localStorage.removeItem(`room_access_${currentRoomId}`);
+
+    setTimeout(() => { showView('chat-settings-modal'); }, 1500);
+  } catch (error) {
+    console.error("Error setting room password:", error);
+    setPasswordStatus.textContent = error.message || 'خطا در تغییر رمز.';
+    setPasswordStatus.classList.add('text-red-600');
+  }
 });
 
 // --- PWA Service Worker ---
