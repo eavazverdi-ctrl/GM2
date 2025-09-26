@@ -37,17 +37,27 @@ export const sendMessageToFirebase = (author: string, text: string): Promise<any
 
 export const onMessagesSnapshot = (callback: (messages: Message[]) => void): Unsubscribe => {
   const q = query(messagesCollection, orderBy('timestamp', 'asc'));
-  return onSnapshot(q, (querySnapshot) => {
-    const messages: Message[] = [];
-    querySnapshot.forEach((doc) => {
+
+  // onSnapshot returns an unsubscribe function that we can use for cleanup
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // The querySnapshot object from Firebase contains complex, non-serializable objects.
+    // We must map over the documents and create our own array of plain objects.
+    const messages: Message[] = querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      messages.push({
+      // This is the plain object that is safe to store in React state.
+      return {
         id: doc.id,
         text: data.text,
         author: data.author,
-        timestamp: data.timestamp ? data.timestamp.toDate() : null,
-      });
+        // CRITICAL: Firestore's timestamp is a special object. We must convert it
+        // to a standard JavaScript Date object to prevent circular structure errors.
+        // We use optional chaining (?.) and the nullish coalescing operator (??) for safety.
+        timestamp: data.timestamp?.toDate() ?? null,
+      };
     });
+    
     callback(messages);
   });
+
+  return unsubscribe;
 };
