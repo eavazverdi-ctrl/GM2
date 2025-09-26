@@ -1,7 +1,8 @@
 // Import Firebase and config
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc
+  getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
+  limit, getDocs, startAfter, writeBatch, where, endBefore, limitToLast
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -15,7 +16,9 @@ const USER_ID_KEY = 'chat_user_id_v2';
 const USERNAME_KEY = 'chat_username_v2';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const CREATOR_PASSWORD = '2025';
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
+const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
+const MESSAGES_PER_PAGE = 15;
 
 const getUserId = () => {
   let userId = localStorage.getItem(USER_ID_KEY);
@@ -30,6 +33,12 @@ let currentUsername = '';
 let currentRoomId = null;
 let messagesUnsubscribe = null;
 let currentFontSize = 'md';
+
+// Pagination state
+let oldestMessageDoc = null;
+let isLoadingOlderMessages = false;
+let reachedEndOfMessages = false;
+
 
 // --- DOM Elements ---
 const usernameModal = document.getElementById('username-modal');
@@ -71,12 +80,14 @@ const messageInput = document.getElementById('message-input');
 const fileInput = document.getElementById('file-input');
 const sendButton = document.getElementById('send-button');
 const sendButtonIcon = sendButton.querySelector('svg');
+const loadingSpinner = document.getElementById('loading-spinner');
 
 // Chat Settings Modals
 const chatSettingsModal = document.getElementById('chat-settings-modal');
 const cancelChatSettings = document.getElementById('cancel-chat-settings');
 const openChangeNameModalBtn = document.getElementById('open-change-name-modal-btn');
 const openSetPasswordModalBtn = document.getElementById('open-set-password-modal-btn');
+const openDeleteChatModalBtn = document.getElementById('open-delete-chat-modal-btn');
 
 const changeRoomNameModal = document.getElementById('change-room-name-modal');
 const changeRoomNameForm = document.getElementById('change-room-name-form');
@@ -89,6 +100,12 @@ const setRoomPasswordForm = document.getElementById('set-room-password-form');
 const newPasswordInput = document.getElementById('new-password-input');
 const currentPasswordForPassInput = document.getElementById('current-password-for-pass');
 const setPasswordStatus = document.getElementById('set-password-status');
+
+const deleteChatModal = document.getElementById('delete-chat-modal');
+const deleteChatForm = document.getElementById('delete-chat-form');
+const passwordForDeleteInput = document.getElementById('password-for-delete');
+const deleteChatStatus = document.getElementById('delete-chat-status');
+
 const cancelBtns = document.querySelectorAll('.cancel-btn');
 
 
@@ -96,7 +113,7 @@ const cancelBtns = document.querySelectorAll('.cancel-btn');
 const showView = (viewId) => {
   [
     lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
-    chatSettingsModal, changeRoomNameModal, setRoomPasswordModal
+    chatSettingsModal, changeRoomNameModal, setRoomPasswordModal, deleteChatModal
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -190,7 +207,6 @@ const handleRoomClick = (e) => {
   const roomEl = e.currentTarget;
   const { roomId, roomName, hasPassword } = roomEl.dataset;
 
-  // Check for stored access grant
   const accessGranted = localStorage.getItem(`room_access_${roomId}`);
   
   if (hasPassword === 'false' || accessGranted) {
@@ -210,46 +226,138 @@ const handleRoomClick = (e) => {
 const enterChatRoom = (roomId, roomName) => {
   currentRoomId = roomId;
   chatRoomName.textContent = roomName;
-  messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">درحال بارگذاری پیام‌ها...</li>';
+  messagesList.innerHTML = '';
+  
+  // Reset pagination state
+  oldestMessageDoc = null;
+  isLoadingOlderMessages = false;
+  reachedEndOfMessages = false;
+  
   showView('chat-container');
-
+  
   if (messagesUnsubscribe) messagesUnsubscribe();
 
-  const messagesCol = collection(db, 'rooms', roomId, 'messages');
-  const q = query(messagesCol, orderBy('timestamp', 'asc'));
+  // Load initial messages and listen for new ones
+  loadAndListenForMessages();
+};
+
+const loadAndListenForMessages = () => {
+  const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+  // Listen for the latest messages in real-time
+  const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
   
   messagesUnsubscribe = onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map((doc) => ({
+    if (snapshot.empty) {
+      messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
+      reachedEndOfMessages = true;
+      return;
+    }
+
+    const messages = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      timestamp: doc.data().timestamp?.toDate() ?? null,
-    }));
-    renderMessages(messages);
+      timestamp: doc.data().timestamp?.toDate() ?? new Date(),
+    })).reverse();
+    
+    // Only update if it's the initial load or a new message has arrived
+    if (!oldestMessageDoc || snapshot.docChanges().some(c => c.type === 'added')) {
+        renderMessages(messages);
+    }
+    
+    // Update pagination cursor
+    oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+  }, error => {
+    console.error("Error listening to messages:", error);
+    messagesList.innerHTML = '<li class="text-center text-red-500 p-4">خطا در بارگذاری پیام‌ها.</li>';
   });
 };
 
-const renderMessages = (messages) => {
-  messagesList.innerHTML = '';
-  if (messages.length === 0) {
-      messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
+const loadOlderMessages = async () => {
+  if (isLoadingOlderMessages || reachedEndOfMessages || !oldestMessageDoc) return;
+
+  isLoadingOlderMessages = true;
+  loadingSpinner.classList.remove('hidden');
+
+  const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+  const q = query(messagesCol, orderBy('timestamp', 'desc'), startAfter(oldestMessageDoc), limit(MESSAGES_PER_PAGE));
+  
+  try {
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      reachedEndOfMessages = true;
+      loadingSpinner.classList.add('hidden');
+      return;
+    }
+
+    const oldMessages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate() ?? new Date(),
+    })).reverse();
+    
+    oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+    
+    // Prepend older messages to the list
+    const firstMessage = messagesList.firstChild;
+    const currentScrollHeight = messagesContainer.scrollHeight;
+    
+    renderMessages(oldMessages, true); // `true` to prepend
+    
+    // Maintain scroll position
+    messagesContainer.scrollTop = messagesContainer.scrollHeight - currentScrollHeight;
+
+  } catch(error) {
+    console.error("Error loading older messages:", error);
+  } finally {
+    isLoadingOlderMessages = false;
+    loadingSpinner.classList.add('hidden');
   }
+};
+
+
+messagesContainer.addEventListener('scroll', () => {
+  if (messagesContainer.scrollTop < 50) {
+    loadOlderMessages();
+  }
+});
+
+
+const renderMessages = (messages, prepend = false) => {
+  if (!prepend) {
+      messagesList.innerHTML = '';
+  }
+  
+  // Get all existing messages to check for sequential authors
+  const existingMessages = prepend ? Array.from(messagesList.querySelectorAll('li[data-author-id]')).map(li => ({ authorId: li.dataset.authorId })) : [];
+  let allMessages = prepend ? [...messages, ...existingMessages] : messages;
+  let lastAuthorId = prepend ? null : (existingMessages.length > 0 ? existingMessages[existingMessages.length - 1].authorId : null);
+
+  if (prepend && messagesList.firstChild && messagesList.firstChild.nodeName === "LI") {
+      lastAuthorId = messages[messages.length - 1].authorId;
+  }
+  
+  const fragment = document.createDocumentFragment();
+
   messages.forEach((message, index) => {
-    const previousMessage = messages[index - 1];
     const isUser = message.authorId === currentUserId;
+    // Determine if the author is different from the previous message in the FULL sequence
+    const previousMessage = messages[index - 1] || (prepend ? null : (messagesList.lastChild ? { authorId: messagesList.lastChild.dataset.authorId } : null));
     const showName = !isUser && (!previousMessage || previousMessage.authorId !== message.authorId);
 
-    const li = document.createElement('li');
-    // Swapped justify-start and justify-end
-    li.className = `w-full flex ${isUser ? 'justify-start' : 'justify-end'}`;
 
-    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-bl-none' : 'bg-white text-black rounded-br-none shadow';
+    const li = document.createElement('li');
+    li.dataset.authorId = message.authorId;
+    // Swapped justify-start and justify-end -> user is left, others are right
+    li.className = `w-full flex ${isUser ? 'justify-end' : 'justify-start'}`;
+
+    const bubbleClasses = isUser ? 'bg-white text-black rounded-br-none shadow' : 'bg-blue-500 text-white rounded-bl-none';
     const nameColor = 'text-gray-500';
 
     const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const nameHTML = showName ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : '';
+    const nameHTML = showName ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-2 text-left">${senderName}</div>` : '';
     
     let messageContentHTML = '';
-    const timeHTML = `<div class="absolute bottom-1 ${isUser ? 'left-2' : 'right-2'} text-xs ${isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>`;
+    const timeHTML = `<div class="absolute bottom-1 ${!isUser ? 'left-2' : 'right-2'} text-xs ${!isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>`;
 
     switch (message.type) {
       case 'image':
@@ -286,48 +394,93 @@ const renderMessages = (messages) => {
         ${messageContentHTML}
       </div>
     `;
-    messagesList.appendChild(li);
+    fragment.appendChild(li);
+    lastAuthorId = message.authorId;
   });
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  if (prepend) {
+      messagesList.prepend(fragment);
+  } else {
+      messagesList.appendChild(fragment);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 };
 
-// --- File Handling ---
+
+// --- File Handling & Image Compression ---
+const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > height) {
+                    if (width > IMAGE_MAX_DIMENSION) {
+                        height *= IMAGE_MAX_DIMENSION / width;
+                        width = IMAGE_MAX_DIMENSION;
+                    }
+                } else {
+                    if (height > IMAGE_MAX_DIMENSION) {
+                        width *= IMAGE_MAX_DIMENSION / height;
+                        height = IMAGE_MAX_DIMENSION;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.85)); // Get compressed data URL
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
 const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file || !currentRoomId) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-        alert(`حجم فایل نباید بیشتر از 5 مگابایت باشد.`);
-        e.target.value = ''; // Reset file input
-        return;
-    }
+    let fileDataUrl;
+    const isImage = file.type.startsWith('image/');
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        const fileDataUrl = event.target.result;
-        const isImage = file.type.startsWith('image/');
-        
-        try {
-            const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-            await addDoc(messagesCol, {
-                type: isImage ? 'image' : 'file',
-                fileName: file.name,
-                fileDataUrl,
-                authorId: currentUserId,
-                authorName: currentUsername,
-                timestamp: serverTimestamp(),
+    try {
+        if (isImage) {
+            fileDataUrl = await compressImage(file);
+        } else {
+            if (file.size > MAX_FILE_SIZE) {
+                alert(`حجم فایل نباید بیشتر از 5 مگابایت باشد.`);
+                e.target.value = ''; // Reset file input
+                return;
+            }
+            fileDataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsDataURL(file);
             });
-        } catch (error) {
-            console.error("Error uploading file:", error);
-            alert('خطا در ارسال فایل.');
         }
-    };
-    reader.onerror = () => {
-        console.error("Error reading file");
-        alert('خطا در خواندن فایل.');
-    };
-    reader.readAsDataURL(file);
-    e.target.value = ''; // Reset file input
+        
+        const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+        await addDoc(messagesCol, {
+            type: isImage ? 'image' : 'file',
+            fileName: file.name,
+            fileDataUrl,
+            authorId: currentUserId,
+            authorName: currentUsername,
+            timestamp: serverTimestamp(),
+        });
+
+    } catch (error) {
+        console.error("Error processing/uploading file:", error);
+        alert('خطا در ارسال فایل.');
+    } finally {
+        e.target.value = ''; // Reset file input
+    }
 };
 fileInput.addEventListener('change', handleFileSelect);
 
@@ -366,7 +519,7 @@ createRoomForm.addEventListener('submit', async (e) => {
   try {
     await addDoc(roomsCollection, {
       name,
-      password: null, // Rooms are created without a password by default
+      password: null,
       createdAt: serverTimestamp(),
     });
     showView('lobby-container');
@@ -404,6 +557,7 @@ backToLobbyBtn.addEventListener('click', () => {
     messagesUnsubscribe = null;
   }
   currentRoomId = null;
+  messagesContainer.removeEventListener('scroll', loadOlderMessages); // Clean up listener
   showView('lobby-container');
 });
 
@@ -411,6 +565,7 @@ messageForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
   if (text && currentRoomId) {
+    const tempInput = messageInput.value;
     messageInput.value = '';
     messageInput.dispatchEvent(new Event('input'));
     try {
@@ -424,6 +579,8 @@ messageForm.addEventListener('submit', async (e) => {
       });
     } catch (error) {
       console.error("Error sending message:", error);
+      messageInput.value = tempInput; // Restore on error
+      messageInput.dispatchEvent(new Event('input'));
     }
   }
 });
@@ -431,8 +588,8 @@ messageForm.addEventListener('submit', async (e) => {
 messageInput.addEventListener('input', () => {
   const hasText = messageInput.value.trim().length > 0;
   sendButton.disabled = !hasText;
-  sendButtonIcon.classList.toggle('text-blue-500', hasText);
-  sendButtonIcon.classList.toggle('text-gray-400', !hasText);
+  sendButtonIcon.classList.toggle('text-white', hasText);
+  sendButtonIcon.classList.toggle('text-gray-300', !hasText);
 });
 
 // --- Chat Settings Listeners ---
@@ -448,8 +605,20 @@ openSetPasswordModalBtn.addEventListener('click', () => {
   setPasswordStatus.textContent = '';
   showView('set-room-password-modal');
 });
+openDeleteChatModalBtn.addEventListener('click', () => {
+    deleteChatForm.reset();
+    deleteChatStatus.textContent = '';
+    showView('delete-chat-modal');
+});
 cancelBtns.forEach(btn => {
-  btn.addEventListener('click', () => showView('chat-settings-modal'));
+  btn.addEventListener('click', () => {
+    const parentModal = btn.closest('.fixed');
+    if(parentModal.id === 'delete-chat-modal') {
+        showView('chat-settings-modal');
+    } else {
+        showView('chat-settings-modal');
+    }
+  });
 });
 
 changeRoomNameForm.addEventListener('submit', async (e) => {
@@ -515,7 +684,6 @@ setRoomPasswordForm.addEventListener('submit', async (e) => {
     setPasswordStatus.textContent = 'رمز با موفقیت به‌روز شد.';
     setPasswordStatus.classList.add('text-green-600');
     
-    // Invalidate access grant since password has changed
     localStorage.removeItem(`room_access_${currentRoomId}`);
 
     setTimeout(() => { showView('chat-settings-modal'); }, 1500);
@@ -526,12 +694,51 @@ setRoomPasswordForm.addEventListener('submit', async (e) => {
   }
 });
 
-// --- PWA Service Worker (commented out to remove errors for now) ---
-// if ('serviceWorker' in navigator) {
-//   window.addEventListener('load', () => {
-//     navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
-//   });
-// }
+deleteChatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentRoomId) return;
+
+    const password = passwordForDeleteInput.value;
+    deleteChatStatus.textContent = 'در حال بررسی رمز...';
+    deleteChatStatus.classList.remove('text-red-600', 'text-green-600');
+
+    try {
+        const roomRef = doc(db, 'rooms', currentRoomId);
+        const roomDoc = await getDoc(roomRef);
+        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
+
+        const roomData = roomDoc.data();
+        const correctPassword = roomData.password || CREATOR_PASSWORD;
+
+        if (password !== correctPassword) {
+            deleteChatStatus.textContent = 'رمز اشتباه است.';
+            deleteChatStatus.classList.add('text-red-600');
+            return;
+        }
+
+        deleteChatStatus.textContent = 'در حال حذف پیام‌ها...';
+        deleteChatStatus.classList.add('text-yellow-600');
+
+        const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+        const snapshot = await getDocs(query(messagesCol));
+        
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        
+        deleteChatStatus.textContent = 'تمام پیام‌ها حذف شدند.';
+        deleteChatStatus.classList.remove('text-yellow-600');
+        deleteChatStatus.classList.add('text-green-600');
+
+        setTimeout(() => { showView('chat-container'); }, 1500);
+
+    } catch (error) {
+        console.error("Error deleting chat:", error);
+        deleteChatStatus.textContent = error.message || 'خطا در حذف گفتگو.';
+        deleteChatStatus.classList.add('text-red-600');
+    }
+});
+
 
 // --- App Entry Point ---
 const startApp = () => {
