@@ -1,6 +1,14 @@
-// Fix: Updated Firebase imports and usage to v8 syntax to match the likely installed SDK version.
-import firebase from 'firebase/app';
-import 'firebase/firestore';
+// Fix: Updated Firebase imports and usage to v9+ modular syntax to fix compatibility issues.
+import { initializeApp } from 'firebase/app';
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  onSnapshot, 
+  serverTimestamp 
+} from 'firebase/firestore';
 
 import { type Message } from '../types';
 
@@ -15,26 +23,24 @@ const FIREBASE_CONFIG = {
 };
 
 // Initialize Firebase
-if (!firebase.apps.length) {
-  firebase.initializeApp(FIREBASE_CONFIG);
-}
-const db = firebase.firestore();
+const app = initializeApp(FIREBASE_CONFIG);
+const db = getFirestore(app);
 
-const messagesCollection = db.collection('messages');
+const messagesCollectionRef = collection(db, 'messages');
 
 export const sendMessageToFirebase = (author: string, text: string): Promise<any> => {
-  return messagesCollection.add({
+  return addDoc(messagesCollectionRef, {
     author,
     text,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    timestamp: serverTimestamp(),
   });
 };
 
 export const onMessagesSnapshot = (callback: (messages: Message[]) => void): () => void => {
-  const q = messagesCollection.orderBy('timestamp', 'asc');
+  const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
   // onSnapshot returns an unsubscribe function that we can use for cleanup
-  const unsubscribe = q.onSnapshot((querySnapshot) => {
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
     // The querySnapshot object from Firebase contains complex, non-serializable objects.
     // We must map over the documents and create our own array of plain objects.
     const messages: Message[] = querySnapshot.docs.map((doc) => {
