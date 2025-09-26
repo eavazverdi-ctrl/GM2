@@ -1,0 +1,5 @@
+{
+  "name": "Firebase Messenger",
+  "description": "A web application that simulates an iPhone messenger, allowing two users to chat in real-time using Firebase.",
+  "requestFramePermissions": []
+}
