@@ -60,11 +60,11 @@
             <!-- Rooms will be injected by main.js -->
           </ul>
           <!-- Bottom Nav -->
-          <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 p-2 flex-shrink-0 flex justify-around items-center">
-             <button id="settings-btn" class="p-3 rounded-full hover:bg-gray-200/50 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-gray-700"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+          <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 h-16 flex-shrink-0 flex justify-around items-center px-2">
+             <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-200/50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-gray-700"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
              </button>
-             <button id="create-room-btn" class="p-3 rounded-full hover:bg-gray-200/50 transition-colors">
+             <button id="create-room-btn" class="p-2 rounded-full hover:bg-gray-200/50 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-blue-600"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
              </button>
           </div>
@@ -90,17 +90,23 @@
           </div>
           <!-- Messages Container -->
           <div id="messages-container" class="flex-1 overflow-y-auto p-4">
-            <ul id="messages-list" class="flex flex-col space-y-4"></ul>
+            <ul id="messages-list" class="flex flex-col space-y-2"></ul>
           </div>
           <!-- Message Input -->
           <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 px-4 py-3 flex-shrink-0">
-            <form id="message-form" class="flex items-center space-x-3 rtl:space-x-reverse" dir="ltr">
-              <button type="submit" id="send-button" class="order-2" disabled>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 transition-colors text-gray-400 transform -rotate-90"><path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-              </button>
-              <div class="flex-1 relative order-1">
+            <form id="message-form" class="flex items-center space-x-2 rtl:space-x-reverse" dir="ltr">
+              <label for="file-input" class="p-2 rounded-full hover:bg-gray-200/50 transition-colors cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-700">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.122 2.122l7.81-7.81" />
+                </svg>
+                <input type="file" id="file-input" class="hidden"/>
+              </label>
+              <div class="flex-1 relative">
                 <input type="text" id="message-input" placeholder="پیام..." autocomplete="off" dir="rtl" class="w-full bg-white/50 backdrop-blur-sm border border-white/30 rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" />
               </div>
+              <button type="submit" id="send-button" disabled>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 transition-colors text-gray-400 transform -rotate-90"><path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+              </button>
             </form>
           </div>
         </div>
@@ -187,7 +193,7 @@
             <button id="open-set-password-modal-btn" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">تنظیم/تغییر رمز</button>
           </div>
           <div class="mt-6">
-            <button id="cancel-chat-settings" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">بستن</button>
+            <button id="cancel-chat-settings" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md">بستن</button>
           </div>
         </div>
     </div>

@@ -15,6 +15,7 @@ const USER_ID_KEY = 'chat_user_id_v2';
 const USERNAME_KEY = 'chat_username_v2';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const CREATOR_PASSWORD = '2025';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const getUserId = () => {
   let userId = localStorage.getItem(USER_ID_KEY);
@@ -67,6 +68,7 @@ const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
 const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
+const fileInput = document.getElementById('file-input');
 const sendButton = document.getElementById('send-button');
 const sendButtonIcon = sendButton.querySelector('svg');
 
@@ -231,31 +233,104 @@ const renderMessages = (messages) => {
   if (messages.length === 0) {
       messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
   }
-  messages.forEach(message => {
+  messages.forEach((message, index) => {
+    const previousMessage = messages[index - 1];
     const isUser = message.authorId === currentUserId;
+    const showName = !isUser && (!previousMessage || previousMessage.authorId !== message.authorId);
+
     const li = document.createElement('li');
     // Swapped justify-start and justify-end
     li.className = `w-full flex ${isUser ? 'justify-start' : 'justify-end'}`;
 
-    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none shadow';
-    const nameColor = isUser ? 'text-blue-200' : 'text-gray-500';
+    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-bl-none' : 'bg-white text-black rounded-br-none shadow';
+    const nameColor = 'text-gray-500';
 
-    const textContent = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const nameHTML = showName ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : '';
+    
+    let messageContentHTML = '';
+    const timeHTML = `<div class="absolute bottom-1 ${isUser ? 'left-2' : 'right-2'} text-xs ${isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>`;
+
+    switch (message.type) {
+      case 'image':
+        messageContentHTML = `
+          <div class="relative">
+            <img src="${message.fileDataUrl}" class="rounded-lg max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/>
+            ${timeHTML}
+          </div>
+        `;
+        break;
+      case 'file':
+        const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        messageContentHTML = `
+          <a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-500/10 p-3 rounded-lg hover:bg-gray-500/20 min-w-[180px]">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+            <span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>
+            ${timeHTML}
+          </a>
+        `;
+        break;
+      default: // 'text'
+        const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        messageContentHTML = `
+          <div class="px-3 py-2 rounded-2xl ${bubbleClasses} relative">
+            <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
+            ${timeHTML}
+          </div>
+        `;
+    }
 
     li.innerHTML = `
       <div class="flex flex-col max-w-xs lg:max-w-md">
-        ${!isUser ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : ''}
-        <div class="px-3 py-2 rounded-2xl ${bubbleClasses} relative">
-          <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
-          <div class="absolute bottom-1 ${isUser ? 'right-2' : 'left-2'} text-xs ${isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>
-        </div>
+        ${nameHTML}
+        ${messageContentHTML}
       </div>
     `;
     messagesList.appendChild(li);
   });
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 };
+
+// --- File Handling ---
+const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentRoomId) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+        alert(`حجم فایل نباید بیشتر از 5 مگابایت باشد.`);
+        e.target.value = ''; // Reset file input
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        const fileDataUrl = event.target.result;
+        const isImage = file.type.startsWith('image/');
+        
+        try {
+            const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+            await addDoc(messagesCol, {
+                type: isImage ? 'image' : 'file',
+                fileName: file.name,
+                fileDataUrl,
+                authorId: currentUserId,
+                authorName: currentUsername,
+                timestamp: serverTimestamp(),
+            });
+        } catch (error) {
+            console.error("Error uploading file:", error);
+            alert('خطا در ارسال فایل.');
+        }
+    };
+    reader.onerror = () => {
+        console.error("Error reading file");
+        alert('خطا در خواندن فایل.');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset file input
+};
+fileInput.addEventListener('change', handleFileSelect);
+
 
 // --- Event Listeners & App Flow ---
 usernameForm.addEventListener('submit', (e) => {
@@ -341,6 +416,7 @@ messageForm.addEventListener('submit', async (e) => {
     try {
       const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
       await addDoc(messagesCol, {
+        type: 'text',
         text,
         authorId: currentUserId,
         authorName: currentUsername,
