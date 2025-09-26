@@ -35,6 +35,7 @@ const usernameInput = document.getElementById('username-input');
 const lobbyContainer = document.getElementById('lobby-container');
 const roomList = document.getElementById('room-list');
 const createRoomBtn = document.getElementById('create-room-btn');
+const settingsBtn = document.getElementById('settings-btn');
 
 const createRoomModal = document.getElementById('create-room-modal');
 const createRoomForm = document.getElementById('create-room-form');
@@ -49,6 +50,9 @@ const passwordError = document.getElementById('password-error');
 const passwordModalRoomName = document.getElementById('password-modal-room-name');
 const cancelPasswordEntryBtn = document.getElementById('cancel-password-entry');
 
+const settingsModal = document.getElementById('settings-modal');
+const settingsOkBtn = document.getElementById('settings-ok-btn');
+
 const chatContainer = document.getElementById('chat-container');
 const chatRoomName = document.getElementById('chat-room-name');
 const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
@@ -61,7 +65,7 @@ const sendButtonIcon = sendButton.querySelector('svg');
 
 // --- View Management ---
 const showView = (viewId) => {
-  [lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal].forEach(el => {
+  [lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
     } else {
@@ -84,7 +88,7 @@ const renderRooms = (rooms) => {
   }
   rooms.forEach(room => {
     const li = document.createElement('li');
-    li.className = 'bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between';
+    li.className = 'bg-white/40 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-sm hover:shadow-lg hover:bg-white/60 transition-all cursor-pointer flex items-center justify-between';
     li.dataset.roomId = room.id;
     li.dataset.roomName = room.name;
     li.dataset.hasPassword = !!room.password;
@@ -92,9 +96,9 @@ const renderRooms = (rooms) => {
     const roomName = room.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     li.innerHTML = `
-      <span class="font-semibold text-lg">${roomName}</span>
+      <span class="font-semibold text-lg text-gray-800">${roomName}</span>
       ${room.password ? `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-gray-500">
           <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
         </svg>
       ` : ''}
@@ -161,24 +165,25 @@ const renderMessages = (messages) => {
   }
   messages.forEach(message => {
     const isUser = message.authorId === currentUserId;
-    const alignmentClass = isUser ? 'self-end' : 'self-start';
+    const li = document.createElement('li');
+    li.className = `w-full flex ${isUser ? 'justify-end' : 'justify-start'}`;
+
     const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none shadow';
     const nameColor = isUser ? 'text-blue-200' : 'text-gray-500';
 
-    const messageWrapper = document.createElement('div');
-    messageWrapper.className = `flex flex-col max-w-xs lg:max-w-md ${alignmentClass}`;
-    
     const textContent = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    messageWrapper.innerHTML = `
-      ${!isUser ? `<div class="text-sm font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : ''}
-      <div class="px-3 py-2 rounded-2xl ${bubbleClasses} relative">
-        <p class="whitespace-pre-wrap pb-4 break-words">${textContent}</p>
-        <div class="absolute bottom-1 ${isUser ? 'left-2' : 'right-2'} text-xs opacity-80" dir="ltr">${formatTime(message.timestamp)}</div>
+    li.innerHTML = `
+      <div class="flex flex-col max-w-xs lg:max-w-md">
+        ${!isUser ? `<div class="text-sm font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : ''}
+        <div class="px-3 py-2 rounded-2xl ${bubbleClasses} relative">
+          <p class="whitespace-pre-wrap pb-4 break-words">${textContent}</p>
+          <div class="absolute bottom-1 ${isUser ? 'left-2' : 'right-2'} text-xs ${isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>
+        </div>
       </div>
     `;
-    messagesList.appendChild(messageWrapper);
+    messagesList.appendChild(li);
   });
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 };
@@ -197,6 +202,14 @@ createRoomBtn.addEventListener('click', () => {
   createRoomForm.reset();
   showView('create-room-modal');
   newRoomNameInput.focus();
+});
+
+settingsBtn.addEventListener('click', () => {
+    showView('settings-modal');
+});
+
+settingsOkBtn.addEventListener('click', () => {
+    showView('lobby-container');
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => showView('lobby-container'));
