@@ -81,6 +81,7 @@ const fileInput = document.getElementById('file-input');
 const sendButton = document.getElementById('send-button');
 const sendButtonIcon = sendButton.querySelector('svg');
 const loadingSpinner = document.getElementById('loading-spinner');
+const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
 
 // Chat Settings Modals
 const chatSettingsModal = document.getElementById('chat-settings-modal');
@@ -129,6 +130,10 @@ const formatTime = (date) => {
   return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
+const scrollToBottom = (behavior = 'auto') => {
+  messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior });
+};
+
 // --- Settings Logic ---
 const applyFontSize = (size) => {
     document.body.classList.remove('font-size-sm', 'font-size-md', 'font-size-lg');
@@ -137,6 +142,7 @@ const applyFontSize = (size) => {
     // Visually update selected button
     fontSizeOptions.querySelectorAll('button').forEach(btn => {
         btn.classList.toggle('glass-button-blue', btn.dataset.size === size);
+        btn.classList.toggle('text-white', btn.dataset.size === size);
         btn.classList.toggle('glass-button-gray', btn.dataset.size !== size);
     });
 };
@@ -232,6 +238,7 @@ const enterChatRoom = (roomId, roomName) => {
   oldestMessageDoc = null;
   isLoadingOlderMessages = false;
   reachedEndOfMessages = false;
+  scrollToBottomBtn.classList.add('view-hidden', 'opacity-0');
   
   showView('chat-container');
   
@@ -247,7 +254,7 @@ const loadAndListenForMessages = () => {
   const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
   
   messagesUnsubscribe = onSnapshot(q, (snapshot) => {
-    if (snapshot.empty) {
+    if (snapshot.empty && messagesList.children.length === 0) {
       messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
       reachedEndOfMessages = true;
       return;
@@ -260,12 +267,17 @@ const loadAndListenForMessages = () => {
     })).reverse();
     
     // Only update if it's the initial load or a new message has arrived
-    if (!oldestMessageDoc || snapshot.docChanges().some(c => c.type === 'added')) {
-        renderMessages(messages);
+    const isInitialLoad = !oldestMessageDoc;
+    if (isInitialLoad || snapshot.docChanges().some(c => c.type === 'added')) {
+        renderMessages(messages, false, isInitialLoad);
     }
     
     // Update pagination cursor
-    oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+    if (snapshot.docs.length > 0) {
+        oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+    } else {
+        reachedEndOfMessages = true;
+    }
   }, error => {
     console.error("Error listening to messages:", error);
     messagesList.innerHTML = '<li class="text-center text-red-500 p-4">خطا در بارگذاری پیام‌ها.</li>';
@@ -297,13 +309,11 @@ const loadOlderMessages = async () => {
     
     oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
     
-    // Prepend older messages to the list
     const firstMessage = messagesList.firstChild;
     const currentScrollHeight = messagesContainer.scrollHeight;
     
-    renderMessages(oldMessages, true); // `true` to prepend
+    renderMessages(oldMessages, true);
     
-    // Maintain scroll position
     messagesContainer.scrollTop = messagesContainer.scrollHeight - currentScrollHeight;
 
   } catch(error) {
@@ -319,42 +329,41 @@ messagesContainer.addEventListener('scroll', () => {
   if (messagesContainer.scrollTop < 50) {
     loadOlderMessages();
   }
+  const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 200;
+  scrollToBottomBtn.classList.remove('view-hidden');
+  scrollToBottomBtn.classList.toggle('opacity-0', !isScrolledUp);
+});
+
+scrollToBottomBtn.addEventListener('click', () => {
+    scrollToBottom('smooth');
 });
 
 
-const renderMessages = (messages, prepend = false) => {
-  if (!prepend) {
+const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
+  if (!prepend && messagesList.innerHTML.includes('هنوز پیامی')) {
       messagesList.innerHTML = '';
   }
   
-  // Get all existing messages to check for sequential authors
-  const existingMessages = prepend ? Array.from(messagesList.querySelectorAll('li[data-author-id]')).map(li => ({ authorId: li.dataset.authorId })) : [];
-  let allMessages = prepend ? [...messages, ...existingMessages] : messages;
-  let lastAuthorId = prepend ? null : (existingMessages.length > 0 ? existingMessages[existingMessages.length - 1].authorId : null);
-
-  if (prepend && messagesList.firstChild && messagesList.firstChild.nodeName === "LI") {
-      lastAuthorId = messages[messages.length - 1].authorId;
-  }
-  
   const fragment = document.createDocumentFragment();
+  let lastAuthorId = prepend 
+    ? (messagesList.firstChild?.dataset?.authorId || null)
+    : (messagesList.lastChild?.dataset?.authorId || null);
 
   messages.forEach((message, index) => {
     const isUser = message.authorId === currentUserId;
-    // Determine if the author is different from the previous message in the FULL sequence
-    const previousMessage = messages[index - 1] || (prepend ? null : (messagesList.lastChild ? { authorId: messagesList.lastChild.dataset.authorId } : null));
-    const showName = !isUser && (!previousMessage || previousMessage.authorId !== message.authorId);
-
+    // Show name if author is different from the *previous* rendered message
+    const showName = !isUser && (lastAuthorId !== message.authorId);
 
     const li = document.createElement('li');
     li.dataset.authorId = message.authorId;
-    // Swapped justify-start and justify-end -> user is left, others are right
+    // user (white) on the right, others (blue) on the left
     li.className = `w-full flex ${isUser ? 'justify-end' : 'justify-start'}`;
 
     const bubbleClasses = isUser ? 'bg-white text-black rounded-br-none shadow' : 'bg-blue-500 text-white rounded-bl-none';
-    const nameColor = 'text-gray-500';
+    const nameColor = 'text-gray-600';
 
     const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const nameHTML = showName ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-2 text-left">${senderName}</div>` : '';
+    const nameHTML = showName ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-1 text-right">${senderName}</div>` : '';
     
     let messageContentHTML = '';
     const timeHTML = `<div class="absolute bottom-1 ${!isUser ? 'left-2' : 'right-2'} text-xs ${!isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>`;
@@ -371,7 +380,7 @@ const renderMessages = (messages, prepend = false) => {
       case 'file':
         const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
         messageContentHTML = `
-          <a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-500/10 p-3 rounded-lg hover:bg-gray-500/20 min-w-[180px]">
+          <a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/50 p-3 rounded-lg hover:bg-gray-100 min-w-[180px]">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
             <span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>
             ${timeHTML}
@@ -402,7 +411,10 @@ const renderMessages = (messages, prepend = false) => {
       messagesList.prepend(fragment);
   } else {
       messagesList.appendChild(fragment);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+  
+  if (isInitialLoad || !prepend) {
+      setTimeout(() => scrollToBottom(), 50);
   }
 };
 
@@ -474,6 +486,7 @@ const handleFileSelect = async (e) => {
             authorName: currentUsername,
             timestamp: serverTimestamp(),
         });
+        scrollToBottom('smooth');
 
     } catch (error) {
         console.error("Error processing/uploading file:", error);
@@ -557,7 +570,6 @@ backToLobbyBtn.addEventListener('click', () => {
     messagesUnsubscribe = null;
   }
   currentRoomId = null;
-  messagesContainer.removeEventListener('scroll', loadOlderMessages); // Clean up listener
   showView('lobby-container');
 });
 
@@ -577,6 +589,7 @@ messageForm.addEventListener('submit', async (e) => {
         authorName: currentUsername,
         timestamp: serverTimestamp(),
       });
+      scrollToBottom('smooth');
     } catch (error) {
       console.error("Error sending message:", error);
       messageInput.value = tempInput; // Restore on error
@@ -722,13 +735,20 @@ deleteChatForm.addEventListener('submit', async (e) => {
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
         const snapshot = await getDocs(query(messagesCol));
         
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
+        // Firestore limits batch writes to 500 operations.
+        // We'll delete in chunks if needed.
+        for (let i = 0; i < snapshot.docs.length; i += 500) {
+            const batch = writeBatch(db);
+            const chunk = snapshot.docs.slice(i, i + 500);
+            chunk.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        }
         
         deleteChatStatus.textContent = 'تمام پیام‌ها حذف شدند.';
         deleteChatStatus.classList.remove('text-yellow-600');
         deleteChatStatus.classList.add('text-green-600');
+        
+        messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">تمام پیام‌ها حذف شدند.</li>';
 
         setTimeout(() => { showView('chat-container'); }, 1500);
 
