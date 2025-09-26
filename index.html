@@ -5,11 +5,9 @@
     <link rel="icon" href="data:," />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>پیام‌رسان</title>
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#f3f4f6" />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      html, body { overflow: hidden; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+      html, body { overflow: hidden; height: 100dvh; /* Dynamic viewport height */ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
       #messages-container::-webkit-scrollbar, #room-list::-webkit-scrollbar { display: none; }
       #messages-container, #room-list { -ms-overflow-style: none; scrollbar-width: none; }
       .view-hidden { display: none !important; }
@@ -27,6 +25,9 @@
         background-color: rgba(209, 213, 219, 0.5);
         border: 1px solid rgba(209, 213, 219, 0.7);
       }
+      .font-size-sm .message-text { font-size: 14px; }
+      .font-size-md .message-text { font-size: 16px; }
+      .font-size-lg .message-text { font-size: 18px; }
     </style>
   <script type="importmap">
 {
@@ -45,13 +46,13 @@
         <div class="absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_500px_at_50%_200px,#C9EBFF,transparent)]"></div>
     </div>
 
-    <div class="flex justify-center items-center h-screen p-0 sm:p-4">
-      <div class="w-full h-full max-w-md mx-auto bg-transparent sm:rounded-3xl overflow-hidden flex flex-col sm:h-[90vh] relative">
+    <!-- Main App Container -->
+    <div class="w-full h-full max-w-md mx-auto bg-transparent sm:rounded-3xl overflow-hidden flex flex-col sm:h-[95dvh] sm:my-[2.5dvh] relative">
 
         <!-- Lobby Container -->
         <div id="lobby-container" class="w-full h-full flex flex-col view-hidden">
           <!-- Header -->
-          <div class="bg-white/50 backdrop-blur-xl border-b border-white/30 px-4 py-3 sticky top-0 z-10">
+          <div class="bg-white/50 backdrop-blur-xl border-b border-white/30 px-4 py-3 flex-shrink-0">
             <h1 class="text-2xl font-bold text-center text-gray-800">گفتگوها</h1>
           </div>
           <!-- Room List -->
@@ -59,7 +60,7 @@
             <!-- Rooms will be injected by main.js -->
           </ul>
           <!-- Bottom Nav -->
-          <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 p-2 sticky bottom-0 z-10 flex justify-around items-center">
+          <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 p-2 flex-shrink-0 flex justify-around items-center">
              <button id="settings-btn" class="p-3 rounded-full hover:bg-gray-200/50 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-gray-700"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
              </button>
@@ -72,7 +73,7 @@
         <!-- Chat Container -->
         <div id="chat-container" class="w-full h-full flex flex-col view-hidden bg-transparent">
           <!-- Header -->
-          <div class="bg-white/50 backdrop-blur-xl border-b border-white/30 px-4 py-2 sticky top-0 z-10">
+          <div class="bg-white/50 backdrop-blur-xl border-b border-white/30 px-4 py-2 flex-shrink-0">
             <div class="flex items-center justify-between relative h-12">
               <button id="back-to-lobby-btn" class="p-2 rounded-full hover:bg-gray-200/50 transition-colors">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7 text-blue-500 transform rtl:rotate-180"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
@@ -92,7 +93,7 @@
             <ul id="messages-list" class="flex flex-col space-y-4"></ul>
           </div>
           <!-- Message Input -->
-          <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 px-4 py-3 sticky bottom-0">
+          <div class="bg-white/50 backdrop-blur-xl border-t border-white/30 px-4 py-3 flex-shrink-0">
             <form id="message-form" class="flex items-center space-x-3 rtl:space-x-reverse" dir="ltr">
               <button type="submit" id="send-button" class="order-2" disabled>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 transition-colors text-gray-400 transform -rotate-90"><path stroke-linecap="round" stroke-linejoin="round" d="m15 11.25-3-3m0 0-3 3m3-3v7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
@@ -103,7 +104,6 @@
             </form>
           </div>
         </div>
-      </div>
     </div>
     
     <!-- Username Modal -->
@@ -154,9 +154,27 @@
     <div id="settings-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
         <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-6 text-center text-gray-800">تنظیمات</h2>
-          <div class="flex justify-center">
-            <button id="settings-ok-btn" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md hover:bg-blue-500/80 transition-colors">OK</button>
-          </div>
+          
+          <form id="user-settings-form" class="space-y-6">
+            <div>
+              <label for="change-username-input" class="block text-sm font-medium text-gray-700 mb-1">تغییر نام نمایشی</label>
+              <input type="text" id="change-username-input" class="w-full bg-white/50 backdrop-blur-sm border border-white/30 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">اندازه فونت پیام‌ها</label>
+              <div class="grid grid-cols-3 gap-2" id="font-size-options">
+                <button type="button" data-size="sm" class="font-size-btn p-2 rounded-md glass-button-gray">کوچک</button>
+                <button type="button" data-size="md" class="font-size-btn p-2 rounded-md glass-button-gray">معمولی</button>
+                <button type="button" data-size="lg" class="font-size-btn p-2 rounded-md glass-button-gray">بزرگ</button>
+              </div>
+            </div>
+
+            <div class="flex justify-center pt-4">
+              <button id="settings-ok-btn" type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md hover:bg-blue-500/80 transition-colors">OK</button>
+            </div>
+          </form>
+
         </div>
     </div>
 

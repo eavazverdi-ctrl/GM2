@@ -10,9 +10,10 @@ const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
 const roomsCollection = collection(db, 'rooms');
 
-// --- User Identity ---
+// --- User Identity & Settings ---
 const USER_ID_KEY = 'chat_user_id_v2';
 const USERNAME_KEY = 'chat_username_v2';
+const FONT_SIZE_KEY = 'chat_font_size_v1';
 const CREATOR_PASSWORD = '2025';
 
 const getUserId = () => {
@@ -27,6 +28,7 @@ const currentUserId = getUserId();
 let currentUsername = '';
 let currentRoomId = null;
 let messagesUnsubscribe = null;
+let currentFontSize = 'md';
 
 // --- DOM Elements ---
 const usernameModal = document.getElementById('username-modal');
@@ -52,6 +54,9 @@ const passwordModalRoomName = document.getElementById('password-modal-room-name'
 const cancelPasswordEntryBtn = document.getElementById('cancel-password-entry');
 
 const settingsModal = document.getElementById('settings-modal');
+const userSettingsForm = document.getElementById('user-settings-form');
+const changeUsernameInput = document.getElementById('change-username-input');
+const fontSizeOptions = document.getElementById('font-size-options');
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 
 const chatContainer = document.getElementById('chat-container');
@@ -104,6 +109,44 @@ const formatTime = (date) => {
   if (!date || !(date instanceof Date)) return '';
   return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
+
+// --- Settings Logic ---
+const applyFontSize = (size) => {
+    document.body.classList.remove('font-size-sm', 'font-size-md', 'font-size-lg');
+    document.body.classList.add(`font-size-${size}`);
+    currentFontSize = size;
+    // Visually update selected button
+    fontSizeOptions.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('glass-button-blue', btn.dataset.size === size);
+        btn.classList.toggle('glass-button-gray', btn.dataset.size !== size);
+    });
+};
+
+fontSizeOptions.addEventListener('click', (e) => {
+    if (e.target.matches('.font-size-btn')) {
+        applyFontSize(e.target.dataset.size);
+    }
+});
+
+settingsBtn.addEventListener('click', () => {
+    changeUsernameInput.value = currentUsername;
+    applyFontSize(currentFontSize);
+    showView('settings-modal');
+});
+
+userSettingsForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    // Save Username
+    const newUsername = changeUsernameInput.value.trim();
+    if (newUsername && newUsername !== currentUsername) {
+        currentUsername = newUsername;
+        localStorage.setItem(USERNAME_KEY, currentUsername);
+    }
+    // Save Font Size
+    localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
+    showView('lobby-container');
+});
+
 
 // --- Lobby Logic ---
 const renderRooms = (rooms) => {
@@ -191,9 +234,10 @@ const renderMessages = (messages) => {
   messages.forEach(message => {
     const isUser = message.authorId === currentUserId;
     const li = document.createElement('li');
-    li.className = `w-full flex ${isUser ? 'justify-end' : 'justify-start'}`;
+    // Swapped justify-start and justify-end
+    li.className = `w-full flex ${isUser ? 'justify-start' : 'justify-end'}`;
 
-    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-bl-none' : 'bg-white text-black rounded-br-none shadow';
+    const bubbleClasses = isUser ? 'bg-blue-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none shadow';
     const nameColor = isUser ? 'text-blue-200' : 'text-gray-500';
 
     const textContent = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -201,10 +245,10 @@ const renderMessages = (messages) => {
 
     li.innerHTML = `
       <div class="flex flex-col max-w-xs lg:max-w-md">
-        ${!isUser ? `<div class="text-sm font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : ''}
+        ${!isUser ? `<div class="text-xs font-semibold ${nameColor} mb-1 px-2 text-right">${senderName}</div>` : ''}
         <div class="px-3 py-2 rounded-2xl ${bubbleClasses} relative">
-          <p class="whitespace-pre-wrap pb-4 break-words">${textContent}</p>
-          <div class="absolute bottom-1 ${isUser ? 'left-2' : 'right-2'} text-xs ${isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>
+          <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
+          <div class="absolute bottom-1 ${isUser ? 'right-2' : 'left-2'} text-xs ${isUser ? 'text-blue-100/80' : 'text-gray-400'}" dir="ltr">${formatTime(message.timestamp)}</div>
         </div>
       </div>
     `;
@@ -227,14 +271,6 @@ createRoomBtn.addEventListener('click', () => {
   createRoomForm.reset();
   showView('create-room-modal');
   newRoomNameInput.focus();
-});
-
-settingsBtn.addEventListener('click', () => {
-    showView('settings-modal');
-});
-
-settingsOkBtn.addEventListener('click', () => {
-    showView('lobby-container');
 });
 
 cancelCreateRoomBtn.addEventListener('click', () => showView('lobby-container'));
@@ -414,16 +450,19 @@ setRoomPasswordForm.addEventListener('submit', async (e) => {
   }
 });
 
-// --- PWA Service Worker ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
-  });
-}
+// --- PWA Service Worker (commented out to remove errors for now) ---
+// if ('serviceWorker' in navigator) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW registration failed:', err));
+//   });
+// }
 
 // --- App Entry Point ---
 const startApp = () => {
   const storedUsername = localStorage.getItem(USERNAME_KEY);
+  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
+  applyFontSize(storedFontSize);
+
   if (storedUsername) {
     currentUsername = storedUsername;
     showView('lobby-container');
