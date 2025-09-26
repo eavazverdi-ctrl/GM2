@@ -37,7 +37,11 @@
                <span class="text-blue-500 text-lg">پیام‌ها</span>
             </div>
             <div class="absolute left-1/2 -translate-x-1/2 flex flex-col items-center text-center">
-              <img src="https://i.pravatar.cc/40?u=group" alt="گروه" class="w-10 h-10 rounded-full" />
+              <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center ring-1 ring-gray-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-500">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m-7.5-2.928A9.086 9.086 0 0 0 9 14.25m-4.5 4.5v-2.25m0-10.5v-2.25m0 5.25v-2.25m0 10.5a8.967 8.967 0 0 1-1.756-.429m12.568 4.673A11.961 11.961 0 0 1 12 21a11.961 11.961 0 0 1-7.256-2.428m16.5 0a11.961 11.961 0 0 0-7.256-2.428M12 6a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Zm-4.5 0a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Zm13.5 0a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z" />
+                  </svg>
+              </div>
               <span class="text-sm font-semibold mt-1">چت گروهی</span>
             </div>
             <div></div>
@@ -73,7 +77,7 @@
     </div>
     
     <!-- Username Modal -->
-    <div id="username-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50 hidden">
+    <div id="username-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 max-w-sm text-center">
         <h2 class="text-xl font-bold mb-4">نام خود را وارد کنید</h2>
         <form id="username-form">
