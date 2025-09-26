@@ -87,16 +87,17 @@
         </div>
 
         <!-- Chat Container -->
-        <div id="chat-container" class="w-full h-full flex flex-col view-hidden bg-transparent relative">
+        <div id="chat-container" class="w-full h-full flex flex-col view-hidden bg-transparent relative z-0">
+          <div id="chat-background" class="absolute inset-0 w-full h-full bg-cover bg-center -z-10"></div>
           <!-- Header -->
           <div class="glass-bar border-b px-4 py-2 flex-shrink-0 z-10">
             <div class="flex items-center justify-between relative h-12">
               <button id="back-to-lobby-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7 text-white transform rtl:rotate-180"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
               </button>
-              <div class="absolute left-1/2 -translate-x-1/2 flex items-center space-x-2 rtl:space-x-reverse">
-                <div id="chat-room-avatar" class="w-10 h-10 rounded-full bg-gray-200"></div>
-                <span id="chat-room-name" class="text-lg font-semibold text-white"></span>
+              <div class="absolute left-1/2 -translate-x-1/2 flex items-center space-x-2 rtl:space-x-reverse max-w-[60%]">
+                <div id="chat-room-avatar" class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0"></div>
+                <span id="chat-room-name" class="text-lg font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis"></span>
               </div>
               <button id="chat-settings-btn" class="p-2 rounded-full hover:bg-white/20 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-white">
@@ -223,7 +224,8 @@
         <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-6 text-center text-gray-800">تنظیمات گفتگو</h2>
           <div class="space-y-3">
-            <button id="open-change-room-avatar-btn" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">تغییر عکس گفتگو</button>
+            <button id="open-change-room-avatar-btn" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">تغییر عکس پروفایل</button>
+            <button id="open-change-background-btn" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">تغییر عکس پس زمینه</button>
             <button id="open-change-name-modal-btn" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">تغییر نام گفتگو</button>
             <button id="open-set-password-modal-btn" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">تنظیم/تغییر رمز</button>
             <button id="open-delete-chat-modal-btn" class="w-full glass-button-red text-white font-bold py-2 px-4 rounded-md mt-4">پاک کردن گفتگو</button>
@@ -237,7 +239,7 @@
      <!-- Change Room Avatar Modal -->
     <div id="change-room-avatar-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
         <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
-          <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تغییر عکس گفتگو</h2>
+          <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تغییر عکس پروفایل</h2>
           <form id="change-room-avatar-form">
             <div class="space-y-4">
                <div class="flex flex-col items-center">
@@ -252,6 +254,31 @@
               <input type="password" id="current-password-for-avatar" class="w-full bg-white/50 backdrop-blur-sm border border-white/30 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز فعلی (پیش‌فرض: 2025)" required />
             </div>
             <p id="change-avatar-status" class="text-sm mt-2 text-center h-4"></p>
+            <div class="mt-4 flex justify-end space-x-3 rtl:space-x-reverse">
+              <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
+              <button type="submit" class="glass-button-blue text-white font-bold py-2 px-4 rounded-md">ذخیره</button>
+            </div>
+          </form>
+        </div>
+    </div>
+    
+    <!-- Change Background Modal -->
+    <div id="change-background-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
+          <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تغییر عکس پس زمینه</h2>
+          <form id="change-background-form">
+            <div class="space-y-4">
+               <div class="flex flex-col items-center">
+                  <label for="background-input" class="cursor-pointer">
+                      <div id="background-preview" class="w-48 h-32 rounded-lg bg-gray-200 flex items-center justify-center mb-2 overflow-hidden ring-2 ring-white/50 bg-cover bg-center">
+                          <span id="background-preview-text" class="text-sm text-gray-600 p-2 text-center">انتخاب عکس جدید</span>
+                      </div>
+                  </label>
+                  <input type="file" id="background-input" class="hidden" accept="image/*" />
+              </div>
+              <input type="password" id="current-password-for-background" class="w-full bg-white/50 backdrop-blur-sm border border-white/30 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز فعلی (پیش‌فرض: 2025)" required />
+            </div>
+            <p id="change-background-status" class="text-sm mt-2 text-center h-4"></p>
             <div class="mt-4 flex justify-end space-x-3 rtl:space-x-reverse">
               <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
               <button type="submit" class="glass-button-blue text-white font-bold py-2 px-4 rounded-md">ذخیره</button>
