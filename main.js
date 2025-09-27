@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
-  limit, getDocs, startAfter, writeBatch, where, endBefore, limitToLast
+  limit, getDocs, startAfter, writeBatch, where, endBefore, limitToLast, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -37,6 +37,7 @@ let currentUsername = '';
 let currentUserAvatar = null;
 let currentRoomId = null;
 let messagesUnsubscribe = null;
+let roomsUnsubscribe = null;
 let currentFontSize = 'sm';
 let currentGlassMode = 'off';
 
@@ -117,7 +118,7 @@ const setRoomPasswordModal = document.getElementById('set-room-password-modal');
 const setRoomPasswordForm = document.getElementById('set-room-password-form');
 const newPasswordInput = document.getElementById('new-password-input');
 const currentPasswordForPassInput = document.getElementById('current-password-for-pass');
-const setPasswordStatus = document.getElementById('set-password-status');
+const setPasswordStatus = document.getElementById('setPassword-status');
 const deleteChatModal = document.getElementById('delete-chat-modal');
 const deleteChatForm = document.getElementById('delete-chat-form');
 const passwordForDeleteInput = document.getElementById('password-for-delete');
@@ -274,7 +275,8 @@ const renderRooms = (rooms) => {
 
 const listenForRooms = () => {
   const q = query(roomsCollection, orderBy('createdAt', 'desc'));
-  onSnapshot(q, (snapshot) => {
+  if (roomsUnsubscribe) roomsUnsubscribe();
+  roomsUnsubscribe = onSnapshot(q, (snapshot) => {
     const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     renderRooms(rooms);
   });
@@ -332,19 +334,23 @@ const loadAndListenForMessages = () => {
       reachedEndOfMessages = true;
       return;
     }
-    const messages = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      timestamp: doc.data().timestamp?.toDate() ?? new Date(),
-    })).reverse();
-    const isInitialLoad = !oldestMessageDoc;
-    if (isInitialLoad || snapshot.docChanges().some(c => c.type === 'added')) {
-        renderMessages(messages, false, isInitialLoad);
-    }
-    if (snapshot.docs.length > 0) {
-        oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
-    } else {
-        reachedEndOfMessages = true;
+    
+    // Check if the view is still active before rendering
+    if(currentRoomId) {
+        const messages = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate() ?? new Date(),
+        })).reverse();
+        const isInitialLoad = !oldestMessageDoc;
+        if (isInitialLoad || snapshot.docChanges().some(c => c.type === 'added')) {
+            renderMessages(messages, false, isInitialLoad);
+        }
+        if (snapshot.docs.length > 0) {
+            oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+        } else {
+            reachedEndOfMessages = true;
+        }
     }
   }, error => {
     console.error("Error listening to messages:", error);
@@ -396,61 +402,50 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
   const fragment = document.createDocumentFragment();
 
   const glassModeClasses = {
-      'off': { user: 'bg-green-500', other: 'bg-white' },
-      'low': { user: 'bg-green-500/70', other: 'bg-white/70' },
-      'high': { user: 'bg-green-500/40', other: 'bg-white/40' }
+      'off': { user: 'bg-blue-500', other: 'bg-white' },
+      'low': { user: 'bg-blue-500/70 backdrop-blur-sm', other: 'bg-white/70 backdrop-blur-sm' },
+      'high': { user: 'bg-blue-500/40 backdrop-blur-md', other: 'bg-white/40 backdrop-blur-md' }
   };
   const selectedModeClasses = glassModeClasses[currentGlassMode] || glassModeClasses['off'];
 
   messages.forEach(message => {
     const isUser = message.authorId === currentUserId;
-    
     const li = document.createElement('li');
     li.dataset.authorId = message.authorId;
     
-    let bubbleClasses, bubbleTailClass, nameAlignmentClass, timeAlignmentClass, nameColorClass, timeColorClass;
+    // Determine classes based on sender
+    const liClasses = isUser ? 'justify-end' : 'justify-start'; // end=left, start=right in RTL
+    const bubbleClasses = isUser ? `${selectedModeClasses.user} text-white` : `${selectedModeClasses.other} text-black shadow`;
+    const bubbleTailClass = isUser ? 'rounded-bl-none' : 'rounded-br-none';
+    const nameAlignmentClass = isUser ? 'text-left' : 'text-right';
+    const timeAlignmentClass = isUser ? 'right-2.5' : 'left-2.5';
+    const metaColorClass = isUser ? 'text-white/80' : 'text-gray-500';
 
-    if (isUser) { // User: Green, Left
-        li.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse';
-        bubbleClasses = `${selectedModeClasses.user} text-white`;
-        bubbleTailClass = 'rounded-bl-none'; // Tail: bottom-left
-        nameAlignmentClass = 'text-left';   // Name: top-left
-        timeAlignmentClass = 'right-2.5';   // Time: bottom-right
-        nameColorClass = 'text-gray-200/90';
-        timeColorClass = 'text-gray-200/90';
-    } else { // Others: White, Right
-        li.className = 'flex justify-end items-start space-x-3 rtl:space-x-reverse';
-        bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
-        bubbleTailClass = 'rounded-br-none'; // Tail: bottom-right
-        nameAlignmentClass = 'text-right';  // Name: top-right
-        timeAlignmentClass = 'left-2.5';    // Time: bottom-left
-        nameColorClass = 'text-gray-500 opacity-70';
-        timeColorClass = 'text-gray-500 opacity-70';
-    }
+    li.className = `flex items-start space-x-3 rtl:space-x-reverse ${liClasses}`;
 
     const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
+    const nameHTML = `<div class="text-xs ${metaColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
     
     const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
     const avatarContainer = `<div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${avatarHTML}</div>`;
 
     let messageContentHTML = '';
-    const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
-
+    const timeHTML = (timestamp) => `<span class="text-xs ${metaColorClass}" dir="ltr">${formatTime(timestamp)}</span>`;
+    
     switch (message.type) {
       case 'image':
-        messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-xs text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${formatTime(message.timestamp)}</div></div>`;
+        messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${formatTime(message.timestamp)}</div></div>`;
         break;
       case 'file':
         const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
+        const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML(message.timestamp)}</div>`;
         messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
         break;
       default: // text
         const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
+        const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML(message.timestamp)}</div>`;
         messageContentHTML = `
-          <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
+          <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative">
             ${nameHTML}
             <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
             ${metaHTML}
@@ -459,10 +454,11 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     
     const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
 
-    if (isUser) { // User: Green, Left
-        li.innerHTML = avatarContainer + bubbleContainer;
-    } else { // Others: White, Right
+    // In RTL flex, the visual order is the reverse of the DOM order.
+    if (isUser) { // User (Left): We want [Avatar | Bubble]. DOM order: Bubble, then Avatar.
         li.innerHTML = bubbleContainer + avatarContainer;
+    } else { // Others (Right): We want [Bubble | Avatar]. DOM order: Avatar, then Bubble.
+        li.innerHTML = avatarContainer + bubbleContainer;
     }
 
     fragment.appendChild(li);
@@ -512,15 +508,15 @@ const handleFileSelect = async (e) => {
         const previewUrl = URL.createObjectURL(file);
         const tempLi = document.createElement('li');
         tempLi.id = tempId;
-        tempLi.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse opacity-50';
+        tempLi.className = 'flex justify-end items-start space-x-3 rtl:space-x-reverse opacity-50'; // Aligned left for user
         tempLi.innerHTML = `
-            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
-            <div class="relative rounded-lg overflow-hidden max-w-xs lg:max-w-md">
+             <div class="relative rounded-lg overflow-hidden max-w-xs lg:max-w-md">
                 <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                     <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </div>
             </div>
+            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
             `;
         messagesList.appendChild(tempLi);
         scrollToBottom('smooth');
@@ -674,6 +670,7 @@ backgroundInput.addEventListener('change', async e => { const file = e.target.fi
 changeRoomNameForm.addEventListener('submit', async (e) => {
   e.preventDefault(); if (!currentRoomId) return;
   const newName = newRoomNameInputForChange.value.trim(); const currentPassword = currentPasswordForNameInput.value;
+  if (!newName) return;
   changeNameStatus.textContent = 'در حال بررسی...'; changeNameStatus.classList.remove('text-red-600', 'text-green-600');
   try {
     const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
@@ -681,14 +678,15 @@ changeRoomNameForm.addEventListener('submit', async (e) => {
     const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
     if (currentPassword !== correctPassword) { changeNameStatus.textContent = 'رمز فعلی اشتباه است.'; changeNameStatus.classList.add('text-red-600'); return; }
     await updateDoc(roomRef, { name: newName });
-    changeNameStatus.textContent = 'نام با موفقیت تغییر کرد.'; changeNameStatus.classList.add('text-green-600'); chatRoomName.textContent = newName;
+    changeNameStatus.textContent = 'نام با موفقیت تغییر کرد.'; changeNameStatus.classList.add('text-green-600');
+    chatRoomName.textContent = newName;
     setTimeout(() => showView('chat-settings-modal'), 1500);
-  } catch (error) { console.error("Error changing room name:", error); changeNameStatus.textContent = error.message || 'خطا در تغییر نام.'; changeNameStatus.classList.add('text-red-600'); }
+  } catch (error) { console.error("Error changing room name:", error); changeNameStatus.textContent = error.message; changeNameStatus.classList.add('text-red-600'); }
 });
 
 setRoomPasswordForm.addEventListener('submit', async (e) => {
   e.preventDefault(); if (!currentRoomId) return;
-  const newPassword = newPasswordInput.value.trim(); const currentPassword = currentPasswordForPassInput.value;
+  const newPassword = newPasswordInput.value; const currentPassword = currentPasswordForPassInput.value;
   setPasswordStatus.textContent = 'در حال بررسی...'; setPasswordStatus.classList.remove('text-red-600', 'text-green-600');
   try {
     const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
@@ -696,49 +694,77 @@ setRoomPasswordForm.addEventListener('submit', async (e) => {
     const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
     if (currentPassword !== correctPassword) { setPasswordStatus.textContent = 'رمز فعلی اشتباه است.'; setPasswordStatus.classList.add('text-red-600'); return; }
     await updateDoc(roomRef, { password: newPassword || null });
-    setPasswordStatus.textContent = 'رمز با موفقیت به‌روز شد.'; setPasswordStatus.classList.add('text-green-600');
-    localStorage.removeItem(`room_access_${currentRoomId}`);
+    if(newPassword) { localStorage.setItem(`room_access_${currentRoomId}`, 'true'); } // Grant access if setting a new password
+    else { localStorage.removeItem(`room_access_${currentRoomId}`); } // Remove access if password is removed
+    setPasswordStatus.textContent = 'رمز با موفقیت ذخیره شد.'; setPasswordStatus.classList.add('text-green-600');
     setTimeout(() => showView('chat-settings-modal'), 1500);
-  } catch (error) { console.error("Error setting room password:", error); setPasswordStatus.textContent = error.message || 'خطا در تغییر رمز.'; setPasswordStatus.classList.add('text-red-600'); }
+  } catch (error) { console.error("Error setting password:", error); setPasswordStatus.textContent = error.message; setPasswordStatus.classList.add('text-red-600'); }
 });
 
 deleteChatForm.addEventListener('submit', async (e) => {
     e.preventDefault(); if (!currentRoomId) return;
     const password = passwordForDeleteInput.value;
-    deleteChatStatus.textContent = 'در حال بررسی رمز...'; deleteChatStatus.classList.remove('text-red-600', 'text-green-600');
+    deleteChatStatus.textContent = 'در حال بررسی...'; deleteChatStatus.classList.remove('text-red-600', 'text-green-600');
     try {
-        const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
+        const roomRef = doc(db, 'rooms', currentRoomId);
+        const roomDoc = await getDoc(roomRef);
         if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
         const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-        if (password !== correctPassword) { deleteChatStatus.textContent = 'رمز اشتباه است.'; deleteChatStatus.classList.add('text-red-600'); return; }
-        deleteChatStatus.textContent = 'در حال حذف پیام‌ها...'; deleteChatStatus.classList.add('text-yellow-600');
+        if (password !== correctPassword) {
+            deleteChatStatus.textContent = 'رمز فعلی اشتباه است.';
+            deleteChatStatus.classList.add('text-red-600');
+            return;
+        }
+
+        // Delete all messages in the room
+        deleteChatStatus.textContent = 'در حال حذف پیام‌ها...';
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-        const snapshot = await getDocs(query(messagesCol));
-        for (let i = 0; i < snapshot.docs.length; i += 500) { const batch = writeBatch(db); const chunk = snapshot.docs.slice(i, i + 500); chunk.forEach(doc => batch.delete(doc.ref)); await batch.commit(); }
-        deleteChatStatus.textContent = 'تمام پیام‌ها حذف شدند.'; deleteChatStatus.classList.remove('text-yellow-600'); deleteChatStatus.classList.add('text-green-600');
-        messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">تمام پیام‌ها حذف شدند.</li>';
-        setTimeout(() => { showView('chat-container'); }, 1500);
-    } catch (error) { console.error("Error deleting chat:", error); deleteChatStatus.textContent = error.message || 'خطا در حذف گفتگو.'; deleteChatStatus.classList.add('text-red-600'); }
+        const messagesSnapshot = await getDocs(messagesCol);
+        const batch = writeBatch(db);
+        messagesSnapshot.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+
+        // Delete the room itself
+        deleteChatStatus.textContent = 'در حال حذف اتاق...';
+        await deleteDoc(roomRef);
+        
+        deleteChatStatus.textContent = 'اتاق با موفقیت حذف شد.';
+        deleteChatStatus.classList.add('text-green-600');
+        
+        setTimeout(() => {
+            // Unsubscribe and go back to lobby
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
+            currentRoomId = null;
+            showView('lobby-container');
+        }, 1500);
+
+    } catch (error) {
+        console.error("Error deleting chat:", error);
+        deleteChatStatus.textContent = error.message;
+        deleteChatStatus.classList.add('text-red-600');
+    }
 });
 
-// --- App Entry Point ---
+
+// --- App Start ---
 const startApp = () => {
-  currentUsername = localStorage.getItem(USERNAME_KEY);
-  currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
-  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'sm';
-  const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
-  applyFontSize(storedFontSize);
-  applyGlassModeSelection(storedGlassMode); // will set currentGlassMode
+    // Load user settings from localStorage
+    currentUsername = localStorage.getItem(USERNAME_KEY);
+    currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
+    const savedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
+    const savedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
+    applyFontSize(savedFontSize);
+    applyGlassModeSelection(savedGlassMode);
 
-  const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
+    const hasAccess = localStorage.getItem(APP_ACCESS_KEY);
 
-  if (appAccessGranted && currentUsername) {
-    showView('lobby-container');
-    listenForRooms();
-  } else {
-    showView('username-modal');
-    usernameInput.focus();
-  }
+    if (currentUsername && hasAccess) {
+        listenForRooms();
+        showView('lobby-container');
+    } else {
+        showView('username-modal');
+        usernameInput.focus();
+    }
 };
 
 startApp();
