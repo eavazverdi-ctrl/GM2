@@ -43,7 +43,10 @@ let currentFontSize = 'md';
 let currentGlassMode = 'off';
 let currentBackgroundMode = 'day';
 let currentStaticBackground = null;
+
+// --- State for Settings Modal ---
 let tempStaticBackground = null;
+let initialSettingsState = {};
 
 
 // Pagination state
@@ -83,6 +86,7 @@ const backgroundModeOptions = document.getElementById('background-mode-options')
 const staticBackgroundUploader = document.getElementById('static-background-uploader');
 const backgroundImageInput = document.getElementById('background-image-input');
 const settingsOkBtn = document.getElementById('settings-ok-btn');
+const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 const chatContainer = document.getElementById('chat-container');
 const chatBackground = document.getElementById('chat-background');
 const chatRoomName = document.getElementById('chat-room-name');
@@ -215,15 +219,12 @@ const applyBackgroundModeSelection = (mode) => {
 };
 
 const applyBackgroundSettings = (mode, staticBgData) => {
-    currentBackgroundMode = mode;
-    currentStaticBackground = staticBgData;
-
-    // Reset state
+    // This function now only applies visual changes, not saving state.
     appBackground.style.backgroundImage = '';
     appBackground.classList.remove('animated-day', 'animated-night');
     const gradientBlobs = appBackground.querySelector('.gradient-blobs');
     
-    appBackground.style.backgroundColor = 'transparent'; // Reset solid color
+    appBackground.style.backgroundColor = 'transparent';
 
     if (mode === 'static' && staticBgData) {
         appBackground.style.backgroundImage = `url(${staticBgData})`;
@@ -236,7 +237,7 @@ const applyBackgroundSettings = (mode, staticBgData) => {
     } else if (mode === 'night') {
         appBackground.classList.add('animated-night');
         if (gradientBlobs) gradientBlobs.classList.remove('hidden');
-    } else { // Fallback to day animation
+    } else { // Fallback
         appBackground.classList.add('animated-day');
         if (gradientBlobs) gradientBlobs.classList.remove('hidden');
     }
@@ -256,7 +257,11 @@ glassModeOptions.addEventListener('click', (e) => {
 
 backgroundModeOptions.addEventListener('click', (e) => {
     if (e.target.matches('.bg-mode-btn')) {
-        applyBackgroundModeSelection(e.target.dataset.mode);
+        const mode = e.target.dataset.mode;
+        applyBackgroundModeSelection(mode);
+        // Apply live preview
+        const bgData = (mode === 'static') ? (tempStaticBackground || currentStaticBackground) : null;
+        applyBackgroundSettings(mode, bgData);
     }
 });
 
@@ -265,6 +270,8 @@ backgroundImageInput.addEventListener('change', async (e) => {
     if (!file) return;
     try {
         tempStaticBackground = await compressImage(file, IMAGE_MAX_DIMENSION);
+        // Apply live preview of the new image
+        applyBackgroundSettings('static', tempStaticBackground);
         alert('عکس برای پس‌زمینه آماده شد. برای ذخیره، دکمه OK را بزنید.');
     } catch (error) {
         console.error("Error compressing background image:", error);
@@ -274,14 +281,31 @@ backgroundImageInput.addEventListener('change', async (e) => {
 
 
 settingsBtn.addEventListener('click', () => {
+    // Store initial state to revert on cancel
+    initialSettingsState = {
+        mode: currentBackgroundMode,
+        staticBg: currentStaticBackground
+    };
+    
     changeUsernameInput.value = currentUsername;
     userAvatarPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
     applyFontSize(currentFontSize);
     applyGlassModeSelection(currentGlassMode);
     applyBackgroundModeSelection(currentBackgroundMode);
-    tempStaticBackground = null; // Reset temp background on modal open
+    
+    // Reset temp background state for the new session
+    tempStaticBackground = null;
+    backgroundImageInput.value = '';
+
     showView('settings-modal');
 });
+
+settingsCancelBtn.addEventListener('click', () => {
+    // Revert to initial settings from when the modal was opened
+    applyBackgroundSettings(initialSettingsState.mode, initialSettingsState.staticBg);
+    showView('lobby-container');
+});
+
 
 userAvatarInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -308,15 +332,17 @@ userSettingsForm.addEventListener('submit', (e) => {
     localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
     localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
     
-    // Handle background settings
+    // Finalize and save background settings
     const selectedMode = backgroundModeOptions.querySelector('.bg-mode-btn.glass-button-blue').dataset.mode;
+    currentBackgroundMode = selectedMode;
     localStorage.setItem(BACKGROUND_MODE_KEY, selectedMode);
+    
     if (selectedMode === 'static' && tempStaticBackground) {
-        localStorage.setItem(STATIC_BACKGROUND_KEY, tempStaticBackground);
         currentStaticBackground = tempStaticBackground;
+        localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground);
     }
     
-    applyBackgroundSettings(selectedMode, currentStaticBackground);
+    // Background is already showing the preview, no need to call applyBackgroundSettings again.
     
     showView('lobby-container');
 });
@@ -971,12 +997,12 @@ const startApp = () => {
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
-  const storedBgMode = localStorage.getItem(BACKGROUND_MODE_KEY) || 'day';
-  const storedStaticBg = localStorage.getItem(STATIC_BACKGROUND_KEY);
+  currentBackgroundMode = localStorage.getItem(BACKGROUND_MODE_KEY) || 'day';
+  currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
 
   applyFontSize(storedFontSize);
   applyGlassModeSelection(storedGlassMode);
-  applyBackgroundSettings(storedBgMode, storedStaticBg);
+  applyBackgroundSettings(currentBackgroundMode, currentStaticBackground);
 
   const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
 

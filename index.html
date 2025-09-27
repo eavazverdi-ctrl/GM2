@@ -36,34 +36,47 @@
         position: relative;
         width: 100%;
         height: 100%;
-        filter: blur(80px);
+        filter: blur(100px);
+        opacity: 0.7;
         transition: opacity 0.5s ease-in-out;
       }
       .gradient-blob {
         position: absolute;
         border-radius: 50%;
-        opacity: 0.6;
-        will-change: transform;
         mix-blend-mode: screen;
+        will-change: transform;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
       }
 
       /* DAY THEME */
-      .animated-day .blob-1 { background: #ffafbd; width: 400px; height: 400px; top: -50px; left: -100px; animation: blob-move-1 25s infinite alternate; }
-      .animated-day .blob-2 { background: #a2d2ff; width: 500px; height: 500px; top: -100px; right: -150px; animation: blob-move-2 30s infinite alternate; }
-      .animated-day .blob-3 { background: #ffc6ff; width: 300px; height: 300px; bottom: -50px; left: 100px; animation: blob-move-3 20s infinite alternate; }
-      .animated-day .blob-4 { background: #ffffc2; width: 350px; height: 350px; bottom: -100px; right: 50px; animation: blob-move-4 28s infinite alternate; }
+      .animated-day .blob-1 { background: rgba(255, 175, 189, 0.6); width: 60vmax; height: 60vmax; top: -20%; left: -20%; animation-name: blob-anim-1; animation-duration: 25s; }
+      .animated-day .blob-2 { background: rgba(162, 210, 255, 0.6); width: 50vmax; height: 50vmax; top: 10%; right: -25%; animation-name: blob-anim-2; animation-duration: 30s; }
+      .animated-day .blob-3 { background: rgba(255, 252, 194, 0.5); width: 45vmax; height: 45vmax; bottom: -20%; left: 20%; animation-name: blob-anim-3; animation-duration: 20s; }
+      .animated-day .blob-4 { background: rgba(255, 198, 255, 0.5); width: 40vmax; height: 40vmax; bottom: -10%; right: 10%; animation-name: blob-anim-4; animation-duration: 35s; }
 
       /* NIGHT THEME */
-      .animated-night .blob-1 { background: #4a00e0; width: 400px; height: 400px; top: -50px; left: -100px; animation: blob-move-1 25s infinite alternate; }
-      .animated-night .blob-2 { background: #8e2de2; width: 500px; height: 500px; top: -100px; right: -150px; animation: blob-move-2 30s infinite alternate; }
-      .animated-night .blob-3 { background: #000428; width: 300px; height: 300px; bottom: -50px; left: 100px; animation: blob-move-3 20s infinite alternate; }
-      .animated-night .blob-4 { background: #004e92; width: 350px; height: 350px; bottom: -100px; right: 50px; animation: blob-move-4 28s infinite alternate; }
+      .animated-night .blob-1 { background: rgba(74, 0, 224, 0.6); width: 60vmax; height: 60vmax; top: -20%; left: -20%; animation-name: blob-anim-1; animation-duration: 28s; }
+      .animated-night .blob-2 { background: rgba(142, 45, 226, 0.6); width: 50vmax; height: 50vmax; top: 10%; right: -25%; animation-name: blob-anim-2; animation-duration: 32s; }
+      .animated-night .blob-3 { background: rgba(0, 4, 40, 0.7); width: 45vmax; height: 45vmax; bottom: -20%; left: 20%; animation-name: blob-anim-3; animation-duration: 24s; }
+      .animated-night .blob-4 { background: rgba(0, 78, 146, 0.5); width: 40vmax; height: 40vmax; bottom: -10%; right: 10%; animation-name: blob-anim-4; animation-duration: 38s; }
 
-      @keyframes blob-move-1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(100px, 200px) scale(1.2); } }
-      @keyframes blob-move-2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-150px, -50px) scale(0.8); } }
-      @keyframes blob-move-3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(50px, -150px) scale(1.1); } }
-      @keyframes blob-move-4 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-100px, 100px) scale(1); } }
-
+      @keyframes blob-anim-1 {
+        from { transform: translate(-20%, 20%) scale(1) rotate(0deg); }
+        to { transform: translate(20%, -20%) scale(1.2) rotate(180deg); }
+      }
+      @keyframes blob-anim-2 {
+        from { transform: translate(10%, -15%) scale(1) rotate(0deg); }
+        to { transform: translate(-10%, 15%) scale(0.8) rotate(220deg); }
+      }
+      @keyframes blob-anim-3 {
+        from { transform: translate(-15%, 10%) scale(0.9) rotate(0deg); }
+        to { transform: translate(15%, -10%) scale(1.1) rotate(-150deg); }
+      }
+      @keyframes blob-anim-4 {
+        from { transform: translate(5%, 5%) scale(1) rotate(0deg); }
+        to { transform: translate(-5%, -5%) scale(1.2) rotate(90deg); }
+      }
     </style>
   <script type="importmap">
 {
@@ -259,8 +272,9 @@
               </div>
             </div>
 
-            <div class="flex justify-center pt-4">
-              <button id="settings-ok-btn" type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md hover:bg-blue-500/80 transition-colors">OK</button>
+            <div class="flex justify-center pt-4 space-x-3 rtl:space-x-reverse">
+               <button id="settings-cancel-btn" type="button" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
+               <button id="settings-ok-btn" type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md">OK</button>
             </div>
           </form>
 
