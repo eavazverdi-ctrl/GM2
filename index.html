@@ -24,17 +24,46 @@
         backdrop-filter: blur(16px) saturate(180%);
         -webkit-backdrop-filter: blur(16px) saturate(180%);
       }
-      .shared-background {
-        background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23C9EBFF' offset='0%25'/%3E%3Cstop stop-color='%23a7d7ff' offset='100%25'/%3E%3C/linearGradient%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='5' seed='10'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='120'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='800' height='800' fill='url(%23g)'/%3E%3Crect width='800' height='800' fill='url(%23g)' filter='url(%23f)'/%3E%3C/svg%3E");
-        background-size: cover;
-        background-position: center;
-      }
       .glass-button-blue { background-color: rgba(59, 130, 246, 0.7); }
       .glass-button-red { background-color: rgba(239, 68, 68, 0.7); }
       .glass-button-gray { background-color: rgba(209, 213, 219, 0.6); }
       .font-size-sm .message-text { font-size: 14px; }
       .font-size-md .message-text { font-size: 16px; }
       .font-size-lg .message-text { font-size: 18px; }
+
+      /* --- Animated Gradient Background --- */
+      .gradient-blobs {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        filter: blur(80px);
+        transition: opacity 0.5s ease-in-out;
+      }
+      .gradient-blob {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.6;
+        will-change: transform;
+        mix-blend-mode: screen;
+      }
+
+      /* DAY THEME */
+      .animated-day .blob-1 { background: #ffafbd; width: 400px; height: 400px; top: -50px; left: -100px; animation: blob-move-1 25s infinite alternate; }
+      .animated-day .blob-2 { background: #a2d2ff; width: 500px; height: 500px; top: -100px; right: -150px; animation: blob-move-2 30s infinite alternate; }
+      .animated-day .blob-3 { background: #ffc6ff; width: 300px; height: 300px; bottom: -50px; left: 100px; animation: blob-move-3 20s infinite alternate; }
+      .animated-day .blob-4 { background: #ffffc2; width: 350px; height: 350px; bottom: -100px; right: 50px; animation: blob-move-4 28s infinite alternate; }
+
+      /* NIGHT THEME */
+      .animated-night .blob-1 { background: #4a00e0; width: 400px; height: 400px; top: -50px; left: -100px; animation: blob-move-1 25s infinite alternate; }
+      .animated-night .blob-2 { background: #8e2de2; width: 500px; height: 500px; top: -100px; right: -150px; animation: blob-move-2 30s infinite alternate; }
+      .animated-night .blob-3 { background: #000428; width: 300px; height: 300px; bottom: -50px; left: 100px; animation: blob-move-3 20s infinite alternate; }
+      .animated-night .blob-4 { background: #004e92; width: 350px; height: 350px; bottom: -100px; right: 50px; animation: blob-move-4 28s infinite alternate; }
+
+      @keyframes blob-move-1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(100px, 200px) scale(1.2); } }
+      @keyframes blob-move-2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-150px, -50px) scale(0.8); } }
+      @keyframes blob-move-3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(50px, -150px) scale(1.1); } }
+      @keyframes blob-move-4 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-100px, 100px) scale(1); } }
+
     </style>
   <script type="importmap">
 {
@@ -48,8 +77,15 @@
 </script>
 </head>
   <body class="bg-gray-200 font-sans">
-    <!-- Gradient Background -->
-    <div class="fixed inset-0 -z-10 h-full w-full bg-white shared-background"></div>
+    <!-- Background Container -->
+    <div id="app-background" class="fixed inset-0 -z-10 h-full w-full bg-sky-100 overflow-hidden">
+        <div class="gradient-blobs">
+            <div class="gradient-blob blob-1"></div>
+            <div class="gradient-blob blob-2"></div>
+            <div class="gradient-blob blob-3"></div>
+            <div class="gradient-blob blob-4"></div>
+        </div>
+    </div>
 
     <!-- Main App Container -->
     <div class="w-full h-full max-w-md mx-auto bg-transparent sm:rounded-3xl overflow-hidden flex flex-col sm:h-[95vh] sm:my-[2.5vh]">
@@ -143,7 +179,7 @@
 
     <!-- Create Room Modal -->
     <div id="create-room-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">ایجاد گفتگوی جدید</h2>
         <form id="create-room-form">
           <div class="space-y-4">
@@ -160,7 +196,7 @@
 
     <!-- Password Modal -->
     <div id="password-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">ورود به <span id="password-modal-room-name" class="text-blue-600"></span></h2>
         <form id="password-form">
           <input type="password" id="room-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز عبور..." required />
@@ -175,7 +211,7 @@
 
     <!-- General Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <form id="user-settings-form" class="space-y-6">
             <div class="flex flex-col items-center">
                 <label for="user-avatar-input" class="cursor-pointer">
@@ -210,6 +246,19 @@
               </div>
             </div>
 
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">حالت پس‌زمینه</label>
+              <div class="grid grid-cols-3 gap-2" id="background-mode-options">
+                <button type="button" data-mode="static" class="bg-mode-btn p-2 rounded-md glass-button-gray">ثابت</button>
+                <button type="button" data-mode="day" class="bg-mode-btn p-2 rounded-md glass-button-gray">متحرک (روز)</button>
+                <button type="button" data-mode="night" class="bg-mode-btn p-2 rounded-md glass-button-gray">متحرک (شب)</button>
+              </div>
+              <div id="static-background-uploader" class="mt-2 text-center hidden">
+                  <label for="background-image-input" class="cursor-pointer inline-block glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انتخاب عکس</label>
+                  <input type="file" id="background-image-input" class="hidden" accept="image/*" />
+              </div>
+            </div>
+
             <div class="flex justify-center pt-4">
               <button id="settings-ok-btn" type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md hover:bg-blue-500/80 transition-colors">OK</button>
             </div>
@@ -220,7 +269,7 @@
 
     <!-- Chat Settings Modal (Three-dot menu) -->
     <div id="chat-settings-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-6 text-center text-gray-800">گزینه‌ها</h2>
           <div class="space-y-3">
             <button id="open-delete-chat-modal-btn" class="w-full glass-button-red text-white font-bold py-2 px-4 rounded-md">پاک کردن گفتگو</button>
@@ -233,7 +282,7 @@
     
     <!-- Room Info & Settings Modal (New consolidated modal) -->
     <div id="room-info-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center overflow-y-auto max-h-[85vh]">
+      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm overflow-y-auto max-h-[85vh]">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تنظیمات گفتگو</h2>
         <form id="room-info-form" class="space-y-5">
           
@@ -287,7 +336,7 @@
 
     <!-- Delete Chat Modal -->
     <div id="delete-chat-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-4 text-center text-red-600">پاک کردن گفتگو</h2>
           <p class="text-center text-gray-700 mb-4">تمام پیام‌های این گفتگو برای همیشه حذف خواهند شد. این عمل قابل بازگشت نیست.</p>
           <form id="delete-chat-form">
@@ -303,7 +352,7 @@
 
     <!-- View Avatar Modal -->
     <div id="view-avatar-modal" class="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 view-hidden" role="dialog" aria-modal="true">
-      <div class="glass-modal p-4 rounded-2xl shadow-xl w-full max-w-sm text-center relative shared-background bg-cover bg-center">
+      <div class="glass-modal p-4 rounded-2xl shadow-xl w-full max-w-sm text-center relative">
         <h3 id="view-avatar-name" class="text-xl font-bold mb-4 text-gray-800"></h3>
         <div id="view-avatar-display" class="w-72 h-72 mx-auto rounded-3xl bg-gray-200 flex items-center justify-center mb-4 overflow-hidden ring-4 ring-white/50">
             <!-- Large avatar will be rendered here -->
@@ -314,7 +363,7 @@
 
     <!-- Change User Avatar In-Chat Modal -->
     <div id="change-user-avatar-in-chat-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تغییر عکس پروفایل</h2>
           <form id="change-user-avatar-in-chat-form">
             <div class="flex flex-col items-center space-y-4">

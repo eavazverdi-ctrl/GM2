@@ -18,6 +18,8 @@ const USERNAME_KEY = 'chat_username_v2';
 const USER_AVATAR_KEY = 'chat_user_avatar_v1';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const GLASS_MODE_KEY = 'chat_glass_mode_v1';
+const BACKGROUND_MODE_KEY = 'chat_background_mode_v1';
+const STATIC_BACKGROUND_KEY = 'chat_background_static_v1';
 const CREATOR_PASSWORD = '2025';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
@@ -39,6 +41,10 @@ let currentRoomId = null;
 let messagesUnsubscribe = null;
 let currentFontSize = 'md';
 let currentGlassMode = 'off';
+let currentBackgroundMode = 'day';
+let currentStaticBackground = null;
+let tempStaticBackground = null;
+
 
 // Pagination state
 let oldestMessageDoc = null;
@@ -46,6 +52,7 @@ let isLoadingOlderMessages = false;
 let reachedEndOfMessages = false;
 
 // --- DOM Elements ---
+const appBackground = document.getElementById('app-background');
 const usernameModal = document.getElementById('username-modal');
 const usernameForm = document.getElementById('username-form');
 const usernameInput = document.getElementById('username-input');
@@ -72,6 +79,9 @@ const userAvatarInput = document.getElementById('user-avatar-input');
 const changeUsernameInput = document.getElementById('change-username-input');
 const fontSizeOptions = document.getElementById('font-size-options');
 const glassModeOptions = document.getElementById('glass-mode-options');
+const backgroundModeOptions = document.getElementById('background-mode-options');
+const staticBackgroundUploader = document.getElementById('static-background-uploader');
+const backgroundImageInput = document.getElementById('background-image-input');
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 const chatContainer = document.getElementById('chat-container');
 const chatBackground = document.getElementById('chat-background');
@@ -195,6 +205,43 @@ const applyGlassModeSelection = (mode) => {
     });
 };
 
+const applyBackgroundModeSelection = (mode) => {
+    backgroundModeOptions.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('glass-button-blue', btn.dataset.mode === mode);
+        btn.classList.toggle('text-white', btn.dataset.mode === mode);
+        btn.classList.toggle('glass-button-gray', btn.dataset.mode !== mode);
+    });
+    staticBackgroundUploader.classList.toggle('hidden', mode !== 'static');
+};
+
+const applyBackgroundSettings = (mode, staticBgData) => {
+    currentBackgroundMode = mode;
+    currentStaticBackground = staticBgData;
+
+    // Reset state
+    appBackground.style.backgroundImage = '';
+    appBackground.classList.remove('animated-day', 'animated-night');
+    const gradientBlobs = appBackground.querySelector('.gradient-blobs');
+    
+    appBackground.style.backgroundColor = 'transparent'; // Reset solid color
+
+    if (mode === 'static' && staticBgData) {
+        appBackground.style.backgroundImage = `url(${staticBgData})`;
+        appBackground.style.backgroundSize = 'cover';
+        appBackground.style.backgroundPosition = 'center';
+        if (gradientBlobs) gradientBlobs.classList.add('hidden');
+    } else if (mode === 'day') {
+        appBackground.classList.add('animated-day');
+        if (gradientBlobs) gradientBlobs.classList.remove('hidden');
+    } else if (mode === 'night') {
+        appBackground.classList.add('animated-night');
+        if (gradientBlobs) gradientBlobs.classList.remove('hidden');
+    } else { // Fallback to day animation
+        appBackground.classList.add('animated-day');
+        if (gradientBlobs) gradientBlobs.classList.remove('hidden');
+    }
+};
+
 fontSizeOptions.addEventListener('click', (e) => {
     if (e.target.matches('.font-size-btn')) {
         applyFontSize(e.target.dataset.size);
@@ -207,11 +254,32 @@ glassModeOptions.addEventListener('click', (e) => {
     }
 });
 
+backgroundModeOptions.addEventListener('click', (e) => {
+    if (e.target.matches('.bg-mode-btn')) {
+        applyBackgroundModeSelection(e.target.dataset.mode);
+    }
+});
+
+backgroundImageInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+        tempStaticBackground = await compressImage(file, IMAGE_MAX_DIMENSION);
+        alert('عکس برای پس‌زمینه آماده شد. برای ذخیره، دکمه OK را بزنید.');
+    } catch (error) {
+        console.error("Error compressing background image:", error);
+        alert("خطا در پردازش تصویر پس‌زمینه.");
+    }
+});
+
+
 settingsBtn.addEventListener('click', () => {
     changeUsernameInput.value = currentUsername;
     userAvatarPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
     applyFontSize(currentFontSize);
     applyGlassModeSelection(currentGlassMode);
+    applyBackgroundModeSelection(currentBackgroundMode);
+    tempStaticBackground = null; // Reset temp background on modal open
     showView('settings-modal');
 });
 
@@ -235,9 +303,21 @@ userSettingsForm.addEventListener('submit', (e) => {
         currentUsername = newUsername;
         localStorage.setItem(USERNAME_KEY, newUsername);
     }
+    
     localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
     localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
     localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
+    
+    // Handle background settings
+    const selectedMode = backgroundModeOptions.querySelector('.bg-mode-btn.glass-button-blue').dataset.mode;
+    localStorage.setItem(BACKGROUND_MODE_KEY, selectedMode);
+    if (selectedMode === 'static' && tempStaticBackground) {
+        localStorage.setItem(STATIC_BACKGROUND_KEY, tempStaticBackground);
+        currentStaticBackground = tempStaticBackground;
+    }
+    
+    applyBackgroundSettings(selectedMode, currentStaticBackground);
+    
     showView('lobby-container');
 });
 
@@ -311,7 +391,6 @@ const enterChatRoom = (roomId, roomData) => {
   // Set default background unless a custom one exists
   if (roomData.backgroundUrl) {
     chatBackground.style.backgroundImage = `url(${roomData.backgroundUrl})`;
-    chatBackground.classList.remove('shared-background', 'opacity-50');
   } else {
     chatBackground.style.backgroundImage = '';
   }
@@ -840,7 +919,6 @@ roomInfoForm.addEventListener('submit', async (e) => {
             if (updateData.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updateData.name || roomDoc.data().name, updateData.avatarUrl);
             if (updateData.backgroundUrl) {
                 chatBackground.style.backgroundImage = `url(${updateData.backgroundUrl})`;
-                chatBackground.classList.remove('shared-background', 'opacity-50');
             }
             if (updateData.password !== undefined) {
                 localStorage.removeItem(`room_access_${currentRoomId}`);
@@ -893,8 +971,12 @@ const startApp = () => {
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
+  const storedBgMode = localStorage.getItem(BACKGROUND_MODE_KEY) || 'day';
+  const storedStaticBg = localStorage.getItem(STATIC_BACKGROUND_KEY);
+
   applyFontSize(storedFontSize);
-  applyGlassModeSelection(storedGlassMode); // will set currentGlassMode
+  applyGlassModeSelection(storedGlassMode);
+  applyBackgroundSettings(storedBgMode, storedStaticBg);
 
   const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
 
