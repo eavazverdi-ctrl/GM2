@@ -402,9 +402,9 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
   const fragment = document.createDocumentFragment();
 
   const glassModeClasses = {
-      'off': { user: 'bg-blue-500', other: 'bg-white' },
-      'low': { user: 'bg-blue-500/70 backdrop-blur-sm', other: 'bg-white/70 backdrop-blur-sm' },
-      'high': { user: 'bg-blue-500/40 backdrop-blur-md', other: 'bg-white/40 backdrop-blur-md' }
+      'off': { user: 'bg-green-500', other: 'bg-white' },
+      'low': { user: 'bg-green-500/70 backdrop-blur-sm', other: 'bg-white/70 backdrop-blur-sm' },
+      'high': { user: 'bg-green-500/40 backdrop-blur-md', other: 'bg-white/40 backdrop-blur-md' }
   };
   const selectedModeClasses = glassModeClasses[currentGlassMode] || glassModeClasses['off'];
 
@@ -414,11 +414,11 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     li.dataset.authorId = message.authorId;
     
     // Determine classes based on sender
-    const liClasses = isUser ? 'justify-end' : 'justify-start'; // end=left, start=right in RTL
+    const liClasses = isUser ? 'justify-start' : 'justify-end'; // start=right, end=left in RTL
     const bubbleClasses = isUser ? `${selectedModeClasses.user} text-white` : `${selectedModeClasses.other} text-black shadow`;
-    const bubbleTailClass = isUser ? 'rounded-bl-none' : 'rounded-br-none';
-    const nameAlignmentClass = isUser ? 'text-left' : 'text-right';
-    const timeAlignmentClass = isUser ? 'right-2.5' : 'left-2.5';
+    const bubbleTailClass = isUser ? 'rounded-br-none' : 'rounded-bl-none';
+    const nameAlignmentClass = isUser ? 'text-right' : 'text-left';
+    const timeAlignmentClass = isUser ? 'left-2.5' : 'right-2.5';
     const metaColorClass = isUser ? 'text-white/80' : 'text-gray-500';
 
     li.className = `flex items-start space-x-3 rtl:space-x-reverse ${liClasses}`;
@@ -454,10 +454,10 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     
     const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
 
-    // In RTL flex, the visual order is the reverse of the DOM order.
-    if (isUser) { // User (Left): We want [Avatar | Bubble]. DOM order: Bubble, then Avatar.
+    // In RTL flex, the first DOM element is rendered on the right.
+    if (isUser) { // User (Right): We want [Bubble | Avatar]. DOM order: Bubble, then Avatar.
         li.innerHTML = bubbleContainer + avatarContainer;
-    } else { // Others (Right): We want [Bubble | Avatar]. DOM order: Avatar, then Bubble.
+    } else { // Others (Left): We want [Avatar | Bubble]. DOM order: Avatar, then Bubble.
         li.innerHTML = avatarContainer + bubbleContainer;
     }
 
@@ -508,12 +508,14 @@ const handleFileSelect = async (e) => {
         const previewUrl = URL.createObjectURL(file);
         const tempLi = document.createElement('li');
         tempLi.id = tempId;
-        tempLi.className = 'flex justify-end items-start space-x-3 rtl:space-x-reverse opacity-50'; // Aligned left for user
+        tempLi.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse opacity-50'; // Aligned right for user
         tempLi.innerHTML = `
-             <div class="relative rounded-lg overflow-hidden max-w-xs lg:max-w-md">
-                <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <div class="flex flex-col max-w-xs lg:max-w-md">
+                 <div class="relative rounded-lg overflow-hidden">
+                    <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
                 </div>
             </div>
             <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
