@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
     <meta name="apple-mobile-web-app-title" content="Ariana Messenger">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Ariana Messenger</title>
@@ -151,12 +152,11 @@
     <!-- Username Modal -->
     <div id="username-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
       <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm text-center">
-        <h2 class="text-xl font-bold mb-4 text-gray-800">به پیام‌رسان خوش آمدید!</h2>
-        <p class="text-gray-700 mb-4">برای شروع، یک نام و رمز ورود را وارد کنید.</p>
+        <h2 class="text-xl font-bold mb-4 text-gray-800">به پیام رسان آریانا خوش آمدید!</h2>
         <form id="username-form" class="space-y-4">
-          <input type="text" id="username-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="نام نمایشی..." required />
-          <input type="password" id="initial-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز ورود..." required />
-          <button type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md hover:bg-blue-500/80 transition-colors">ورود به لابی</button>
+          <input type="text" id="username-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="نام کاربری..." required />
+          <input type="password" id="initial-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز برنامه..." required />
+          <button type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md hover:bg-blue-500/80 transition-colors">ورود</button>
         </form>
       </div>
     </div>
@@ -167,8 +167,8 @@
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">ایجاد گفتگوی جدید</h2>
         <form id="create-room-form">
           <div class="space-y-4">
-            <input type="text" id="new-room-name" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="نام گفتگو..." required />
-            <input type="password" id="creator-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز سازنده (2025)" required />
+            <input type="text" id="new-room-name" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="نام گفتگو..." required />
+            <input type="password" id="creator-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز برنامه..." required />
           </div>
           <div class="mt-6 flex justify-end space-x-3 rtl:space-x-reverse">
             <button type="button" id="cancel-create-room" class="glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md hover:bg-gray-400/70 transition-colors">انصراف</button>
@@ -183,7 +183,7 @@
       <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">ورود به <span id="password-modal-room-name" class="text-blue-600"></span></h2>
         <form id="password-form">
-          <input type="password" id="room-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز عبور..." required />
+          <input type="password" id="room-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز عبور..." required />
           <p id="password-error" class="text-red-600 font-semibold text-sm mt-2 text-center hidden">رمز عبور اشتباه است.</p>
           <div class="mt-6 flex justify-end space-x-3 rtl:space-x-reverse">
             <button type="button" id="cancel-password-entry" class="glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md hover:bg-gray-400/70 transition-colors">انصراف</button>
@@ -207,45 +207,47 @@
                 <span class="text-sm text-gray-600">تغییر عکس پروفایل</span>
             </div>
 
-            <div class="flex justify-between items-center">
-              <label for="change-username-input" class="text-sm font-medium text-gray-700 whitespace-nowrap pr-4">نام کاربری</label>
-              <input type="text" id="change-username-input" class="bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600 w-48" />
+            <div class="flex items-center">
+              <label for="change-username-input" class="w-1/2 text-sm font-medium text-gray-700">نام کاربری</label>
+              <div class="w-1/2">
+                <input type="text" id="change-username-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" />
+              </div>
             </div>
 
-            <div class="flex justify-between items-center">
-              <label class="text-sm font-medium text-gray-700 whitespace-nowrap pr-4">اندازه فونت پیام‌ها</label>
-              <div class="flex gap-1" id="font-size-options">
-                <button type="button" data-size="sm" class="font-size-btn p-2 rounded-md glass-button-gray text-xs w-16 text-center">کوچک</button>
-                <button type="button" data-size="md" class="font-size-btn p-2 rounded-md glass-button-gray text-xs w-16 text-center">معمولی</button>
-                <button type="button" data-size="lg" class="font-size-btn p-2 rounded-md glass-button-gray text-xs w-16 text-center">بزرگ</button>
+            <div class="flex items-center">
+              <label class="w-1/2 text-sm font-medium text-gray-700">اندازه فونت پیام‌ها</label>
+              <div class="w-1/2 flex gap-1" id="font-size-options">
+                <button type="button" data-size="sm" class="font-size-btn p-2 rounded-md glass-button-gray text-xs flex-1 text-center">کوچک</button>
+                <button type="button" data-size="md" class="font-size-btn p-2 rounded-md glass-button-gray text-xs flex-1 text-center">معمولی</button>
+                <button type="button" data-size="lg" class="font-size-btn p-2 rounded-md glass-button-gray text-xs flex-1 text-center">بزرگ</button>
               </div>
             </div>
             
-            <div class="flex justify-between items-center">
-              <label class="text-sm font-medium text-gray-700 whitespace-nowrap pr-4">حالت شیشه‌ای</label>
-              <div class="flex gap-1" id="glass-mode-options">
-                <button type="button" data-glass="off" class="glass-mode-btn p-2 rounded-md text-xs w-16 text-center">خاموش</button>
-                <button type="button" data-glass="low" class="glass-mode-btn p-2 rounded-md text-xs w-16 text-center">کم</button>
-                <button type="button" data-glass="high" class="glass-mode-btn p-2 rounded-md text-xs w-16 text-center">زیاد</button>
+            <div class="flex items-center">
+              <label class="w-1/2 text-sm font-medium text-gray-700">حالت شیشه‌ای</label>
+              <div class="w-1/2 flex gap-1" id="glass-mode-options">
+                <button type="button" data-glass="off" class="glass-mode-btn p-2 rounded-md text-xs flex-1 text-center">خاموش</button>
+                <button type="button" data-glass="low" class="glass-mode-btn p-2 rounded-md text-xs flex-1 text-center">کم</button>
+                <button type="button" data-glass="high" class="glass-mode-btn p-2 rounded-md text-xs flex-1 text-center">زیاد</button>
               </div>
             </div>
 
-            <div class="flex justify-between items-center">
-              <label class="text-sm font-medium text-gray-700 whitespace-nowrap pr-4">ارسال پیام با اینتر</label>
-              <div class="flex gap-2" id="send-with-enter-options">
-                <button type="button" data-value="on" class="send-with-enter-btn p-2 rounded-md text-xs w-24 text-center">فعال</button>
-                <button type="button" data-value="off" class="send-with-enter-btn p-2 rounded-md text-xs w-24 text-center">غیرفعال</button>
+            <div class="flex items-center">
+              <label class="w-1/2 text-sm font-medium text-gray-700">ارسال پیام با اینتر</label>
+              <div class="w-1/2 flex gap-1" id="send-with-enter-options">
+                <button type="button" data-value="on" class="send-with-enter-btn p-2 rounded-md text-xs flex-1 text-center">فعال</button>
+                <button type="button" data-value="off" class="send-with-enter-btn p-2 rounded-md text-xs flex-1 text-center">غیرفعال</button>
               </div>
             </div>
 
-            <div class="flex justify-between items-center">
-              <label class="text-sm font-medium text-gray-700 whitespace-nowrap pr-4">پس‌زمینه برنامه</label>
-              <div id="static-background-uploader" class="text-center">
-                  <label for="background-image-input" class="cursor-pointer inline-block glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md text-xs">انتخاب عکس</label>
-                  <input type="file" id="background-image-input" class="hidden" accept="image/*" />
-              </div>
+            <div class="flex items-center">
+               <label class="w-1/2 text-sm font-medium text-gray-700">پس‌زمینه برنامه</label>
+               <div id="static-background-uploader" class="w-1/2">
+                   <label for="background-image-input" class="cursor-pointer block w-full text-center glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md text-xs">انتخاب عکس</label>
+                   <input type="file" id="background-image-input" class="hidden" accept="image/*" />
+               </div>
             </div>
-            <p id="background-upload-status" class="text-sm text-center h-4 -mt-2"></p>
+            <p id="background-upload-status" class="text-sm text-center h-4"></p>
 
             <div class="flex justify-center pt-4 space-x-3 rtl:space-x-reverse">
                <button id="settings-cancel-btn" type="button" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
@@ -269,11 +271,11 @@
             <div class="space-y-4">
                <div>
                 <label for="room-info-new-password-input-2" class="block text-sm font-medium text-gray-700 mb-1">رمز جدید</label>
-                <input type="password" id="room-info-new-password-input-2" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="رمز جدید را وارد کنید..." />
+                <input type="password" id="room-info-new-password-input-2" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز جدید را وارد کنید..." />
               </div>
               <div>
                 <label for="room-info-current-password-input-2" class="block text-sm font-medium text-gray-700 mb-1">رمز فعلی</label>
-                <input type="password" id="room-info-current-password-input-2" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="برای انجام تغییرات رمز فعلی این گفتگو را وارد کنید..." required/>
+                <input type="password" id="room-info-current-password-input-2" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="برای انجام تغییرات رمز فعلی این گفتگو را وارد کنید..." required/>
               </div>
             </div>
             <p id="change-password-status" class="text-sm mt-2 text-center h-4"></p>
@@ -313,7 +315,7 @@
           
           <div>
             <label for="room-info-name-input" class="block text-sm font-medium text-gray-700 mb-1">نام گفتگو</label>
-            <input type="text" id="room-info-name-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" required />
+            <input type="text" id="room-info-name-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" required />
           </div>
 
           <p id="room-info-status" class="text-sm mt-2 text-center h-4"></p>
@@ -332,7 +334,7 @@
           <h2 class="text-xl font-bold mb-4 text-center text-red-600">پاک کردن گفتگو</h2>
           <p class="text-center text-gray-700 mb-4">تمام پیام‌های این گفتگو برای همیشه حذف خواهند شد. این عمل قابل بازگشت نیست.</p>
           <form id="delete-chat-form">
-            <input type="password" id="password-for-delete" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-red-400 placeholder:text-gray-600" placeholder="رمز فعلی (پیش‌فرض: 2025)" required />
+            <input type="password" id="password-for-delete" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-red-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز فعلی (پیش‌فرض: 2025)" required />
             <p id="delete-chat-status" class="text-sm mt-2 text-center h-4"></p>
             <div class="mt-4 flex justify-end space-x-3 rtl:space-x-reverse">
               <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>

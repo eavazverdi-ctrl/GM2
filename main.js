@@ -563,8 +563,9 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       let bubbleClasses, bubbleTailClass, nameAlignmentClass, nameColorClass, timeColorClass, liClasses;
       
       const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
-      const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
+      const authorAvatarForRender = isUser ? currentUserAvatar : message.authorAvatar;
+      const avatarHTML = generateAvatar(message.authorName, authorAvatarForRender);
+      const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${authorAvatarForRender || ''}">${avatarHTML}</div>`;
 
       if (isUser) { // User's messages on the RIGHT
           liClasses = 'justify-start'; // Aligns to the right in RTL
