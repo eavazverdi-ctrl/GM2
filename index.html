@@ -105,23 +105,22 @@
           </button>
           <!-- Message Input -->
           <div class="flex-shrink-0 p-2 bg-gray-100 border-t border-gray-200 z-10">
-            <form id="message-form" class="flex items-end space-x-2 rtl:space-x-reverse">
-              <button type="submit" id="send-button" class="p-0 self-center rounded-full transition-opacity disabled:opacity-50" disabled>
-                <svg viewBox="0 0 32 32" class="w-8 h-8">
-                  <circle cx="16" cy="16" r="16" fill="#007aff"></circle>
-                  <path d="M16.0001 24.0001V8.00009M16.0001 8.00009L21.3334 13.3334M16.0001 8.00009L10.6667 13.3334" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-              </button>
-              <div class="flex-1 relative">
-                <textarea id="message-input" placeholder="پیام..." class="w-full bg-white text-gray-800 border border-gray-300 rounded-xl py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" rows="1" style="max-height: 120px;"></textarea>
-              </div>
-              <label for="file-input" class="p-2 self-center rounded-full hover:bg-gray-300/50 transition-colors cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
-                </svg>
-                <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
-              </label>
-            </form>
+              <form id="message-form" class="flex items-end space-x-2 rtl:space-x-reverse">
+                  <div class="flex-1 relative bg-white rounded-2xl border border-gray-300 flex items-end">
+                      <label for="file-input" class="p-2 self-center rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
+                          </svg>
+                          <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
+                      </label>
+                      <textarea id="message-input" placeholder="پیام..." class="flex-1 bg-transparent text-gray-800 py-2.5 px-2 focus:outline-none resize-none" rows="1" style="max-height: 120px;"></textarea>
+                  </div>
+                  <button type="submit" id="send-button" class="flex-shrink-0 self-stretch rounded-full transition-opacity disabled:opacity-40 flex items-center justify-center w-10 bg-blue-500" disabled>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                      </svg>
+                  </button>
+              </form>
           </div>
         </div>
     </div>
@@ -345,6 +344,29 @@
         </div>
         <button id="close-view-avatar-modal" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md mt-2">بستن</button>
       </div>
+    </div>
+
+    <!-- Change User Avatar In-Chat Modal -->
+    <div id="change-user-avatar-in-chat-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm shared-background bg-cover bg-center">
+          <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تغییر عکس پروفایل</h2>
+          <form id="change-user-avatar-in-chat-form">
+            <div class="flex flex-col items-center space-y-4">
+               <label for="user-avatar-in-chat-input" class="cursor-pointer">
+                   <div id="user-avatar-in-chat-preview" class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden ring-2 ring-white/50">
+                       <!-- User avatar preview -->
+                   </div>
+                   <span class="text-sm text-gray-600 mt-2 block text-center">انتخاب عکس جدید</span>
+               </label>
+               <input type="file" id="user-avatar-in-chat-input" class="hidden" accept="image/*" />
+            </div>
+            <p id="change-user-avatar-in-chat-status" class="text-sm mt-2 text-center h-4"></p>
+            <div class="mt-4 flex justify-end space-x-3 rtl:space-x-reverse">
+              <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
+              <button type="submit" class="glass-button-blue text-white font-bold py-2 px-4 rounded-md">ذخیره</button>
+            </div>
+          </form>
+        </div>
     </div>
 
 

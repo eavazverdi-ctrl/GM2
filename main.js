@@ -126,6 +126,11 @@ const viewAvatarModal = document.getElementById('view-avatar-modal');
 const viewAvatarDisplay = document.getElementById('view-avatar-display');
 const viewAvatarName = document.getElementById('view-avatar-name');
 const closeViewAvatarModalBtn = document.getElementById('close-view-avatar-modal');
+const changeUserAvatarInChatModal = document.getElementById('change-user-avatar-in-chat-modal');
+const changeUserAvatarInChatForm = document.getElementById('change-user-avatar-in-chat-form');
+const userAvatarInChatPreview = document.getElementById('user-avatar-in-chat-preview');
+const userAvatarInChatInput = document.getElementById('user-avatar-in-chat-input');
+const changeUserAvatarInChatStatus = document.getElementById('change-user-avatar-in-chat-status');
 
 
 // --- View Management ---
@@ -133,7 +138,7 @@ const showView = (viewId) => {
   [
     lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
     chatSettingsModal, changeRoomNameModal, setRoomPasswordModal, deleteChatModal, changeRoomAvatarModal,
-    changeBackgroundModal, viewAvatarModal
+    changeBackgroundModal, viewAvatarModal, changeUserAvatarInChatModal
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -147,6 +152,12 @@ const showView = (viewId) => {
 const formatTime = (date) => {
   if (!date || !(date instanceof Date)) return '';
   return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false });
+};
+
+const formatDateSeparator = (date) => {
+    const gregorian = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric' }).format(date);
+    const shamsi = new Intl.DateTimeFormat('fa-IR', { month: 'long', day: 'numeric' }).format(date);
+    return `${gregorian}<br>${shamsi}`;
 };
 
 const scrollToBottom = (behavior = 'auto') => {
@@ -413,72 +424,104 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
   };
   const selectedModeClasses = glassModeClasses[currentGlassMode] || glassModeClasses['off'];
 
+  let lastDateStrInBatch = null;
+
+  if (prepend) {
+      const firstOldMessageOnScreenEl = messagesList.querySelector('li[data-timestamp]');
+      if (firstOldMessageOnScreenEl) {
+          const lastNewMessage = messages[messages.length - 1];
+          const firstOldMessageDateStr = new Date(parseInt(firstOldMessageOnScreenEl.dataset.timestamp)).toDateString();
+          if (lastNewMessage && lastNewMessage.timestamp?.toDateString() === firstOldMessageDateStr) {
+              const separator = firstOldMessageOnScreenEl.previousElementSibling;
+              if (separator && separator.classList.contains('date-separator')) {
+                  separator.remove();
+              }
+          }
+      }
+  } else {
+      const allVisibleMsgs = messagesList.querySelectorAll('li[data-timestamp]');
+      if (allVisibleMsgs.length > 0) {
+          const lastVisibleMsg = allVisibleMsgs[allVisibleMsgs.length - 1];
+          lastDateStrInBatch = new Date(parseInt(lastVisibleMsg.dataset.timestamp)).toDateString();
+      }
+  }
+
   messages.forEach(message => {
-    const isUser = message.authorId === currentUserId;
-    
-    const li = document.createElement('li');
-    li.dataset.authorId = message.authorId;
-    
-    let bubbleClasses, bubbleTailClass, nameAlignmentClass, timeAlignmentClass, nameColorClass, timeColorClass, liClasses;
+      if (!message.timestamp) return;
+      const messageDateStr = message.timestamp.toDateString();
 
-    if (isUser) { // User: Green, Right
-        liClasses = 'justify-start'; // justify-start is RIGHT in RTL
-        bubbleClasses = `${selectedModeClasses.user} text-white`;
-        bubbleTailClass = 'rounded-br-none'; // Tail: bottom-right
-        nameAlignmentClass = 'text-right';   // Name: top-right
-        timeAlignmentClass = 'left-2.5';   // Time: bottom-left
-        nameColorClass = 'text-gray-200/90';
-        timeColorClass = 'text-gray-200/90';
-    } else { // Others: White, Left
-        liClasses = 'justify-end'; // justify-end is LEFT in RTL
-        bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
-        bubbleTailClass = 'rounded-bl-none'; // Tail: bottom-left
-        nameAlignmentClass = 'text-left';  // Name: top-left
-        timeAlignmentClass = 'right-2.5';    // Time: bottom-right
-        nameColorClass = 'text-gray-500 opacity-70';
-        timeColorClass = 'text-gray-500 opacity-70';
-    }
-    
-    li.className = `flex items-start space-x-3 rtl:space-x-reverse mb-2 ${liClasses}`;
+      if (messageDateStr !== lastDateStrInBatch) {
+          const li = document.createElement('li');
+          li.className = 'date-separator text-center my-3';
+          li.innerHTML = `<span class="bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1">${formatDateSeparator(message.timestamp)}</span>`;
+          fragment.appendChild(li);
+          lastDateStrInBatch = messageDateStr;
+      }
 
-    const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
-    
-    const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
-    const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${message.authorName || ''}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
+      const isUser = message.authorId === currentUserId;
+      const li = document.createElement('li');
+      li.dataset.authorId = message.authorId;
+      li.dataset.timestamp = message.timestamp.getTime();
+      
+      let bubbleClasses, bubbleTailClass, nameAlignmentClass, timeAlignmentClass, nameColorClass, timeColorClass, liClasses;
 
-    let messageContentHTML = '';
-    const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
+      if (isUser) { // User: Green, Right
+          liClasses = 'justify-start'; // justify-start is RIGHT in RTL
+          bubbleClasses = `${selectedModeClasses.user} text-white`;
+          bubbleTailClass = 'rounded-br-none'; // Tail: bottom-right
+          nameAlignmentClass = 'text-right';   // Name: top-right
+          timeAlignmentClass = 'left-2.5';   // Time: bottom-left
+          nameColorClass = 'text-gray-200/90';
+          timeColorClass = 'text-gray-200/90';
+      } else { // Others: White, Left
+          liClasses = 'justify-end'; // justify-end is LEFT in RTL
+          bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
+          bubbleTailClass = 'rounded-bl-none'; // Tail: bottom-left
+          nameAlignmentClass = 'text-left';  // Name: top-left
+          timeAlignmentClass = 'right-2.5';    // Time: bottom-right
+          nameColorClass = 'text-gray-500 opacity-70';
+          timeColorClass = 'text-gray-500 opacity-70';
+      }
+      
+      li.className = `flex items-start space-x-3 rtl:space-x-reverse mb-2 ${liClasses}`;
 
-    switch (message.type) {
-      case 'image':
-        messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-xs text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${formatTime(message.timestamp)}</div></div>`;
-        break;
-      case 'file':
-        const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
-        messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
-        break;
-      default: // text
-        const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
-        messageContentHTML = `
-          <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
-            ${nameHTML}
-            <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
-            ${metaHTML}
-          </div>`;
-    }
-    
-    const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
+      const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
+      
+      const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
+      const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${message.authorName || ''}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
 
-    if (isUser) { // User (Right): Profile Right, Bubble Left. DOM order: Avatar then Bubble
-        li.innerHTML = avatarContainer + bubbleContainer;
-    } else { // Others (Left): Profile Left, Bubble Right. DOM order: Bubble then Avatar
-        li.innerHTML = bubbleContainer + avatarContainer;
-    }
+      let messageContentHTML = '';
+      const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
 
-    fragment.appendChild(li);
+      switch (message.type) {
+        case 'image':
+          messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-xs text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${formatTime(message.timestamp)}</div></div>`;
+          break;
+        case 'file':
+          const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
+          messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
+          break;
+        default: // text
+          const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
+          messageContentHTML = `
+            <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
+              ${nameHTML}
+              <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
+              ${metaHTML}
+            </div>`;
+      }
+      
+      const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
+
+      if (isUser) { // User (Right): Profile Right, Bubble Left. DOM order: Bubble then Avatar
+          li.innerHTML = bubbleContainer + avatarContainer;
+      } else { // Others (Left): Profile Left, Bubble Right. DOM order: Avatar then Bubble
+          li.innerHTML = avatarContainer + bubbleContainer;
+      }
+      fragment.appendChild(li);
   });
 
   if (prepend) { messagesList.prepend(fragment); } else { messagesList.appendChild(fragment); }
@@ -501,13 +544,53 @@ messagesList.addEventListener('click', (e) => {
     const authorAvatarUrl = avatarEl.dataset.authorAvatarUrl;
 
     if (authorId === currentUserId) {
-        settingsBtn.click();
+        changeUserAvatarInChatForm.reset();
+        userAvatarInChatPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+        changeUserAvatarInChatStatus.textContent = '';
+        showView('change-user-avatar-in-chat-modal');
     } else {
         showUserAvatar(authorName, authorAvatarUrl);
     }
 });
 
 closeViewAvatarModalBtn.addEventListener('click', () => showView('chat-container'));
+document.querySelector('#change-user-avatar-in-chat-modal .cancel-btn').addEventListener('click', () => showView('chat-container'));
+
+userAvatarInChatInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        userAvatarInChatPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover"/>`;
+    }
+});
+
+changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const file = userAvatarInChatInput.files[0];
+    if (!file) { alert("لطفا یک عکس انتخاب کنید."); return; }
+    
+    changeUserAvatarInChatStatus.textContent = 'در حال ذخیره...';
+    changeUserAvatarInChatStatus.classList.remove('text-red-600', 'text-green-600');
+    try {
+        const compressedAvatar = await compressImage(file, AVATAR_MAX_DIMENSION);
+        currentUserAvatar = compressedAvatar;
+        localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+        
+        // Update all visible avatars for the current user
+        document.querySelectorAll(`.message-avatar[data-author-id="${currentUserId}"]`).forEach(el => {
+            el.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+        });
+
+        changeUserAvatarInChatStatus.textContent = 'عکس با موفقیت ذخیره شد.';
+        changeUserAvatarInChatStatus.classList.add('text-green-600');
+        setTimeout(() => showView('chat-container'), 1500);
+
+    } catch(error) {
+        console.error("Error changing user avatar in chat:", error);
+        changeUserAvatarInChatStatus.textContent = 'خطا در ذخیره عکس.';
+        changeUserAvatarInChatStatus.classList.add('text-red-600');
+    }
+});
+
 
 // --- File Handling & Image Compression ---
 const compressImage = (file, maxDimension) => {
@@ -551,13 +634,15 @@ const handleFileSelect = async (e) => {
         tempLi.id = tempId;
         tempLi.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse opacity-50 mb-2';
         tempLi.innerHTML = `
-            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
-            <div class="relative rounded-lg overflow-hidden max-w-xs lg:max-w-md">
-                <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+             <div class="flex flex-col max-w-xs lg:max-w-md">
+                <div class="relative rounded-lg overflow-hidden">
+                    <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
                 </div>
             </div>
+             <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
             `;
         messagesList.appendChild(tempLi);
         scrollToBottom('smooth');
@@ -650,6 +735,9 @@ const adjustTextareaHeight = () => {
     messageInput.style.height = 'auto';
     const scrollHeight = messageInput.scrollHeight;
     messageInput.style.height = `${scrollHeight}px`;
+
+    const inputContainer = messageInput.parentElement;
+    sendButton.style.height = `${inputContainer.clientHeight}px`;
 };
 
 messageInput.addEventListener('input', () => { 
@@ -784,6 +872,7 @@ const startApp = () => {
   if (appAccessGranted && currentUsername) {
     showView('lobby-container');
     listenForRooms();
+    adjustTextareaHeight(); // Set initial height for send button
   } else {
     showView('username-modal');
     usernameInput.focus();
