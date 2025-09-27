@@ -85,7 +85,6 @@ const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
 const fileInput = document.getElementById('file-input');
 const sendButton = document.getElementById('send-button');
-const sendButtonIcon = sendButton.querySelector('svg');
 const loadingSpinner = document.getElementById('loading-spinner');
 const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
 const chatSettingsModal = document.getElementById('chat-settings-modal');
@@ -123,6 +122,10 @@ const deleteChatForm = document.getElementById('delete-chat-form');
 const passwordForDeleteInput = document.getElementById('password-for-delete');
 const deleteChatStatus = document.getElementById('delete-chat-status');
 const cancelBtns = document.querySelectorAll('.cancel-btn');
+const viewAvatarModal = document.getElementById('view-avatar-modal');
+const viewAvatarDisplay = document.getElementById('view-avatar-display');
+const viewAvatarName = document.getElementById('view-avatar-name');
+const closeViewAvatarModalBtn = document.getElementById('close-view-avatar-modal');
 
 
 // --- View Management ---
@@ -130,7 +133,7 @@ const showView = (viewId) => {
   [
     lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
     chatSettingsModal, changeRoomNameModal, setRoomPasswordModal, deleteChatModal, changeRoomAvatarModal,
-    changeBackgroundModal
+    changeBackgroundModal, viewAvatarModal
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -161,7 +164,7 @@ const hashStringToColor = (str) => {
 };
 
 const generateAvatar = (name, url) => {
-    if (url) {
+    if (url && url !== 'null' && url !== 'undefined') {
         return `<img src="${url}" class="w-full h-full object-cover" alt="${name || 'avatar'}"/>`;
     }
     const initial = name ? name.charAt(0).toUpperCase() : '?';
@@ -307,7 +310,15 @@ const enterChatRoom = (roomId, roomData) => {
   currentRoomId = roomId;
   chatRoomName.textContent = roomData.name;
   chatRoomAvatar.innerHTML = generateAvatar(roomData.name, roomData.avatarUrl);
-  chatBackground.style.backgroundImage = roomData.backgroundUrl ? `url(${roomData.backgroundUrl})` : '';
+  
+  // Set default background unless a custom one exists
+  if (roomData.backgroundUrl) {
+    chatBackground.style.backgroundImage = `url(${roomData.backgroundUrl})`;
+    chatBackground.classList.remove('shared-background', 'opacity-50');
+  } else {
+    chatBackground.style.backgroundImage = '';
+    chatBackground.classList.add('shared-background', 'opacity-50');
+  }
 
   messagesList.innerHTML = '';
   oldestMessageDoc = null;
@@ -434,7 +445,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
     
     const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
-    const avatarContainer = `<div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${avatarHTML}</div>`;
+    const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${message.authorName || ''}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
 
     let messageContentHTML = '';
     const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
@@ -473,6 +484,30 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
   if (prepend) { messagesList.prepend(fragment); } else { messagesList.appendChild(fragment); }
   if (isInitialLoad || !prepend) { setTimeout(() => scrollToBottom(), 50); }
 };
+
+// --- Avatar Click Logic ---
+const showUserAvatar = (name, url) => {
+    viewAvatarName.textContent = name || 'کاربر';
+    viewAvatarDisplay.innerHTML = generateAvatar(name, url);
+    showView('view-avatar-modal');
+};
+
+messagesList.addEventListener('click', (e) => {
+    const avatarEl = e.target.closest('.message-avatar');
+    if (!avatarEl) return;
+    
+    const authorId = avatarEl.dataset.authorId;
+    const authorName = avatarEl.dataset.authorName;
+    const authorAvatarUrl = avatarEl.dataset.authorAvatarUrl;
+
+    if (authorId === currentUserId) {
+        settingsBtn.click();
+    } else {
+        showUserAvatar(authorName, authorAvatarUrl);
+    }
+});
+
+closeViewAvatarModalBtn.addEventListener('click', () => showView('chat-container'));
 
 // --- File Handling & Image Compression ---
 const compressImage = (file, maxDimension) => {
@@ -620,8 +655,6 @@ const adjustTextareaHeight = () => {
 messageInput.addEventListener('input', () => { 
     const hasText = messageInput.value.trim().length > 0; 
     sendButton.disabled = !hasText; 
-    sendButtonIcon.classList.toggle('text-blue-500', hasText); 
-    sendButtonIcon.classList.toggle('text-gray-400', !hasText); 
     adjustTextareaHeight();
 });
 
@@ -681,6 +714,7 @@ changeBackgroundForm.addEventListener('submit', async (e) => {
         await updateDoc(roomRef, { backgroundUrl });
         changeBackgroundStatus.textContent = 'پس‌زمینه با موفقیت تغییر کرد.'; changeBackgroundStatus.classList.add('text-green-600');
         chatBackground.style.backgroundImage = `url(${backgroundUrl})`;
+        chatBackground.classList.remove('shared-background', 'opacity-50');
         setTimeout(() => showView('chat-settings-modal'), 1500);
     } catch (error) { console.error("Error changing background:", error); changeBackgroundStatus.textContent = error.message; changeBackgroundStatus.classList.add('text-red-600'); }
 });
