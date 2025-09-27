@@ -456,22 +456,22 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
 
       let messageContentHTML = '';
-      const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
+      const timeHTML = `<span class="text-xs" dir="ltr">${formatTime(message.timestamp)}</span>`;
 
-      if (isUser) { // User: Profile RIGHT, Bubble LEFT
-          liClasses = 'justify-start'; // justify-start is RIGHT in RTL
-          bubbleClasses = `${selectedModeClasses.user} text-white`;
-          bubbleTailClass = 'rounded-br-none'; 
-          nameAlignmentClass = 'text-right';
-          timeAlignmentClass = 'left-2.5';
-          nameColorClass = 'text-gray-200/90';
-          timeColorClass = 'text-gray-200/90';
-      } else { // Others: Profile LEFT, Bubble RIGHT
+      if (isUser) { // User: Profile LEFT, Bubble RIGHT
           liClasses = 'justify-end'; // justify-end is LEFT in RTL
-          bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
-          bubbleTailClass = 'rounded-bl-none';
+          bubbleClasses = `${selectedModeClasses.user} text-white`;
+          bubbleTailClass = 'rounded-bl-none'; 
           nameAlignmentClass = 'text-left';
           timeAlignmentClass = 'right-2.5';
+          nameColorClass = 'text-gray-200/90';
+          timeColorClass = 'text-gray-200/90';
+      } else { // Others: Profile RIGHT, Bubble LEFT
+          liClasses = 'justify-start'; // justify-start is RIGHT in RTL
+          bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
+          bubbleTailClass = 'rounded-br-none';
+          nameAlignmentClass = 'text-right';
+          timeAlignmentClass = 'left-2.5';
           nameColorClass = 'text-gray-500 opacity-70';
           timeColorClass = 'text-gray-500 opacity-70';
       }
@@ -486,12 +486,12 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           break;
         case 'file':
           const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const fileMetaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'left-2.5' : 'right-2.5'} flex items-center gap-1">${timeHTML.replace(timeColorClass, isUser ? 'text-gray-700' : 'text-gray-700')}</div>`;
+          const fileMetaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'right-2.5' : 'left-2.5'} flex items-center gap-1 ${isUser ? 'text-gray-700' : 'text-gray-700'}">${timeHTML}</div>`;
           messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
           break;
         default: // text
           const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const metaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'left-2.5' : 'right-2.5'} flex items-center gap-1">${timeHTML}</div>`;
+          const metaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'right-2.5' : 'left-2.5'} flex items-center gap-1 ${timeColorClass}">${timeHTML}</div>`;
           messageContentHTML = `
             <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
               ${nameHTML}
@@ -502,10 +502,10 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       
       const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
 
-      if (isUser) { // User (Profile Right, Bubble Left)
-          li.innerHTML = bubbleContainer + avatarContainer;
-      } else { // Others (Profile Left, Bubble Right)
+      if (isUser) { // User (Profile Left, Bubble Right)
           li.innerHTML = avatarContainer + bubbleContainer;
+      } else { // Others (Profile Right, Bubble Left)
+          li.innerHTML = bubbleContainer + avatarContainer;
       }
       fragment.appendChild(li);
   });
@@ -618,9 +618,10 @@ const handleFileSelect = async (e) => {
         const previewUrl = URL.createObjectURL(file);
         const tempLi = document.createElement('li');
         tempLi.id = tempId;
-        tempLi.className = 'flex items-start space-x-3 rtl:space-x-reverse mb-2 justify-start opacity-50';
+        tempLi.className = 'flex items-start space-x-3 rtl:space-x-reverse mb-2 justify-end opacity-50';
         tempLi.innerHTML = `
-             <div class="flex flex-col max-w-xs lg:max-w-md">
+            <div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
+            <div class="flex flex-col max-w-xs lg:max-w-md">
                 <div class="relative rounded-lg overflow-hidden">
                     <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
                     <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -628,7 +629,6 @@ const handleFileSelect = async (e) => {
                     </div>
                 </div>
             </div>
-             <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
             `;
         messagesList.appendChild(tempLi);
         scrollToBottom('smooth');
@@ -730,13 +730,11 @@ const adjustTextareaHeight = () => {
     messageInput.style.height = 'auto';
     const scrollHeight = messageInput.scrollHeight;
     messageInput.style.height = `${scrollHeight}px`;
-};
-
-messageInput.addEventListener('input', () => { 
     const hasText = messageInput.value.trim().length > 0; 
     sendButton.disabled = !hasText; 
-    adjustTextareaHeight();
-});
+};
+
+messageInput.addEventListener('input', adjustTextareaHeight);
 
 // --- Chat Settings Listeners ---
 chatSettingsBtn.addEventListener('click', () => showView('chat-settings-modal'));
@@ -910,7 +908,7 @@ const startApp = () => {
   if (appAccessGranted && currentUsername) {
     showView('lobby-container');
     listenForRooms();
-    adjustTextareaHeight(); // Set initial height for send button
+    adjustTextareaHeight();
   } else {
     showView('username-modal');
     usernameInput.focus();
