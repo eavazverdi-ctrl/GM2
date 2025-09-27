@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
-  limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc
+  limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc, where, collectionGroup
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -25,7 +25,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
-const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUfG5gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
+const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjG-AAAAAAAAAAAAAAAAAAAAAAAAAADUfG5gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
 const VIDEO_CALL_ROOM_NAME = 'اتاق تماس تصویری';
 const NUM_VIDEO_SLOTS = 4;
@@ -1166,11 +1166,22 @@ deleteChatForm.addEventListener('submit', async (e) => {
 
 // --- Video Call Logic ---
 
+const resetVideoSlot = (slotEl) => {
+    const videoEl = slotEl.querySelector('video');
+    videoEl.srcObject = null;
+    videoEl.classList.add('hidden');
+    slotEl.querySelector('.placeholder').classList.remove('hidden');
+    slotEl.querySelector('.controls').classList.add('hidden');
+    slotEl.querySelector('.connection-overlay').classList.add('hidden');
+    delete slotEl.dataset.occupantId;
+    delete slotEl.dataset.occupantName;
+};
+
 const enterVideoCallRoom = () => {
   currentRoomId = VIDEO_CALL_ROOM_ID;
   showView('video-call-container');
   initializeVideoGrid();
-  listenForConnections();
+  setupVideoCallListeners();
 };
 
 const initializeVideoGrid = () => {
@@ -1184,6 +1195,10 @@ const initializeVideoGrid = () => {
       <div class="placeholder absolute inset-0 flex items-center justify-center cursor-pointer transition-opacity duration-300">
         <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z"></path></svg>
       </div>
+      <div class="connection-overlay absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+        <p class="remote-user-name text-white font-bold mb-4 text-lg"></p>
+        <button class="connect-btn glass-button-blue text-white font-bold py-2 px-4 rounded-md">اتصال</button>
+      </div>
       <div class="controls absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 hidden"></div>
     `;
     const placeholder = slot.querySelector('.placeholder');
@@ -1193,7 +1208,7 @@ const initializeVideoGrid = () => {
 };
 
 const joinVideoSlot = async (slotId) => {
-  if (localStream) return;
+  if (localStream) return; // Already in a call
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
   } catch (err) {
@@ -1201,6 +1216,7 @@ const joinVideoSlot = async (slotId) => {
     alert("دسترسی به دوربین و میکروفون امکان‌پذیر نیست.");
     return;
   }
+
   myVideoSlotId = slotId;
   const slotEl = document.getElementById(`video-slot-${slotId}`);
   const videoEl = slotEl.querySelector('video');
@@ -1209,138 +1225,191 @@ const joinVideoSlot = async (slotId) => {
   videoEl.classList.remove('hidden');
   slotEl.querySelector('.placeholder').classList.add('hidden');
   
+  // Add controls for local user
   const controls = slotEl.querySelector('.controls');
   controls.classList.remove('hidden');
-  
-  const muteBtn = document.createElement('button');
-  muteBtn.className = 'w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center';
-  muteBtn.innerHTML = document.getElementById('mic-on-svg').outerHTML + document.getElementById('mic-off-svg').outerHTML;
-  muteBtn.querySelector('#mic-off-svg').classList.add('hidden');
-  muteBtn.addEventListener('click', () => {
+  controls.innerHTML = `
+      <button id="mute-btn" class="w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
+          ${document.getElementById('mic-on-svg').outerHTML}
+          ${document.getElementById('mic-off-svg').outerHTML}
+      </button>
+      <button id="end-call-btn" class="w-10 h-10 bg-red-600/80 backdrop-blur-sm rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v3.75m0-10.5a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0V5.25A.75.75 0 0112 4.5z" /></svg>
+      </button>
+  `;
+  controls.querySelector('#mic-off-svg').classList.add('hidden');
+  controls.querySelector('#mute-btn').addEventListener('click', () => {
     const audioTrack = localStream.getAudioTracks()[0];
     audioTrack.enabled = !audioTrack.enabled;
-    muteBtn.querySelector('#mic-on-svg').classList.toggle('hidden', !audioTrack.enabled);
-    muteBtn.querySelector('#mic-off-svg').classList.toggle('hidden', audioTrack.enabled);
+    controls.querySelector('#mic-on-svg').classList.toggle('hidden', !audioTrack.enabled);
+    controls.querySelector('#mic-off-svg').classList.toggle('hidden', audioTrack.enabled);
   });
-  
-  const endBtn = document.createElement('button');
-  endBtn.className = 'w-10 h-10 bg-red-600/80 backdrop-blur-sm rounded-full flex items-center justify-center';
-  endBtn.innerHTML = `<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v3.75m0-10.5a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0V5.25A.75.75 0 0112 4.5z" /></svg>`;
-  endBtn.addEventListener('click', hangUp);
-  
-  controls.append(muteBtn, endBtn);
-  
+  controls.querySelector('#end-call-btn').addEventListener('click', hangUp);
+
+  // Announce presence in the slot
   const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
-  await setDoc(slotRef, { occupantId: currentUserId });
+  await setDoc(slotRef, { occupantId: currentUserId, occupantName: currentUsername });
 };
 
-const createPeerConnection = async (remoteUserId, remoteSlotId) => {
-  const pc = new RTCPeerConnection(stunServers);
-  peerConnections[remoteUserId] = { pc, slotId: remoteSlotId };
+const createPeerConnection = (remoteUserId, remoteSlotId) => {
+    if (peerConnections[remoteUserId]) return peerConnections[remoteUserId];
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    const pc = new RTCPeerConnection(stunServers);
+    peerConnections[remoteUserId] = { pc, slotId: remoteSlotId };
 
-  pc.ontrack = event => {
-    const slotEl = document.getElementById(`video-slot-${remoteSlotId}`);
-    if (slotEl) {
-      const remoteVideo = slotEl.querySelector('video');
-      remoteVideo.srcObject = event.streams[0];
-      remoteVideo.classList.remove('hidden');
-      slotEl.querySelector('.placeholder').classList.add('hidden');
-      slotEl.dataset.occupantId = remoteUserId;
-    }
-  };
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-  const signalingCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling');
-  pc.onicecandidate = event => {
-    if (event.candidate) {
-      addDoc(signalingCol, { to: remoteUserId, from: currentUserId, candidate: event.candidate.toJSON() });
-    }
-  };
-  return pc;
-};
-
-const listenForConnections = () => {
-  const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
-  const unsubscribeSlots = onSnapshot(slotsCol, snapshot => {
-    snapshot.docChanges().forEach(async change => {
-      const remoteSlotId = change.doc.id.split('_')[1];
-      const remoteUserId = change.doc.data().occupantId;
-      if (remoteUserId === currentUserId) return;
-      
-      if (change.type === 'added' && localStream) {
-        const pc = await createPeerConnection(remoteUserId, remoteSlotId);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        const signalingCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling');
-        await addDoc(signalingCol, { to: remoteUserId, from: currentUserId, offer: { type: offer.type, sdp: offer.sdp } });
-      }
-      if (change.type === 'removed') {
-        peerConnections[remoteUserId]?.pc.close();
-        delete peerConnections[remoteUserId];
+    pc.ontrack = event => {
         const slotEl = document.getElementById(`video-slot-${remoteSlotId}`);
-        if(slotEl) resetVideoSlot(slotEl);
-      }
-    });
-  });
-  videoCallListeners.push(unsubscribeSlots);
-
-  const signalingCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling');
-  const q = query(signalingCol, orderBy('timestamp', 'asc'));
-  const unsubscribeSignaling = onSnapshot(q, snapshot => {
-    snapshot.docChanges().forEach(async change => {
-      if (change.type === 'added') {
-        const data = change.doc.data();
-        if (data.to !== currentUserId) return;
-
-        const remoteUserId = data.from;
-        if (data.offer) {
-          const remoteSlotDoc = (await getDocs(query(collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots'), where('occupantId', '==', remoteUserId)))).docs[0];
-          if (!remoteSlotDoc) return;
-          const remoteSlotId = remoteSlotDoc.id.split('_')[1];
-          
-          const pc = await createPeerConnection(remoteUserId, remoteSlotId);
-          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await addDoc(signalingCol, { to: remoteUserId, from: currentUserId, answer: { type: answer.type, sdp: answer.sdp }, timestamp: serverTimestamp() });
+        if (slotEl) {
+            const remoteVideo = slotEl.querySelector('video');
+            remoteVideo.srcObject = event.streams[0];
+            remoteVideo.classList.remove('hidden');
+            slotEl.querySelector('.connection-overlay').classList.add('hidden');
         }
-        if (data.answer) {
-          await peerConnections[remoteUserId]?.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    };
+    
+    pc.onicecandidate = event => {
+        if (event.candidate) {
+            const signalingRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+            addDoc(signalingRef, { from: currentUserId, candidate: event.candidate.toJSON() });
         }
-        if (data.candidate) {
-          await peerConnections[remoteUserId]?.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-        }
-      }
-    });
-  });
-  videoCallListeners.push(unsubscribeSignaling);
+    };
+    
+    return pc;
 };
+
+
+const setupVideoCallListeners = () => {
+    // 1. Listen for changes in slots (who is online)
+    const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    const unsubscribeSlots = onSnapshot(slotsCol, (snapshot) => {
+        const onlineUsers = new Set();
+        snapshot.docs.forEach(doc => {
+            const { occupantId, occupantName } = doc.data();
+            if (occupantId === currentUserId) {
+                onlineUsers.add(occupantId);
+                return;
+            };
+            
+            const slotId = parseInt(doc.id.split('_')[1]);
+            const slotEl = document.getElementById(`video-slot-${slotId}`);
+            if (slotEl && !slotEl.querySelector('video').srcObject) { // Only show if not already connected
+                const overlay = slotEl.querySelector('.connection-overlay');
+                const nameEl = overlay.querySelector('.remote-user-name');
+                const connectBtn = overlay.querySelector('.connect-btn');
+                
+                nameEl.textContent = occupantName;
+                connectBtn.dataset.remoteUserId = occupantId;
+                connectBtn.dataset.remoteSlotId = slotId;
+                overlay.classList.remove('hidden');
+
+                // Add listener if it doesn't exist
+                if (!connectBtn.hasAttribute('data-listener')) {
+                   connectBtn.addEventListener('click', handleConnectClick);
+                   connectBtn.setAttribute('data-listener', 'true');
+                }
+            }
+            onlineUsers.add(occupantId);
+        });
+
+        // Clean up slots for users who are no longer online
+        for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
+            const slotEl = document.getElementById(`video-slot-${i}`);
+            const occupant = slotEl.dataset.occupantId;
+            if (occupant && occupant !== currentUserId && !onlineUsers.has(occupant)) {
+                 resetVideoSlot(slotEl);
+            }
+        }
+    });
+    videoCallListeners.push(unsubscribeSlots);
+
+    // 2. Listen for signaling messages (offers, answers, candidates)
+    const offersCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', currentUserId, 'offers');
+    const unsubscribeSignaling = onSnapshot(offersCol, (snapshot) => {
+        snapshot.docChanges().forEach(async change => {
+            if (change.type === 'added') {
+                const data = change.doc.data();
+                const remoteUserId = data.from;
+                const pc = createPeerConnection(remoteUserId); // This will get existing or create new
+
+                if (data.offer) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    const answerRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+                    await addDoc(answerRef, { from: currentUserId, answer: { type: answer.type, sdp: answer.sdp } });
+                } else if (data.answer) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                } else if (data.candidate) {
+                    await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+                
+                // Delete the signaling message after processing
+                await deleteDoc(change.doc.ref);
+            }
+        });
+    });
+    videoCallListeners.push(unsubscribeSignaling);
+};
+
+const handleConnectClick = async (e) => {
+    const button = e.currentTarget;
+    const remoteUserId = button.dataset.remoteUserId;
+    
+    if (!localStream) {
+        alert("لطفاً ابتدا با کلیک بر روی دوربین، به تماس بپیوندید.");
+        return;
+    }
+    
+    button.textContent = 'در حال اتصال...';
+    button.disabled = true;
+
+    const pc = createPeerConnection(remoteUserId);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    const offersRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+    await addDoc(offersRef, { from: currentUserId, offer: { type: offer.type, sdp: offer.sdp } });
+};
+
 
 const hangUp = async () => {
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-  }
-  Object.values(peerConnections).forEach(conn => conn.pc.close());
-  peerConnections = {};
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
 
-  if (myVideoSlotId) {
-    const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
-    await deleteDoc(slotRef);
-  }
-  
-  videoCallListeners.forEach(unsub => unsub());
-  videoCallListeners = [];
-  
-  localStream = null;
-  myVideoSlotId = null;
-  
-  initializeVideoGrid(); // Reset all slots
+    Object.values(peerConnections).forEach(({ pc }) => pc.close());
+    peerConnections = {};
+
+    if (myVideoSlotId) {
+        const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+        await deleteDoc(slotRef);
+    }
+
+    const slotEl = document.getElementById(`video-slot-${myVideoSlotId}`);
+    if(slotEl) resetVideoSlot(slotEl);
+
+    myVideoSlotId = null;
 };
 
+const cleanUpVideoCall = async () => {
+    await hangUp();
+    videoCallListeners.forEach(unsub => unsub());
+    videoCallListeners = [];
+    
+    // Clean up signaling collections for the current user
+    const offersRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', currentUserId, 'offers');
+    const offerSnapshot = await getDocs(offersRef);
+    const batch = writeBatch(db);
+    offerSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit().catch(err => console.error("Error cleaning up signaling docs:", err));
+};
 
 backToLobbyFromVideoBtn.addEventListener('click', async () => {
-    await hangUp();
+    await cleanUpVideoCall();
     showView('lobby-container');
 });
 
