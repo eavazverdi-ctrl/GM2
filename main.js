@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
-  limit, getDocs, startAfter, writeBatch, where, endBefore, limitToLast
+  limit, getDocs, startAfter, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -77,6 +77,7 @@ const chatContainer = document.getElementById('chat-container');
 const chatBackground = document.getElementById('chat-background');
 const chatRoomName = document.getElementById('chat-room-name');
 const chatRoomAvatar = document.getElementById('chat-room-avatar');
+const chatHeaderInfo = document.getElementById('chat-header-info');
 const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
 const chatSettingsBtn = document.getElementById('chat-settings-btn');
 const messagesContainer = document.getElementById('messages-container');
@@ -89,39 +90,11 @@ const loadingSpinner = document.getElementById('loading-spinner');
 const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
 const chatSettingsModal = document.getElementById('chat-settings-modal');
 const cancelChatSettings = document.getElementById('cancel-chat-settings');
-const openChangeRoomAvatarBtn = document.getElementById('open-change-room-avatar-btn');
-const openChangeBackgroundBtn = document.getElementById('open-change-background-btn');
-const openChangeNameModalBtn = document.getElementById('open-change-name-modal-btn');
-const openSetPasswordModalBtn = document.getElementById('open-set-password-modal-btn');
 const openDeleteChatModalBtn = document.getElementById('open-delete-chat-modal-btn');
-const changeRoomAvatarModal = document.getElementById('change-room-avatar-modal');
-const changeRoomAvatarForm = document.getElementById('change-room-avatar-form');
-const roomAvatarPreview = document.getElementById('room-avatar-preview');
-const roomAvatarInput = document.getElementById('room-avatar-input');
-const currentPasswordForAvatarInput = document.getElementById('current-password-for-avatar');
-const changeAvatarStatus = document.getElementById('change-avatar-status');
-const changeBackgroundModal = document.getElementById('change-background-modal');
-const changeBackgroundForm = document.getElementById('change-background-form');
-const backgroundPreview = document.getElementById('background-preview');
-const backgroundPreviewText = document.getElementById('background-preview-text');
-const backgroundInput = document.getElementById('background-input');
-const currentPasswordForBackgroundInput = document.getElementById('current-password-for-background');
-const changeBackgroundStatus = document.getElementById('change-background-status');
-const changeRoomNameModal = document.getElementById('change-room-name-modal');
-const changeRoomNameForm = document.getElementById('change-room-name-form');
-const newRoomNameInputForChange = document.getElementById('new-room-name-input');
-const currentPasswordForNameInput = document.getElementById('current-password-for-name');
-const changeNameStatus = document.getElementById('change-name-status');
-const setRoomPasswordModal = document.getElementById('set-room-password-modal');
-const setRoomPasswordForm = document.getElementById('set-room-password-form');
-const newPasswordInput = document.getElementById('new-password-input');
-const currentPasswordForPassInput = document.getElementById('current-password-for-pass');
-const setPasswordStatus = document.getElementById('set-password-status');
 const deleteChatModal = document.getElementById('delete-chat-modal');
 const deleteChatForm = document.getElementById('delete-chat-form');
 const passwordForDeleteInput = document.getElementById('password-for-delete');
 const deleteChatStatus = document.getElementById('delete-chat-status');
-const cancelBtns = document.querySelectorAll('.cancel-btn');
 const viewAvatarModal = document.getElementById('view-avatar-modal');
 const viewAvatarDisplay = document.getElementById('view-avatar-display');
 const viewAvatarName = document.getElementById('view-avatar-name');
@@ -131,14 +104,27 @@ const changeUserAvatarInChatForm = document.getElementById('change-user-avatar-i
 const userAvatarInChatPreview = document.getElementById('user-avatar-in-chat-preview');
 const userAvatarInChatInput = document.getElementById('user-avatar-in-chat-input');
 const changeUserAvatarInChatStatus = document.getElementById('change-user-avatar-in-chat-status');
+const sendSound = document.getElementById('send-sound');
+
+// New Consolidated Room Info Modal Elements
+const roomInfoModal = document.getElementById('room-info-modal');
+const roomInfoForm = document.getElementById('room-info-form');
+const roomInfoAvatarPreview = document.getElementById('room-info-avatar-preview');
+const roomInfoAvatarInput = document.getElementById('room-info-avatar-input');
+const roomInfoBackgroundPreview = document.getElementById('room-info-background-preview');
+const roomInfoBackgroundPreviewText = document.getElementById('room-info-background-preview-text');
+const roomInfoBackgroundInput = document.getElementById('room-info-background-input');
+const roomInfoNameInput = document.getElementById('room-info-name-input');
+const roomInfoNewPasswordInput = document.getElementById('room-info-new-password-input');
+const roomInfoCurrentPasswordInput = document.getElementById('room-info-current-password-input');
+const roomInfoStatus = document.getElementById('room-info-status');
 
 
 // --- View Management ---
 const showView = (viewId) => {
   [
     lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
-    chatSettingsModal, changeRoomNameModal, setRoomPasswordModal, deleteChatModal, changeRoomAvatarModal,
-    changeBackgroundModal, viewAvatarModal, changeUserAvatarInChatModal
+    chatSettingsModal, deleteChatModal, viewAvatarModal, changeUserAvatarInChatModal, roomInfoModal
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -453,7 +439,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       if (messageDateStr !== lastDateStrInBatch) {
           const li = document.createElement('li');
           li.className = 'date-separator text-center my-3';
-          li.innerHTML = `<span class="bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1">${formatDateSeparator(message.timestamp)}</span>`;
+          li.innerHTML = `<span class="bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1 text-center">${formatDateSeparator(message.timestamp)}</span>`;
           fragment.appendChild(li);
           lastDateStrInBatch = messageDateStr;
       }
@@ -464,8 +450,15 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       li.dataset.timestamp = message.timestamp.getTime();
       
       let bubbleClasses, bubbleTailClass, nameAlignmentClass, timeAlignmentClass, nameColorClass, timeColorClass, liClasses;
+      
+      const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
+      const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
 
-      if (isUser) { // User: Profile Right, Bubble Left
+      let messageContentHTML = '';
+      const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
+
+      if (isUser) { // User: Profile RIGHT, Bubble LEFT
           liClasses = 'justify-start'; // justify-start is RIGHT in RTL
           bubbleClasses = `${selectedModeClasses.user} text-white`;
           bubbleTailClass = 'rounded-br-none'; 
@@ -473,7 +466,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           timeAlignmentClass = 'left-2.5';
           nameColorClass = 'text-gray-200/90';
           timeColorClass = 'text-gray-200/90';
-      } else { // Others: Profile Left, Bubble Right
+      } else { // Others: Profile LEFT, Bubble RIGHT
           liClasses = 'justify-end'; // justify-end is LEFT in RTL
           bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
           bubbleTailClass = 'rounded-bl-none';
@@ -484,15 +477,8 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       }
       
       li.className = `flex items-start space-x-3 rtl:space-x-reverse mb-2 ${liClasses}`;
-
-      const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
       const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
-      
-      const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
-      const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${message.authorName || ''}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
 
-      let messageContentHTML = '';
-      const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
 
       switch (message.type) {
         case 'image':
@@ -500,12 +486,12 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           break;
         case 'file':
           const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
+          const fileMetaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'left-2.5' : 'right-2.5'} flex items-center gap-1">${timeHTML.replace(timeColorClass, isUser ? 'text-gray-700' : 'text-gray-700')}</div>`;
           messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
           break;
         default: // text
           const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
+          const metaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'left-2.5' : 'right-2.5'} flex items-center gap-1">${timeHTML}</div>`;
           messageContentHTML = `
             <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
               ${nameHTML}
@@ -632,7 +618,7 @@ const handleFileSelect = async (e) => {
         const previewUrl = URL.createObjectURL(file);
         const tempLi = document.createElement('li');
         tempLi.id = tempId;
-        tempLi.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse opacity-50 mb-2';
+        tempLi.className = 'flex items-start space-x-3 rtl:space-x-reverse mb-2 justify-start opacity-50';
         tempLi.innerHTML = `
              <div class="flex flex-col max-w-xs lg:max-w-md">
                 <div class="relative rounded-lg overflow-hidden">
@@ -662,7 +648,6 @@ const handleFileSelect = async (e) => {
         }
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
         await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
-        // The onSnapshot listener will handle rendering the final message
     } catch (error) { 
         console.error("Error processing/uploading file:", error); 
         alert('خطا در ارسال فایل.'); 
@@ -720,14 +705,24 @@ cancelPasswordEntryBtn.addEventListener('click', () => showView('lobby-container
 backToLobbyBtn.addEventListener('click', () => { if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; } currentRoomId = null; chatBackground.style.backgroundImage = ''; showView('lobby-container'); });
 
 messageForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); const text = messageInput.value.trim();
-  if (text && currentRoomId) {
-    const tempInput = messageInput.value; messageInput.value = ''; messageInput.dispatchEvent(new Event('input'));
-    try {
-      const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-      await addDoc(messagesCol, { type: 'text', text, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
-      scrollToBottom('smooth');
-    } catch (error) { console.error("Error sending message:", error); messageInput.value = tempInput; messageInput.dispatchEvent(new Event('input')); }
+  e.preventDefault(); 
+  const text = messageInput.value.trim();
+  if (!text || !currentRoomId) return;
+
+  const tempInput = messageInput.value; 
+  messageInput.value = ''; 
+  adjustTextareaHeight();
+  messageInput.focus();
+
+  try {
+    const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+    await addDoc(messagesCol, { type: 'text', text, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
+    sendSound.play().catch(err => console.error("Audio play failed:", err));
+    // scrollToBottom is handled by the onSnapshot listener
+  } catch (error) { 
+      console.error("Error sending message:", error); 
+      messageInput.value = tempInput; // Restore message on failure
+      adjustTextareaHeight();
   }
 });
 
@@ -746,98 +741,140 @@ messageInput.addEventListener('input', () => {
 // --- Chat Settings Listeners ---
 chatSettingsBtn.addEventListener('click', () => showView('chat-settings-modal'));
 cancelChatSettings.addEventListener('click', () => showView('chat-container'));
-openChangeRoomAvatarBtn.addEventListener('click', async () => {
-    changeRoomAvatarForm.reset(); changeAvatarStatus.textContent = '';
-    const roomDoc = await getDoc(doc(db, 'rooms', currentRoomId));
-    const roomData = roomDoc.exists() ? roomDoc.data() : {};
-    roomAvatarPreview.innerHTML = generateAvatar(roomData.name, roomData.avatarUrl);
-    showView('change-room-avatar-modal');
-});
-openChangeBackgroundBtn.addEventListener('click', async () => {
-    changeBackgroundForm.reset(); changeBackgroundStatus.textContent = '';
-    const roomDoc = await getDoc(doc(db, 'rooms', currentRoomId));
-    const roomData = roomDoc.exists() ? roomDoc.data() : {};
-    backgroundPreview.style.backgroundImage = roomData.backgroundUrl ? `url(${roomData.backgroundUrl})` : '';
-    backgroundPreviewText.classList.toggle('hidden', !!roomData.backgroundUrl);
-    showView('change-background-modal');
-});
-openChangeNameModalBtn.addEventListener('click', () => { changeRoomNameForm.reset(); changeNameStatus.textContent = ''; showView('change-room-name-modal'); });
-openSetPasswordModalBtn.addEventListener('click', () => { setRoomPasswordForm.reset(); setPasswordStatus.textContent = ''; showView('set-room-password-modal'); });
-openDeleteChatModalBtn.addEventListener('click', () => { deleteChatForm.reset(); deleteChatStatus.textContent = ''; showView('delete-chat-modal'); });
-cancelBtns.forEach(btn => { 
-    // Special case for the in-chat avatar modal cancel button
-    if(btn.closest('#change-user-avatar-in-chat-modal')) return;
-    btn.addEventListener('click', () => showView('chat-settings-modal')); 
+
+openDeleteChatModalBtn.addEventListener('click', () => { 
+    deleteChatForm.reset(); 
+    deleteChatStatus.textContent = ''; 
+    showView('delete-chat-modal'); 
 });
 
-changeRoomAvatarForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); if (!currentRoomId) return;
-    const file = roomAvatarInput.files[0]; const password = currentPasswordForAvatarInput.value;
-    if (!file) { alert("لطفا یک عکس انتخاب کنید."); return; }
-    changeAvatarStatus.textContent = 'در حال بررسی...'; changeAvatarStatus.classList.remove('text-red-600', 'text-green-600');
+// New listener for consolidated Room Info Modal
+chatHeaderInfo.addEventListener('click', async () => {
+    if (!currentRoomId) return;
+    roomInfoForm.reset();
+    roomInfoStatus.textContent = '';
+    roomInfoStatus.className = 'text-sm mt-2 text-center h-4';
+    
     try {
-        const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
-        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-        const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-        if (password !== correctPassword) { changeAvatarStatus.textContent = 'رمز فعلی اشتباه است.'; changeAvatarStatus.classList.add('text-red-600'); return; }
-        const avatarUrl = await compressImage(file, AVATAR_MAX_DIMENSION);
-        await updateDoc(roomRef, { avatarUrl });
-        changeAvatarStatus.textContent = 'عکس با موفقیت تغییر کرد.'; changeAvatarStatus.classList.add('text-green-600');
-        chatRoomAvatar.innerHTML = generateAvatar(roomDoc.data().name, avatarUrl);
-        setTimeout(() => showView('chat-settings-modal'), 1500);
-    } catch (error) { console.error("Error changing avatar:", error); changeAvatarStatus.textContent = error.message; changeAvatarStatus.classList.add('text-red-600'); }
+        const roomDoc = await getDoc(doc(db, 'rooms', currentRoomId));
+        if (!roomDoc.exists()) {
+            alert('اطلاعات گفتگو یافت نشد.');
+            return;
+        }
+        const roomData = roomDoc.data();
+        
+        // Populate form
+        roomInfoNameInput.value = roomData.name || '';
+        roomInfoAvatarPreview.innerHTML = generateAvatar(roomData.name, roomData.avatarUrl);
+        roomInfoBackgroundPreview.style.backgroundImage = roomData.backgroundUrl ? `url(${roomData.backgroundUrl})` : '';
+        roomInfoBackgroundPreviewText.classList.toggle('hidden', !!roomData.backgroundUrl);
+        roomInfoNewPasswordInput.placeholder = roomData.password ? "رمز جدید (خالی برای حذف)" : "رمز جدید (اختیاری)";
+        
+        showView('room-info-modal');
+    } catch (error) {
+        console.error("Error fetching room details:", error);
+        alert('خطا در دریافت اطلاعات گفتگو.');
+    }
 });
-roomAvatarInput.addEventListener('change', async e => { const file = e.target.files[0]; if(file) roomAvatarPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover"/>`; });
 
-changeBackgroundForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); if (!currentRoomId) return;
-    const file = backgroundInput.files[0]; const password = currentPasswordForBackgroundInput.value;
-    if (!file) { alert("لطفا یک عکس انتخاب کنید."); return; }
-    changeBackgroundStatus.textContent = 'در حال بررسی...'; changeBackgroundStatus.classList.remove('text-red-600', 'text-green-600');
+roomInfoAvatarInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+        roomInfoAvatarPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover"/>`;
+    }
+});
+roomInfoBackgroundInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+        roomInfoBackgroundPreview.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+        roomInfoBackgroundPreviewText.classList.add('hidden');
+    }
+});
+
+roomInfoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentRoomId) return;
+
+    const newName = roomInfoNameInput.value.trim();
+    const newPasswordText = roomInfoNewPasswordInput.value; // Don't trim, could be spaces
+    const currentPassword = roomInfoCurrentPasswordInput.value;
+    const avatarFile = roomInfoAvatarInput.files[0];
+    const backgroundFile = roomInfoBackgroundInput.files[0];
+    
+    if (!currentPassword) {
+        alert('لطفا برای اعمال تغییرات، رمز فعلی را وارد کنید.');
+        return;
+    }
+
+    roomInfoStatus.textContent = 'در حال بررسی...';
+    roomInfoStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
+
     try {
-        const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
+        const roomRef = doc(db, 'rooms', currentRoomId);
+        const roomDoc = await getDoc(roomRef);
         if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
+
         const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-        if (password !== correctPassword) { changeBackgroundStatus.textContent = 'رمز فعلی اشتباه است.'; changeBackgroundStatus.classList.add('text-red-600'); return; }
-        const backgroundUrl = await compressImage(file, IMAGE_MAX_DIMENSION);
-        await updateDoc(roomRef, { backgroundUrl });
-        changeBackgroundStatus.textContent = 'پس‌زمینه با موفقیت تغییر کرد.'; changeBackgroundStatus.classList.add('text-green-600');
-        chatBackground.style.backgroundImage = `url(${backgroundUrl})`;
-        chatBackground.classList.remove('shared-background', 'opacity-50');
-        setTimeout(() => showView('chat-settings-modal'), 1500);
-    } catch (error) { console.error("Error changing background:", error); changeBackgroundStatus.textContent = error.message; changeBackgroundStatus.classList.add('text-red-600'); }
-});
-backgroundInput.addEventListener('change', async e => { const file = e.target.files[0]; if(file) { backgroundPreview.style.backgroundImage = `url(${URL.createObjectURL(file)})`; backgroundPreviewText.classList.add('hidden'); }});
+        if (currentPassword !== correctPassword) {
+            roomInfoStatus.textContent = 'رمز فعلی اشتباه است.';
+            roomInfoStatus.classList.add('text-red-600');
+            return;
+        }
 
-changeRoomNameForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); if (!currentRoomId) return;
-  const newName = newRoomNameInputForChange.value.trim(); const currentPassword = currentPasswordForNameInput.value;
-  changeNameStatus.textContent = 'در حال بررسی...'; changeNameStatus.classList.remove('text-red-600', 'text-green-600');
-  try {
-    const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
-    if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-    const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-    if (currentPassword !== correctPassword) { changeNameStatus.textContent = 'رمز فعلی اشتباه است.'; changeNameStatus.classList.add('text-red-600'); return; }
-    await updateDoc(roomRef, { name: newName });
-    changeNameStatus.textContent = 'نام با موفقیت تغییر کرد.'; changeNameStatus.classList.add('text-green-600'); chatRoomName.textContent = newName;
-    setTimeout(() => showView('chat-settings-modal'), 1500);
-  } catch (error) { console.error("Error changing room name:", error); changeNameStatus.textContent = error.message || 'خطا در تغییر نام.'; changeNameStatus.classList.add('text-red-600'); }
+        const updateData = {};
+        let uiNeedsUpdate = false;
+
+        if (newName && newName !== roomDoc.data().name) {
+            updateData.name = newName;
+            uiNeedsUpdate = true;
+        }
+        // Check if password field was touched. An empty string means remove password.
+        if (roomInfoNewPasswordInput.value !== '') {
+            updateData.password = newPasswordText || null;
+            uiNeedsUpdate = true;
+        }
+        if (avatarFile) {
+            updateData.avatarUrl = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
+            uiNeedsUpdate = true;
+        }
+        if (backgroundFile) {
+            updateData.backgroundUrl = await compressImage(backgroundFile, IMAGE_MAX_DIMENSION);
+            uiNeedsUpdate = true;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            await updateDoc(roomRef, updateData);
+            
+            if (updateData.name) chatRoomName.textContent = updateData.name;
+            if (updateData.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updateData.name || roomDoc.data().name, updateData.avatarUrl);
+            if (updateData.backgroundUrl) {
+                chatBackground.style.backgroundImage = `url(${updateData.backgroundUrl})`;
+                chatBackground.classList.remove('shared-background', 'opacity-50');
+            }
+            if (updateData.password !== undefined) {
+                localStorage.removeItem(`room_access_${currentRoomId}`);
+            }
+        }
+        
+        roomInfoStatus.textContent = 'تغییرات با موفقیت ذخیره شد.';
+        roomInfoStatus.classList.add('text-green-600');
+        setTimeout(() => showView('chat-container'), 1500);
+
+    } catch (error) {
+        console.error("Error updating room info:", error);
+        roomInfoStatus.textContent = error.message || 'خطا در ذخیره تغییرات.';
+        roomInfoStatus.classList.add('text-red-600');
+    }
 });
 
-setRoomPasswordForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); if (!currentRoomId) return;
-  const newPassword = newPasswordInput.value.trim(); const currentPassword = currentPasswordForPassInput.value;
-  setPasswordStatus.textContent = 'در حال بررسی...'; setPasswordStatus.classList.remove('text-red-600', 'text-green-600');
-  try {
-    const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
-    if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-    const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-    if (currentPassword !== correctPassword) { setPasswordStatus.textContent = 'رمز فعلی اشتباه است.'; setPasswordStatus.classList.add('text-red-600'); return; }
-    await updateDoc(roomRef, { password: newPassword || null });
-    setPasswordStatus.textContent = 'رمز با موفقیت به‌روز شد.'; setPasswordStatus.classList.add('text-green-600');
-    localStorage.removeItem(`room_access_${currentRoomId}`);
-    setTimeout(() => showView('chat-settings-modal'), 1500);
-  } catch (error) { console.error("Error setting room password:", error); setPasswordStatus.textContent = error.message || 'خطا در تغییر رمز.'; setPasswordStatus.classList.add('text-red-600'); }
+
+document.querySelectorAll('.cancel-btn').forEach(btn => {
+    const parentModal = btn.closest('.fixed');
+    if (parentModal && (parentModal.id === 'room-info-modal' || parentModal.id === 'delete-chat-modal')) {
+        btn.addEventListener('click', () => showView('chat-container'));
+    } else if (parentModal && parentModal.id !== 'change-user-avatar-in-chat-modal') {
+        btn.addEventListener('click', () => showView('chat-settings-modal'));
+    }
 });
 
 deleteChatForm.addEventListener('submit', async (e) => {
