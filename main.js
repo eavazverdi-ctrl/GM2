@@ -602,14 +602,14 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           break;
         default: // text
           const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const timeHTMLSpan = `<span class="text-xs ${timeColorClass} self-end flex-shrink-0" dir="ltr">${formatTime(message.timestamp)}</span>`;
+          const timeHTMLSpan = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
+          const timeAlignmentClass = isUser ? 'text-left' : 'text-right';
+
           messageContentHTML = `
-            <div class="px-3 py-1.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col items-stretch">
+            <div class="px-3 py-1.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col">
               ${nameHTML}
-              <div class="flex items-end gap-x-2">
-                  <p class="whitespace-pre-wrap break-words message-text flex-grow min-w-0">${textContent}</p>
-                  ${timeHTMLSpan}
-              </div>
+              <p class="whitespace-pre-wrap break-words message-text self-stretch">${textContent}</p>
+              <div class="w-full ${timeAlignmentClass} -mb-0.5 mt-1">${timeHTMLSpan}</div>
             </div>`;
       }
       
