@@ -25,7 +25,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
-const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUf35gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
+const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUf35gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
 const VIDEO_CALL_ROOM_NAME = 'اتاق تماس تصویری';
 const NUM_VIDEO_SLOTS = 4;
@@ -123,6 +123,11 @@ const deleteChatModal = document.getElementById('delete-chat-modal');
 const deleteChatForm = document.getElementById('delete-chat-form');
 const passwordForDeleteInput = document.getElementById('password-for-delete');
 const deleteChatStatus = document.getElementById('delete-chat-status');
+const removePasswordBtn = document.getElementById('remove-password-btn');
+const removePasswordModal = document.getElementById('remove-password-modal');
+const removePasswordForm = document.getElementById('remove-password-form');
+const passwordForRemoveInput = document.getElementById('password-for-remove');
+const removePasswordStatus = document.getElementById('remove-password-status');
 const viewAvatarModal = document.getElementById('view-avatar-modal');
 const viewAvatarDisplay = document.getElementById('view-avatar-display');
 const viewAvatarName = document.getElementById('view-avatar-name');
@@ -150,22 +155,15 @@ const roomInfoStatus = document.getElementById('room-info-status');
 // Video Call Elements
 const videoCallContainer = document.getElementById('video-call-container');
 const videoGrid = document.getElementById('video-grid');
+const videoRoomHeader = document.getElementById('video-room-header');
 const backToLobbyFromVideoBtn = document.getElementById('back-to-lobby-from-video-btn');
-const inCallSettingsModal = document.getElementById('in-call-settings-modal');
-const inCallSettingsForm = document.getElementById('in-call-settings-form');
-const inCallAvatarPreview = document.getElementById('in-call-avatar-preview');
-const inCallAvatarInput = document.getElementById('in-call-avatar-input');
-const inCallBackgrounInput = document.getElementById('in-call-background-input');
-const inCallStatus = document.getElementById('in-call-status');
-const inCallSettingsCancelBtn = document.getElementById('in-call-settings-cancel');
-
 
 // --- View Management ---
 const showView = (viewId) => {
   [
     lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
     chatSettingsModal, deleteChatModal, viewAvatarModal, changeUserAvatarInChatModal, roomInfoModal,
-    fileConfirmModal, videoCallContainer, inCallSettingsModal
+    fileConfirmModal, videoCallContainer, removePasswordModal
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -1005,7 +1003,7 @@ openDeleteChatModalBtn.addEventListener('click', () => {
 
 // New listener for consolidated Room Info Modal
 chatHeaderInfo.addEventListener('click', async () => {
-    if (!currentRoomId) return;
+    if (!currentRoomId || currentRoomId === VIDEO_CALL_ROOM_ID) return;
     roomInfoForm.reset();
     roomInfoStatus.textContent = '';
     roomInfoStatus.className = 'text-sm mt-2 text-center h-4';
@@ -1076,21 +1074,30 @@ roomInfoForm.addEventListener('submit', async (e) => {
         if (Object.keys(updates).length > 0) {
             await updateDoc(roomRef, updates);
 
-            if (updates.name) chatRoomName.textContent = updates.name;
-            if (updates.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updates.name || roomData.name, updates.avatarUrl);
-            if (updates.backgroundUrl) {
-                chatBackground.style.backgroundImage = `url(${updates.backgroundUrl})`;
-                chatBackground.style.backgroundSize = 'cover';
-                chatBackground.style.backgroundPosition = 'center';
+            // Update UI if it's a chat room
+            if (currentRoomId !== VIDEO_CALL_ROOM_ID) {
+                if (updates.name) chatRoomName.textContent = updates.name;
+                if (updates.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updates.name || roomData.name, updates.avatarUrl);
+                if (updates.backgroundUrl) {
+                    chatBackground.style.backgroundImage = `url(${updates.backgroundUrl})`;
+                    chatBackground.style.backgroundSize = 'cover';
+                    chatBackground.style.backgroundPosition = 'center';
+                }
             }
 
             roomInfoStatus.textContent = 'تغییرات با موفقیت ذخیره شد.';
             roomInfoStatus.classList.add('text-green-600');
-            setTimeout(() => showView('chat-container'), 1500);
+            setTimeout(() => {
+                if (currentRoomId === VIDEO_CALL_ROOM_ID) showView('video-call-container');
+                else showView('chat-container');
+            }, 1500);
         } else {
             roomInfoStatus.textContent = 'تغییری برای ذخیره وجود ندارد.';
             roomInfoStatus.classList.add('text-yellow-600');
-            setTimeout(() => showView('chat-container'), 1000);
+            setTimeout(() => {
+                 if (currentRoomId === VIDEO_CALL_ROOM_ID) showView('video-call-container');
+                 else showView('chat-container');
+            }, 1000);
         }
 
     } catch (error) {
@@ -1142,10 +1149,45 @@ changePasswordForm.addEventListener('submit', async (e) => {
     }
 });
 
+removePasswordBtn.addEventListener('click', () => {
+    removePasswordForm.reset();
+    removePasswordStatus.textContent = '';
+    showView('remove-password-modal');
+});
+
+removePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentRoomId) return;
+    const password = passwordForRemoveInput.value;
+    removePasswordStatus.textContent = 'در حال بررسی رمز...';
+    removePasswordStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
+
+    try {
+        const roomRef = doc(db, 'rooms', currentRoomId);
+        const roomDoc = await getDoc(roomRef);
+        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
+        const roomData = roomDoc.data();
+        const correctPassword = roomData.password || CREATOR_PASSWORD;
+        if (password !== correctPassword) {
+            throw new Error("رمز فعلی اشتباه است.");
+        }
+        await updateDoc(roomRef, { password: null });
+        localStorage.removeItem(`room_access_${currentRoomId}`);
+        removePasswordStatus.textContent = 'رمز با موفقیت حذف شد.';
+        removePasswordStatus.classList.add('text-green-600');
+        setTimeout(() => showView('chat-container'), 1500);
+
+    } catch(error) {
+        console.error("Error removing password:", error);
+        removePasswordStatus.textContent = error.message || 'خطا در حذف رمز.';
+        removePasswordStatus.classList.add('text-red-600');
+    }
+});
+
 
 document.querySelectorAll('.cancel-btn').forEach(btn => {
     const parentModal = btn.closest('.fixed');
-    if (parentModal && (parentModal.id === 'room-info-modal' || parentModal.id === 'delete-chat-modal')) {
+    if (parentModal && (parentModal.id === 'room-info-modal' || parentModal.id === 'delete-chat-modal' || parentModal.id === 'remove-password-modal')) {
         btn.addEventListener('click', () => showView('chat-container'));
     } else if (parentModal && parentModal.id !== 'change-user-avatar-in-chat-modal') {
         btn.addEventListener('click', () => showView('chat-settings-modal'));
@@ -1172,55 +1214,6 @@ deleteChatForm.addEventListener('submit', async (e) => {
 });
 
 // --- Video Call Logic ---
-inCallSettingsCancelBtn.addEventListener('click', () => showView('video-call-container'));
-
-inCallAvatarInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        inCallAvatarPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover"/>`;
-    }
-});
-
-inCallSettingsForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const avatarFile = inCallAvatarInput.files[0];
-    const backgroundFile = inCallBackgrounInput.files[0];
-
-    if (!avatarFile && !backgroundFile) {
-        showView('video-call-container');
-        return;
-    }
-
-    inCallStatus.textContent = 'در حال ذخیره...';
-    inCallStatus.className = 'text-sm text-center h-4 text-gray-700';
-
-    try {
-        // Handle avatar update
-        if (avatarFile) {
-            const compressedAvatar = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
-            currentUserAvatar = compressedAvatar;
-            localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
-            await setDoc(doc(db, 'users', currentUserId), { avatarUrl: currentUserAvatar }, { merge: true });
-            userProfilesCache[currentUserId] = { ...userProfilesCache[currentUserId], avatarUrl: currentUserAvatar };
-        }
-
-        // Handle background update
-        if (backgroundFile) {
-            const compressedBackground = await compressImage(backgroundFile, IMAGE_MAX_DIMENSION);
-            await setDoc(doc(db, 'app_settings', 'global'), { backgroundUrl: compressedBackground }, { merge: true });
-            // The global listener will handle the update for all users
-        }
-
-        inCallStatus.textContent = 'تغییرات ذخیره شد.';
-        inCallStatus.classList.add('text-green-600');
-        setTimeout(() => showView('video-call-container'), 1500);
-
-    } catch (error) {
-        console.error("Error saving in-call settings:", error);
-        inCallStatus.textContent = 'خطا در ذخیره تغییرات.';
-        inCallStatus.classList.add('text-red-600');
-    }
-});
 
 const resetVideoSlot = (slotEl) => {
     const videoEl = slotEl.querySelector('video');
@@ -1245,7 +1238,7 @@ const initializeVideoGrid = () => {
   for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
     const slot = document.createElement('div');
     slot.id = `video-slot-${i}`;
-    slot.className = 'glass-modal rounded-2xl relative flex items-center justify-center overflow-hidden';
+    slot.className = 'glass-modal relative flex items-center justify-center overflow-hidden bg-white/20 backdrop-blur-xl';
     slot.innerHTML = `
       <video class="w-full h-full object-cover hidden transform -scale-x-100" autoplay playsinline></video>
       <div class="placeholder absolute inset-0 flex items-center justify-center cursor-pointer transition-opacity duration-300">
@@ -1255,13 +1248,21 @@ const initializeVideoGrid = () => {
         <p class="remote-user-name text-white font-bold mb-4 text-lg"></p>
         <button class="connect-btn glass-button-blue text-white font-bold py-2 px-4 rounded-md">اتصال</button>
       </div>
-      <div class="controls absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 hidden"></div>
+      <div class="controls absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 hidden"></div>
     `;
     const placeholder = slot.querySelector('.placeholder');
     placeholder.addEventListener('click', () => joinVideoSlot(i));
     videoGrid.appendChild(slot);
   }
 };
+
+videoRoomHeader.addEventListener('click', () => {
+    // Open the same room info modal, but for the video call room
+    currentRoomId = VIDEO_CALL_ROOM_ID; // Ensure context is correct
+    // The regular roomInfo logic will fetch the details for this ID
+    chatHeaderInfo.dispatchEvent(new Event('click'));
+});
+
 
 const joinVideoSlot = async (slotId) => {
   if (localStream) return; // Already in a call
@@ -1275,18 +1276,6 @@ const joinVideoSlot = async (slotId) => {
 
   myVideoSlotId = slotId;
   const slotEl = document.getElementById(`video-slot-${slotId}`);
-  
-  slotEl.addEventListener('click', () => {
-    if (slotId === myVideoSlotId) {
-      inCallSettingsForm.reset();
-      inCallAvatarPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
-      inCallBackgrounInput.value = '';
-      inCallAvatarInput.value = '';
-      inCallStatus.textContent = '';
-      showView('in-call-settings-modal');
-    }
-  });
-
   const videoEl = slotEl.querySelector('video');
   videoEl.srcObject = localStream;
   videoEl.muted = true;
@@ -1297,24 +1286,25 @@ const joinVideoSlot = async (slotId) => {
   const controls = slotEl.querySelector('.controls');
   controls.classList.remove('hidden');
   controls.innerHTML = `
-      <button id="mute-btn" class="w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center">
+      <button id="mute-btn" class="w-10 h-10 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center transition-opacity">
           ${document.getElementById('mic-on-svg').outerHTML}
-          ${document.getElementById('mic-off-svg').outerHTML}
-      </button>
-      <button id="end-call-btn" class="w-10 h-10 bg-red-600/80 backdrop-blur-sm rounded-full flex items-center justify-center">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 0M12 9v3.75m0-10.5a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0V5.25A.75.75 0 0112 4.5z" /></svg>
       </button>
   `;
-  const muteBtn = controls.querySelector('#mute-btn');
-  muteBtn.querySelector('#mic-off-svg').classList.add('hidden');
-  muteBtn.addEventListener('click', () => {
-    const audioTrack = localStream.getAudioTracks()[0];
-    audioTrack.enabled = !audioTrack.enabled;
-    muteBtn.querySelector('#mic-on-svg').classList.toggle('hidden', !audioTrack.enabled);
-    muteBtn.querySelector('#mic-off-svg').classList.toggle('hidden', audioTrack.enabled);
-    muteBtn.classList.toggle('opacity-50', !audioTrack.enabled);
+  controls.querySelector('#mute-btn').addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent end-call from triggering
+      const audioTrack = localStream.getAudioTracks()[0];
+      audioTrack.enabled = !audioTrack.enabled;
+      e.currentTarget.classList.toggle('opacity-50', !audioTrack.enabled);
   });
-  controls.querySelector('#end-call-btn').addEventListener('click', hangUp);
+  
+  slotEl.addEventListener('click', () => {
+    if (slotId === myVideoSlotId) {
+        if(confirm('آیا می‌خواهید تماس را پایان دهید؟')){
+            hangUp();
+        }
+    }
+  });
+
 
   // Announce presence in the slot
   const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
