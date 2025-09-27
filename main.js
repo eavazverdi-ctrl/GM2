@@ -37,7 +37,7 @@ let currentUsername = '';
 let currentUserAvatar = null;
 let currentRoomId = null;
 let messagesUnsubscribe = null;
-let currentFontSize = 'sm';
+let currentFontSize = 'md';
 let currentGlassMode = 'off';
 
 // Pagination state
@@ -458,16 +458,16 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       let messageContentHTML = '';
       const timeHTML = `<span class="text-xs" dir="ltr">${formatTime(message.timestamp)}</span>`;
 
-      if (isUser) { // User: Profile LEFT, Bubble RIGHT
-          liClasses = 'justify-end'; // justify-end is LEFT in RTL
+      if (isUser) { // User: Profile LEFT, Bubble RIGHT. Aligned LEFT in RTL.
+          liClasses = 'justify-end';
           bubbleClasses = `${selectedModeClasses.user} text-white`;
           bubbleTailClass = 'rounded-bl-none'; 
           nameAlignmentClass = 'text-left';
           timeAlignmentClass = 'right-2.5';
           nameColorClass = 'text-gray-200/90';
           timeColorClass = 'text-gray-200/90';
-      } else { // Others: Profile RIGHT, Bubble LEFT
-          liClasses = 'justify-start'; // justify-start is RIGHT in RTL
+      } else { // Others: Profile RIGHT, Bubble LEFT. Aligned RIGHT in RTL.
+          liClasses = 'justify-start';
           bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
           bubbleTailClass = 'rounded-br-none';
           nameAlignmentClass = 'text-right';
@@ -478,7 +478,6 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       
       li.className = `flex items-start space-x-3 rtl:space-x-reverse mb-2 ${liClasses}`;
       const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
-
 
       switch (message.type) {
         case 'image':
@@ -502,9 +501,9 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       
       const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
 
-      if (isUser) { // User (Profile Left, Bubble Right)
+      if (isUser) {
           li.innerHTML = avatarContainer + bubbleContainer;
-      } else { // Others (Profile Right, Bubble Left)
+      } else {
           li.innerHTML = bubbleContainer + avatarContainer;
       }
       fragment.appendChild(li);
@@ -612,7 +611,6 @@ const handleFileSelect = async (e) => {
     const isImage = file.type.startsWith('image/');
     let fileDataUrl;
     
-    // Show temporary uploading indicator for images
     const tempId = `temp_${Date.now()}`;
     if (isImage) {
         const previewUrl = URL.createObjectURL(file);
@@ -704,6 +702,11 @@ passwordForm.addEventListener('submit', async (e) => {
 cancelPasswordEntryBtn.addEventListener('click', () => showView('lobby-container'));
 backToLobbyBtn.addEventListener('click', () => { if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; } currentRoomId = null; chatBackground.style.backgroundImage = ''; showView('lobby-container'); });
 
+const updateSendButtonState = () => {
+    const hasText = messageInput.value.trim().length > 0; 
+    sendButton.disabled = !hasText;
+};
+
 messageForm.addEventListener('submit', async (e) => {
   e.preventDefault(); 
   const text = messageInput.value.trim();
@@ -711,30 +714,21 @@ messageForm.addEventListener('submit', async (e) => {
 
   const tempInput = messageInput.value; 
   messageInput.value = ''; 
-  adjustTextareaHeight();
+  updateSendButtonState();
   messageInput.focus();
 
   try {
     const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
     await addDoc(messagesCol, { type: 'text', text, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
     sendSound.play().catch(err => console.error("Audio play failed:", err));
-    // scrollToBottom is handled by the onSnapshot listener
   } catch (error) { 
       console.error("Error sending message:", error); 
-      messageInput.value = tempInput; // Restore message on failure
-      adjustTextareaHeight();
+      messageInput.value = tempInput;
+      updateSendButtonState();
   }
 });
 
-const adjustTextareaHeight = () => {
-    messageInput.style.height = 'auto';
-    const scrollHeight = messageInput.scrollHeight;
-    messageInput.style.height = `${scrollHeight}px`;
-    const hasText = messageInput.value.trim().length > 0; 
-    sendButton.disabled = !hasText; 
-};
-
-messageInput.addEventListener('input', adjustTextareaHeight);
+messageInput.addEventListener('input', updateSendButtonState);
 
 // --- Chat Settings Listeners ---
 chatSettingsBtn.addEventListener('click', () => showView('chat-settings-modal'));
@@ -898,7 +892,7 @@ deleteChatForm.addEventListener('submit', async (e) => {
 const startApp = () => {
   currentUsername = localStorage.getItem(USERNAME_KEY);
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
-  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'sm';
+  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
   applyFontSize(storedFontSize);
   applyGlassModeSelection(storedGlassMode); // will set currentGlassMode
@@ -908,7 +902,7 @@ const startApp = () => {
   if (appAccessGranted && currentUsername) {
     showView('lobby-container');
     listenForRooms();
-    adjustTextareaHeight();
+    updateSendButtonState();
   } else {
     showView('username-modal');
     usernameInput.focus();
