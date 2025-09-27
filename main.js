@@ -18,6 +18,7 @@ const USERNAME_KEY = 'chat_username_v2';
 const USER_AVATAR_KEY = 'chat_user_avatar_v1';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const GLASS_MODE_KEY = 'chat_glass_mode_v1';
+const SEND_WITH_ENTER_KEY = 'chat_send_with_enter_v1';
 const STATIC_BACKGROUND_KEY = 'chat_background_static_v1';
 const CREATOR_PASSWORD = '2025';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
@@ -40,11 +41,13 @@ let currentRoomId = null;
 let messagesUnsubscribe = null;
 let currentFontSize = 'md';
 let currentGlassMode = 'off';
+let currentSendWithEnter = 'on';
 let currentStaticBackground = null;
 
 // --- State for Settings Modal ---
 let tempStaticBackground = null;
 let initialSettingsState = {};
+let fileToUpload = null;
 
 // Pagination state
 let oldestMessageDoc = null;
@@ -79,6 +82,7 @@ const userAvatarInput = document.getElementById('user-avatar-input');
 const changeUsernameInput = document.getElementById('change-username-input');
 const fontSizeOptions = document.getElementById('font-size-options');
 const glassModeOptions = document.getElementById('glass-mode-options');
+const sendWithEnterOptions = document.getElementById('send-with-enter-options');
 const staticBackgroundUploader = document.getElementById('static-background-uploader');
 const backgroundImageInput = document.getElementById('background-image-input');
 const backgroundUploadStatus = document.getElementById('background-upload-status');
@@ -102,6 +106,10 @@ const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
 const chatSettingsModal = document.getElementById('chat-settings-modal');
 const cancelChatSettings = document.getElementById('cancel-chat-settings');
 const openDeleteChatModalBtn = document.getElementById('open-delete-chat-modal-btn');
+const changePasswordForm = document.getElementById('change-password-form');
+const newPasswordInput2 = document.getElementById('room-info-new-password-input-2');
+const currentPasswordInput2 = document.getElementById('room-info-current-password-input-2');
+const changePasswordStatus = document.getElementById('change-password-status');
 const deleteChatModal = document.getElementById('delete-chat-modal');
 const deleteChatForm = document.getElementById('delete-chat-form');
 const passwordForDeleteInput = document.getElementById('password-for-delete');
@@ -116,8 +124,13 @@ const userAvatarInChatPreview = document.getElementById('user-avatar-in-chat-pre
 const userAvatarInChatInput = document.getElementById('user-avatar-in-chat-input');
 const changeUserAvatarInChatStatus = document.getElementById('change-user-avatar-in-chat-status');
 const sendSound = document.getElementById('send-sound');
+const fileConfirmModal = document.getElementById('file-confirm-modal');
+const filePreviewContainer = document.getElementById('file-preview-container');
+const fileConfirmStatus = document.getElementById('file-confirm-status');
+const cancelFileUploadBtn = document.getElementById('cancel-file-upload');
+const confirmFileUploadBtn = document.getElementById('confirm-file-upload');
 
-// New Consolidated Room Info Modal Elements
+// Consolidated Room Info Modal Elements
 const roomInfoModal = document.getElementById('room-info-modal');
 const roomInfoForm = document.getElementById('room-info-form');
 const roomInfoAvatarPreview = document.getElementById('room-info-avatar-preview');
@@ -126,8 +139,6 @@ const roomInfoBackgroundPreview = document.getElementById('room-info-background-
 const roomInfoBackgroundPreviewText = document.getElementById('room-info-background-preview-text');
 const roomInfoBackgroundInput = document.getElementById('room-info-background-input');
 const roomInfoNameInput = document.getElementById('room-info-name-input');
-const roomInfoNewPasswordInput = document.getElementById('room-info-new-password-input');
-const roomInfoCurrentPasswordInput = document.getElementById('room-info-current-password-input');
 const roomInfoStatus = document.getElementById('room-info-status');
 
 
@@ -135,7 +146,8 @@ const roomInfoStatus = document.getElementById('room-info-status');
 const showView = (viewId) => {
   [
     lobbyContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
-    chatSettingsModal, deleteChatModal, viewAvatarModal, changeUserAvatarInChatModal, roomInfoModal
+    chatSettingsModal, deleteChatModal, viewAvatarModal, changeUserAvatarInChatModal, roomInfoModal,
+    fileConfirmModal
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -206,6 +218,15 @@ const applyGlassModeSelection = (mode) => {
     });
 };
 
+const applySendWithEnterSelection = (value) => {
+    currentSendWithEnter = value;
+    sendWithEnterOptions.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('glass-button-blue', btn.dataset.value === value);
+        btn.classList.toggle('text-white', btn.dataset.value === value);
+        btn.classList.toggle('glass-button-gray', btn.dataset.value !== value);
+    });
+};
+
 const applyBackgroundSettings = (staticBgData) => {
     // Reset all background states
     appBackground.style.backgroundImage = '';
@@ -233,6 +254,12 @@ glassModeOptions.addEventListener('click', (e) => {
     }
 });
 
+sendWithEnterOptions.addEventListener('click', (e) => {
+    if (e.target.matches('.send-with-enter-btn')) {
+        applySendWithEnterSelection(e.target.dataset.value);
+    }
+});
+
 backgroundImageInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -254,7 +281,6 @@ backgroundImageInput.addEventListener('change', async (e) => {
     }
 });
 
-
 settingsBtn.addEventListener('click', () => {
     // Store initial state to revert on cancel
     initialSettingsState = {
@@ -265,6 +291,7 @@ settingsBtn.addEventListener('click', () => {
     userAvatarPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
     applyFontSize(currentFontSize);
     applyGlassModeSelection(currentGlassMode);
+    applySendWithEnterSelection(currentSendWithEnter);
     
     // Reset temp background state for the new session
     tempStaticBackground = null;
@@ -306,6 +333,7 @@ userSettingsForm.addEventListener('submit', (e) => {
     localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
     localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
     localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
+    localStorage.setItem(SEND_WITH_ENTER_KEY, currentSendWithEnter);
     
     // Finalize and save background settings
     if (tempStaticBackground) {
@@ -532,21 +560,17 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       li.dataset.authorId = message.authorId;
       li.dataset.timestamp = message.timestamp.getTime();
       
-      let bubbleClasses, bubbleTailClass, nameAlignmentClass, timeAlignmentClass, nameColorClass, timeColorClass, liClasses;
+      let bubbleClasses, bubbleTailClass, nameAlignmentClass, nameColorClass, timeColorClass, liClasses;
       
       const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
       const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
       const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${message.authorAvatar || ''}">${avatarHTML}</div>`;
-
-      let messageContentHTML = '';
-      const timeHTML = `<span class="text-xs" dir="ltr">${formatTime(message.timestamp)}</span>`;
 
       if (isUser) { // User's messages on the RIGHT
           liClasses = 'justify-start'; // Aligns to the right in RTL
           bubbleClasses = `${selectedModeClasses.user} text-white`;
           bubbleTailClass = 'rounded-br-none'; // Tail points to avatar on the right
           nameAlignmentClass = 'text-right';
-          timeAlignmentClass = 'left-2.5';
           nameColorClass = 'text-gray-200/90';
           timeColorClass = 'text-gray-200/90';
       } else { // Others' messages on the LEFT
@@ -554,7 +578,6 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
           bubbleTailClass = 'rounded-bl-none'; // Tail points to avatar on the left
           nameAlignmentClass = 'text-left';
-          timeAlignmentClass = 'right-2.5';
           nameColorClass = 'text-gray-500 opacity-70';
           timeColorClass = 'text-gray-500 opacity-70';
       }
@@ -563,7 +586,9 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       const marginClass = isConsecutive ? 'mb-1' : 'mb-2';
       
       li.className = `flex items-start space-x-3 rtl:space-x-reverse ${marginClass} ${liClasses}`;
-      const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
+      const nameHTML = `<div class="text-xs ${nameColorClass} mb-0.5 ${nameAlignmentClass}">${senderName}</div>`;
+
+      let messageContentHTML = '';
 
       switch (message.type) {
         case 'image':
@@ -571,17 +596,20 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           break;
         case 'file':
           const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1 text-gray-700">${timeHTML}</div>`;
+          const timeHTML = `<span class="text-xs" dir="ltr">${formatTime(message.timestamp)}</span>`;
+          const fileMetaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'left-2.5' : 'right-2.5'} flex items-center gap-1 text-gray-700">${timeHTML}</div>`;
           messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
           break;
         default: // text
           const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-          const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1 ${timeColorClass}">${timeHTML}</div>`;
+          const timeHTMLSpan = `<span class="text-xs ${timeColorClass} self-end flex-shrink-0" dir="ltr">${formatTime(message.timestamp)}</span>`;
           messageContentHTML = `
-            <div class="px-3 py-1.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
+            <div class="px-3 py-1.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col items-stretch">
               ${nameHTML}
-              <p class="whitespace-pre-wrap pb-3 break-words message-text">${textContent}</p>
-              ${metaHTML}
+              <div class="flex items-end gap-x-2">
+                  <p class="whitespace-pre-wrap break-words message-text flex-grow min-w-0">${textContent}</p>
+                  ${timeHTMLSpan}
+              </div>
             </div>`;
       }
       
@@ -709,15 +737,43 @@ const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file || !currentRoomId) return;
 
+    fileToUpload = file;
+    fileInput.value = ''; // Allow selecting the same file again if cancelled
+
+    filePreviewContainer.innerHTML = ''; // Clear previous preview
+    fileConfirmStatus.textContent = 'برای ارسال تایید کنید.';
+    fileConfirmStatus.className = 'text-sm text-center h-4 mb-4 text-gray-700';
+
+    if (file.type.startsWith('image/')) {
+        const previewUrl = URL.createObjectURL(file);
+        filePreviewContainer.innerHTML = `<img src="${previewUrl}" class="max-w-full max-h-full object-contain" alt="Preview"/>`;
+    } else {
+        filePreviewContainer.innerHTML = `
+            <div class="text-center text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mx-auto text-gray-500"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                <p class="font-semibold mt-2 break-all">${file.name}</p>
+            </div>
+        `;
+    }
+
+    showView('file-confirm-modal');
+};
+
+const uploadConfirmedFile = async () => {
+    if (!fileToUpload || !currentRoomId) return;
+
+    const file = fileToUpload;
     const isImage = file.type.startsWith('image/');
     let fileDataUrl;
+    
+    fileConfirmStatus.textContent = 'در حال ارسال...';
     
     const tempId = `temp_${Date.now()}`;
     if (isImage) {
         const previewUrl = URL.createObjectURL(file);
         const tempLi = document.createElement('li');
         tempLi.id = tempId;
-        tempLi.className = 'flex items-start space-x-3 rtl:space-x-reverse mb-2 justify-start opacity-50'; // Changed to justify-start
+        tempLi.className = 'flex items-start space-x-3 rtl:space-x-reverse mb-2 justify-start opacity-50';
         tempLi.innerHTML = `
             <div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
             <div class="flex flex-col max-w-xs lg:max-w-md">
@@ -727,8 +783,7 @@ const handleFileSelect = async (e) => {
                         <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </div>
                 </div>
-            </div>
-            `;
+            </div>`;
         messagesList.appendChild(tempLi);
         scrollToBottom('smooth');
     }
@@ -737,7 +792,12 @@ const handleFileSelect = async (e) => {
         if (isImage) {
             fileDataUrl = await compressImage(file, IMAGE_MAX_DIMENSION);
         } else {
-            if (file.size > MAX_FILE_SIZE) { alert(`حجم فایل نباید بیشتر از 5 مگابایت باشد.`); e.target.value = ''; return; }
+            if (file.size > MAX_FILE_SIZE) { 
+                fileConfirmStatus.textContent = `حجم فایل نباید بیشتر از 5 مگابایت باشد.`;
+                fileConfirmStatus.classList.add('text-red-600');
+                fileToUpload = null;
+                return;
+             }
             fileDataUrl = await new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = e => resolve(e.target.result);
@@ -747,18 +807,26 @@ const handleFileSelect = async (e) => {
         }
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
         await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
+        showView('chat-container');
     } catch (error) { 
         console.error("Error processing/uploading file:", error); 
-        alert('خطا در ارسال فایل.'); 
+        fileConfirmStatus.textContent = 'خطا در ارسال فایل.';
+        fileConfirmStatus.classList.add('text-red-600');
     } finally {
         if (isImage) {
             const tempEl = document.getElementById(tempId);
             if(tempEl) tempEl.remove();
         }
-        e.target.value = ''; 
+        fileToUpload = null;
     }
 };
+
 fileInput.addEventListener('change', handleFileSelect);
+cancelFileUploadBtn.addEventListener('click', () => {
+    fileToUpload = null;
+    showView('chat-container');
+});
+confirmFileUploadBtn.addEventListener('click', uploadConfirmedFile);
 
 // --- Event Listeners & App Flow ---
 usernameForm.addEventListener('submit', (e) => { 
@@ -830,9 +898,19 @@ messageForm.addEventListener('submit', async (e) => {
 });
 
 messageInput.addEventListener('input', updateSendButtonState);
+messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && currentSendWithEnter === 'on') {
+        e.preventDefault();
+        messageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+});
 
 // --- Chat Settings Listeners ---
-chatSettingsBtn.addEventListener('click', () => showView('chat-settings-modal'));
+chatSettingsBtn.addEventListener('click', () => {
+    changePasswordForm.reset();
+    changePasswordStatus.textContent = '';
+    showView('chat-settings-modal');
+});
 cancelChatSettings.addEventListener('click', () => showView('chat-container'));
 
 openDeleteChatModalBtn.addEventListener('click', () => { 
@@ -856,12 +934,10 @@ chatHeaderInfo.addEventListener('click', async () => {
         }
         const roomData = roomDoc.data();
         
-        // Populate form
         roomInfoNameInput.value = roomData.name || '';
         roomInfoAvatarPreview.innerHTML = generateAvatar(roomData.name, roomData.avatarUrl);
         roomInfoBackgroundPreview.style.backgroundImage = roomData.backgroundUrl ? `url(${roomData.backgroundUrl})` : '';
         roomInfoBackgroundPreviewText.classList.toggle('hidden', !!roomData.backgroundUrl);
-        roomInfoNewPasswordInput.placeholder = roomData.password ? "رمز جدید (خالی برای حذف)" : "رمز جدید (اختیاری)";
         
         showView('room-info-modal');
     } catch (error) {
@@ -888,10 +964,7 @@ roomInfoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentRoomId) return;
 
-    // Get form data
     const newName = roomInfoNameInput.value.trim();
-    const newPasswordText = roomInfoNewPasswordInput.value;
-    const currentPassword = roomInfoCurrentPasswordInput.value;
     const avatarFile = roomInfoAvatarInput.files[0];
     const backgroundFile = roomInfoBackgroundInput.files[0];
 
@@ -905,22 +978,7 @@ roomInfoForm.addEventListener('submit', async (e) => {
         const roomData = roomDoc.data();
 
         const updates = {};
-        const isChangingPassword = newPasswordText !== '';
         
-        // --- Password Verification (only if needed) ---
-        if (isChangingPassword) {
-            if (!currentPassword) {
-                throw new Error("برای تغییر رمز، رمز فعلی لازم است.");
-            }
-            const correctPassword = roomData.password || CREATOR_PASSWORD;
-            if (currentPassword !== correctPassword) {
-                throw new Error("رمز فعلی اشتباه است.");
-            }
-            // If password is correct, add the new password to updates
-            updates.password = newPasswordText || null;
-        }
-
-        // --- Non-password changes (no verification needed) ---
         if (newName && newName !== roomData.name) {
             updates.name = newName;
         }
@@ -931,11 +989,9 @@ roomInfoForm.addEventListener('submit', async (e) => {
             updates.backgroundUrl = await compressImage(backgroundFile, IMAGE_MAX_DIMENSION);
         }
         
-        // --- Apply Updates ---
         if (Object.keys(updates).length > 0) {
             await updateDoc(roomRef, updates);
 
-            // Update UI immediately
             if (updates.name) chatRoomName.textContent = updates.name;
             if (updates.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updates.name || roomData.name, updates.avatarUrl);
             if (updates.backgroundUrl) {
@@ -943,16 +999,11 @@ roomInfoForm.addEventListener('submit', async (e) => {
                 chatBackground.style.backgroundSize = 'cover';
                 chatBackground.style.backgroundPosition = 'center';
             }
-            if (updates.password !== undefined) {
-                // Invalidate access key if password changes
-                localStorage.removeItem(`room_access_${currentRoomId}`);
-            }
 
             roomInfoStatus.textContent = 'تغییرات با موفقیت ذخیره شد.';
             roomInfoStatus.classList.add('text-green-600');
             setTimeout(() => showView('chat-container'), 1500);
         } else {
-            // No changes detected
             roomInfoStatus.textContent = 'تغییری برای ذخیره وجود ندارد.';
             roomInfoStatus.classList.add('text-yellow-600');
             setTimeout(() => showView('chat-container'), 1000);
@@ -962,6 +1013,48 @@ roomInfoForm.addEventListener('submit', async (e) => {
         console.error("Error updating room info:", error);
         roomInfoStatus.textContent = error.message || 'خطا در ذخیره تغییرات.';
         roomInfoStatus.classList.add('text-red-600');
+    }
+});
+
+
+changePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentRoomId) return;
+
+    const newPassword = newPasswordInput2.value;
+    const currentPassword = currentPasswordInput2.value;
+
+    if (!currentPassword) {
+        changePasswordStatus.textContent = 'رمز فعلی برای تایید لازم است.';
+        changePasswordStatus.className = 'text-sm mt-2 text-center h-4 text-red-600';
+        return;
+    }
+
+    changePasswordStatus.textContent = 'در حال پردازش...';
+    changePasswordStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
+
+    try {
+        const roomRef = doc(db, 'rooms', currentRoomId);
+        const roomDoc = await getDoc(roomRef);
+        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
+        const roomData = roomDoc.data();
+
+        const correctPassword = roomData.password || CREATOR_PASSWORD;
+        if (currentPassword !== correctPassword) {
+            throw new Error("رمز فعلی اشتباه است.");
+        }
+
+        await updateDoc(roomRef, { password: newPassword || null });
+        localStorage.removeItem(`room_access_${currentRoomId}`);
+
+        changePasswordStatus.textContent = 'رمز با موفقیت تغییر کرد.';
+        changePasswordStatus.classList.add('text-green-600');
+        setTimeout(() => showView('chat-container'), 1500);
+
+    } catch (error) {
+        console.error("Error changing password:", error);
+        changePasswordStatus.textContent = error.message || 'خطا در تغییر رمز.';
+        changePasswordStatus.classList.add('text-red-600');
     }
 });
 
@@ -1000,10 +1093,12 @@ const startApp = () => {
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
+  currentSendWithEnter = localStorage.getItem(SEND_WITH_ENTER_KEY) || 'on';
   currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
 
   applyFontSize(storedFontSize);
   applyGlassModeSelection(storedGlassMode);
+  applySendWithEnterSelection(currentSendWithEnter);
   applyBackgroundSettings(currentStaticBackground);
 
   const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
