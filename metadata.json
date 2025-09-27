@@ -1,8 +1,5 @@
 {
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ],
   "name": "Firebase Messenger",
-  "description": ""
+  "description": "",
+  "requestFramePermissions": []
 }

@@ -1,11 +1,10 @@
-const CACHE = "pwa-messenger-v3";
+const CACHE = "pwa-messenger-v4";
 const ASSETS = [
   "./",
   "./index.html",
   "./main.js",
   "./config.js",
-  "./manifest.json",
-  "./icons/icon.png"
+  "./manifest.json"
 ];
 
 self.addEventListener("install", (e) => {
