@@ -31,16 +31,6 @@
       .font-size-md .message-text { font-size: 16px; }
       .font-size-lg .message-text { font-size: 18px; }
 
-      /* --- NEW Animated Backgrounds --- */
-      .bg-mode-animated {
-        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-        background-size: 400% 400%; animation: bg-animated-gradient 15s ease infinite;
-      }
-
-      /* --- Fluid Gradient Animation --- */
-      @keyframes bg-animated-gradient {
-        0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
-      }
     </style>
   <script type="importmap">
 {
@@ -56,7 +46,7 @@
   <body class="bg-gray-200 font-sans">
     <!-- Background Container -->
     <div id="app-background" class="fixed inset-0 -z-10 h-full w-full bg-sky-100 overflow-hidden">
-        <!-- Animated background elements will be controlled by classes -->
+        <!-- Background is controlled by JS -->
     </div>
 
     <!-- Main App Container -->
@@ -219,14 +209,11 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">حالت پس‌زمینه</label>
-              <div class="grid grid-cols-2 gap-2 text-sm" id="background-mode-options">
-                <button type="button" data-mode="static" class="bg-mode-btn p-2 rounded-md glass-button-gray">ثابت</button>
-                <button type="button" data-mode="animated" class="bg-mode-btn p-2 rounded-md glass-button-gray">متحرک</button>
-              </div>
-              <div id="static-background-uploader" class="mt-2 text-center hidden">
+              <label class="block text-sm font-medium text-gray-700 mb-2">پس‌زمینه برنامه</label>
+              <div id="static-background-uploader" class="mt-2 text-center">
                   <label for="background-image-input" class="cursor-pointer inline-block glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انتخاب عکس</label>
                   <input type="file" id="background-image-input" class="hidden" accept="image/*" />
+                  <p id="background-upload-status" class="text-sm text-center h-4 mt-2"></p>
               </div>
             </div>
 

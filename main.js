@@ -18,7 +18,6 @@ const USERNAME_KEY = 'chat_username_v2';
 const USER_AVATAR_KEY = 'chat_user_avatar_v1';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const GLASS_MODE_KEY = 'chat_glass_mode_v1';
-const BACKGROUND_MODE_KEY = 'chat_background_mode_v4'; // version up
 const STATIC_BACKGROUND_KEY = 'chat_background_static_v1';
 const CREATOR_PASSWORD = '2025';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
@@ -41,7 +40,6 @@ let currentRoomId = null;
 let messagesUnsubscribe = null;
 let currentFontSize = 'md';
 let currentGlassMode = 'off';
-let currentBackgroundMode = 'static'; // New default
 let currentStaticBackground = null;
 
 // --- State for Settings Modal ---
@@ -81,9 +79,9 @@ const userAvatarInput = document.getElementById('user-avatar-input');
 const changeUsernameInput = document.getElementById('change-username-input');
 const fontSizeOptions = document.getElementById('font-size-options');
 const glassModeOptions = document.getElementById('glass-mode-options');
-const backgroundModeOptions = document.getElementById('background-mode-options');
 const staticBackgroundUploader = document.getElementById('static-background-uploader');
 const backgroundImageInput = document.getElementById('background-image-input');
+const backgroundUploadStatus = document.getElementById('background-upload-status');
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 const chatContainer = document.getElementById('chat-container');
@@ -208,44 +206,18 @@ const applyGlassModeSelection = (mode) => {
     });
 };
 
-const applyBackgroundModeSelection = (mode) => {
-    backgroundModeOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('glass-button-blue', btn.dataset.mode === mode);
-        btn.classList.toggle('text-white', btn.dataset.mode === mode);
-        btn.classList.toggle('glass-button-gray', btn.dataset.mode !== mode);
-    });
-    staticBackgroundUploader.classList.toggle('hidden', mode !== 'static');
-};
-
-
-const applyBackgroundSettings = (mode, staticBgData) => {
+const applyBackgroundSettings = (staticBgData) => {
     // Reset all background states
     appBackground.style.backgroundImage = '';
     appBackground.style.backgroundColor = 'transparent';
     appBackground.className = 'fixed inset-0 -z-10 h-full w-full bg-sky-100 overflow-hidden'; // Reset classes
 
-    switch (mode) {
-        case 'static':
-            if (staticBgData) {
-                appBackground.style.backgroundImage = `url(${staticBgData})`;
-                appBackground.style.backgroundSize = 'cover';
-                appBackground.style.backgroundPosition = 'center';
-            } else {
-                appBackground.style.backgroundColor = '#f0f9ff'; // Fallback solid color
-            }
-            break;
-        case 'animated':
-            appBackground.classList.add(`bg-mode-animated`);
-            break;
-        default: // Fallback to static
-            if (staticBgData) {
-                appBackground.style.backgroundImage = `url(${staticBgData})`;
-                appBackground.style.backgroundSize = 'cover';
-                appBackground.style.backgroundPosition = 'center';
-            } else {
-                 appBackground.style.backgroundColor = '#f0f9ff';
-            }
-            break;
+    if (staticBgData) {
+        appBackground.style.backgroundImage = `url(${staticBgData})`;
+        appBackground.style.backgroundSize = 'cover';
+        appBackground.style.backgroundPosition = 'center';
+    } else {
+        appBackground.style.backgroundColor = '#f0f9ff'; // Fallback solid color
     }
 };
 
@@ -261,28 +233,24 @@ glassModeOptions.addEventListener('click', (e) => {
     }
 });
 
-backgroundModeOptions.addEventListener('click', (e) => {
-    const btn = e.target.closest('.bg-mode-btn');
-    if (btn) {
-        const mode = btn.dataset.mode;
-        applyBackgroundModeSelection(mode);
-        // Apply live preview
-        const bgData = (mode === 'static') ? (tempStaticBackground || currentStaticBackground) : null;
-        applyBackgroundSettings(mode, bgData);
-    }
-});
-
 backgroundImageInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
+    backgroundUploadStatus.textContent = 'در حال پردازش...';
+    backgroundUploadStatus.className = 'text-sm text-center h-4 mt-2 text-gray-600';
+
     try {
         tempStaticBackground = await compressImage(file, IMAGE_MAX_DIMENSION);
         // Apply live preview of the new image
-        applyBackgroundSettings('static', tempStaticBackground);
-        alert('عکس برای پس‌زمینه آماده شد. برای ذخیره، دکمه OK را بزنید.');
+        applyBackgroundSettings(tempStaticBackground);
+        backgroundUploadStatus.textContent = 'عکس آماده شد. برای ذخیره OK را بزنید.';
+        backgroundUploadStatus.classList.add('text-green-600');
+
     } catch (error) {
         console.error("Error compressing background image:", error);
-        alert("خطا در پردازش تصویر پس‌زمینه.");
+        backgroundUploadStatus.textContent = 'خطا در پردازش تصویر.';
+        backgroundUploadStatus.classList.add('text-red-600');
     }
 });
 
@@ -290,7 +258,6 @@ backgroundImageInput.addEventListener('change', async (e) => {
 settingsBtn.addEventListener('click', () => {
     // Store initial state to revert on cancel
     initialSettingsState = {
-        mode: currentBackgroundMode,
         staticBg: currentStaticBackground
     };
     
@@ -298,18 +265,19 @@ settingsBtn.addEventListener('click', () => {
     userAvatarPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
     applyFontSize(currentFontSize);
     applyGlassModeSelection(currentGlassMode);
-    applyBackgroundModeSelection(currentBackgroundMode);
     
     // Reset temp background state for the new session
     tempStaticBackground = null;
     backgroundImageInput.value = '';
+    backgroundUploadStatus.textContent = '';
+
 
     showView('settings-modal');
 });
 
 settingsCancelBtn.addEventListener('click', () => {
     // Revert to initial settings from when the modal was opened
-    applyBackgroundSettings(initialSettingsState.mode, initialSettingsState.staticBg);
+    applyBackgroundSettings(initialSettingsState.staticBg);
     showView('lobby-container');
 });
 
@@ -340,19 +308,12 @@ userSettingsForm.addEventListener('submit', (e) => {
     localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
     
     // Finalize and save background settings
-    const selectedBtn = backgroundModeOptions.querySelector('.bg-mode-btn.glass-button-blue');
-    const selectedMode = selectedBtn ? selectedBtn.dataset.mode : 'static';
-    
-    currentBackgroundMode = selectedMode;
-    localStorage.setItem(BACKGROUND_MODE_KEY, selectedMode);
-    
-    if (selectedMode === 'static' && tempStaticBackground) {
+    if (tempStaticBackground) {
         currentStaticBackground = tempStaticBackground;
         localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground);
     }
     
-    const finalBgData = (currentBackgroundMode === 'static') ? (tempStaticBackground || currentStaticBackground) : null;
-    applyBackgroundSettings(currentBackgroundMode, finalBgData);
+    applyBackgroundSettings(currentStaticBackground);
     
     showView('lobby-container');
 });
@@ -527,6 +488,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
   const selectedModeClasses = glassModeClasses[currentGlassMode] || glassModeClasses['off'];
 
   let lastDateStrInBatch = null;
+  let lastAuthorIdForMargin = null;
 
   if (prepend) {
       const firstOldMessageOnScreenEl = messagesList.querySelector('li[data-timestamp]');
@@ -545,6 +507,10 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       if (allVisibleMsgs.length > 0) {
           const lastVisibleMsg = allVisibleMsgs[allVisibleMsgs.length - 1];
           lastDateStrInBatch = new Date(parseInt(lastVisibleMsg.dataset.timestamp)).toDateString();
+          const lastMsgAuthorEl = messagesList.querySelector('li[data-author-id]:last-child');
+          if (lastMsgAuthorEl) {
+            lastAuthorIdForMargin = lastMsgAuthorEl.dataset.authorId;
+          }
       }
   }
 
@@ -558,6 +524,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           li.innerHTML = `<span class="inline-block bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1 text-center whitespace-nowrap">${formatDateSeparator(message.timestamp)}</span>`;
           fragment.appendChild(li);
           lastDateStrInBatch = messageDateStr;
+          lastAuthorIdForMargin = null; // Reset author on new day
       }
 
       const isUser = message.authorId === currentUserId;
@@ -592,7 +559,10 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           timeColorClass = 'text-gray-500 opacity-70';
       }
       
-      li.className = `flex items-start space-x-3 rtl:space-x-reverse mb-2 ${liClasses}`;
+      const isConsecutive = message.authorId === lastAuthorIdForMargin;
+      const marginClass = isConsecutive ? 'mb-1' : 'mb-2';
+      
+      li.className = `flex items-start space-x-3 rtl:space-x-reverse ${marginClass} ${liClasses}`;
       const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
 
       switch (message.type) {
@@ -608,9 +578,9 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
           const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1 ${timeColorClass}">${timeHTML}</div>`;
           messageContentHTML = `
-            <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
+            <div class="px-3 py-1.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
               ${nameHTML}
-              <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
+              <p class="whitespace-pre-wrap pb-3 break-words message-text">${textContent}</p>
               ${metaHTML}
             </div>`;
       }
@@ -623,7 +593,22 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
           li.innerHTML = bubbleContainer + avatarContainer;
       }
       fragment.appendChild(li);
+      lastAuthorIdForMargin = message.authorId;
   });
+  
+  // Handle spacing adjustment for prepended messages
+  if (prepend && messages.length > 0) {
+    const firstOldMessageOnScreen = messagesList.querySelector('li[data-author-id]');
+    if (firstOldMessageOnScreen && firstOldMessageOnScreen.dataset.authorId === lastAuthorIdForMargin) {
+        const lastNewTimestamp = messages[messages.length - 1].timestamp;
+        const firstOldTimestamp = new Date(parseInt(firstOldMessageOnScreen.dataset.timestamp));
+        if (lastNewTimestamp.toDateString() === firstOldTimestamp.toDateString()) {
+            firstOldMessageOnScreen.classList.remove('mb-2');
+            firstOldMessageOnScreen.classList.add('mb-1');
+        }
+    }
+  }
+
 
   if (prepend) { messagesList.prepend(fragment); } else { messagesList.appendChild(fragment); }
   if (isInitialLoad || !prepend) { setTimeout(() => scrollToBottom(), 50); }
@@ -1015,12 +1000,11 @@ const startApp = () => {
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
-  currentBackgroundMode = localStorage.getItem(BACKGROUND_MODE_KEY) || 'static'; // Default to static
   currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
 
   applyFontSize(storedFontSize);
   applyGlassModeSelection(storedGlassMode);
-  applyBackgroundSettings(currentBackgroundMode, currentStaticBackground);
+  applyBackgroundSettings(currentStaticBackground);
 
   const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
 
