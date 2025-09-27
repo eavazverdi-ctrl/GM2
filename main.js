@@ -25,7 +25,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
-const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUfG5gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
+const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxj-AAAAAAAAAAAAAAAAAAAAAAAAAADUfG5gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
 
 // --- Global State ---
 let currentRoomId = null;
@@ -37,6 +37,8 @@ let currentGlassMode = 'off';
 let currentSendWithEnter = 'on';
 let currentStaticBackground = null;
 let messagesUnsubscribe = null;
+let userProfilesCache = {}; // Cache for user profiles { userId: { username, avatarUrl } }
+
 // Ensure user ID is persisted
 if (!localStorage.getItem(USER_ID_KEY)) {
   localStorage.setItem(USER_ID_KEY, currentUserId);
@@ -191,6 +193,27 @@ const generateAvatar = (name, url) => {
             ${initial}
         </div>
     `;
+};
+
+// --- Profile Caching ---
+const getUserProfile = async (userId) => {
+    if (userProfilesCache[userId]) {
+        return userProfilesCache[userId];
+    }
+    try {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            userProfilesCache[userId] = userData; // Cache the result
+            return userData;
+        }
+        const fallback = { username: 'کاربر ناشناس', avatarUrl: null };
+        userProfilesCache[userId] = fallback;
+        return fallback;
+    } catch (error) {
+        console.error(`Error fetching profile for user ${userId}:`, error);
+        return { username: 'کاربر', avatarUrl: null };
+    }
 };
 
 // --- Settings Logic ---
@@ -353,6 +376,7 @@ userSettingsForm.addEventListener('submit', async (e) => {
     if (Object.keys(userUpdates).length > 0) {
         try {
             await setDoc(doc(db, 'users', currentUserId), userUpdates, { merge: true });
+            userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
         } catch (error) {
             console.error("Error syncing user settings:", error);
         }
@@ -501,7 +525,7 @@ const loadOlderMessages = async () => {
     oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
     const firstMessage = messagesList.firstChild;
     const currentScrollHeight = messagesContainer.scrollHeight;
-    renderMessages(oldMessages, true);
+    await renderMessages(oldMessages, true);
     messagesContainer.scrollTop = messagesContainer.scrollHeight - currentScrollHeight;
   } catch(error) {
     console.error("Error loading older messages:", error);
@@ -519,9 +543,13 @@ messagesContainer.addEventListener('scroll', () => {
 });
 scrollToBottomBtn.addEventListener('click', () => { scrollToBottom('smooth'); });
 
-const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
+const renderMessages = async (messages, prepend = false, isInitialLoad = false) => {
   if (!prepend && messagesList.innerHTML.includes('هنوز پیامی')) { messagesList.innerHTML = ''; }
   const fragment = document.createDocumentFragment();
+
+  // Pre-fetch all necessary profiles for this batch of messages
+  const authorIds = [...new Set(messages.map(m => m.authorId))];
+  await Promise.all(authorIds.map(id => getUserProfile(id)));
 
   const glassModeClasses = {
       'off': { user: 'bg-green-500', other: 'bg-white' },
@@ -557,8 +585,8 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       }
   }
 
-  messages.forEach(message => {
-      if (!message.timestamp) return;
+  for (const message of messages) {
+      if (!message.timestamp) continue;
       const messageDateStr = message.timestamp.toDateString();
 
       if (messageDateStr !== lastDateStrInBatch) {
@@ -571,15 +599,17 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       }
 
       const isUser = message.authorId === currentUserId;
+      const authorProfile = userProfilesCache[message.authorId] || { username: 'کاربر', avatarUrl: null };
+      
       const li = document.createElement('li');
       li.dataset.authorId = message.authorId;
       li.dataset.timestamp = message.timestamp.getTime();
       
       let bubbleClasses, bubbleTailClass, nameAlignmentClass, nameColorClass, timeColorClass, liClasses;
       
-      const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const authorAvatarForRender = isUser ? currentUserAvatar : message.authorAvatar;
-      const avatarHTML = generateAvatar(message.authorName, authorAvatarForRender);
+      const senderName = (authorProfile.username || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const authorAvatarForRender = authorProfile.avatarUrl;
+      const avatarHTML = generateAvatar(senderName, authorAvatarForRender);
       const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${authorAvatarForRender || ''}">${avatarHTML}</div>`;
 
       if (isUser) { // User's messages on the RIGHT
@@ -602,7 +632,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       const marginClass = isConsecutive ? 'mb-1' : 'mb-2';
       
       li.className = `flex items-start space-x-3 rtl:space-x-reverse ${marginClass} ${liClasses}`;
-      const nameHTML = !isUser ? `<div class="text-xs ${nameColorClass} ${nameAlignmentClass} leading-tight">${senderName}</div>` : '';
+      const nameHTML = !isUser ? `<div class="text-xs ${nameColorClass} ${nameAlignmentClass} leading-tight pt-1">${senderName}</div>` : '';
 
       let messageContentHTML = '';
 
@@ -619,13 +649,13 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
         default: // text
           const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
           const timeHTMLSpan = `<span class="text-xs ${timeColorClass} leading-tight" dir="ltr">${formatTime(message.timestamp)}</span>`;
-          const timeAlignmentClass = isUser ? 'text-left pl-1' : 'text-right pr-1';
+          const timeAlignmentClass = isUser ? 'text-left pl-1.5' : 'text-right pr-1.5';
 
           messageContentHTML = `
-            <div class="px-2 py-1 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col">
+            <div class="px-2 py-0.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col">
               ${nameHTML}
               <p class="whitespace-pre-wrap break-words break-all message-text self-stretch m-0">${textContent}</p>
-              <div class="w-full ${timeAlignmentClass} -mt-1">${timeHTMLSpan}</div>
+              <div class="w-full ${timeAlignmentClass} -mt-1 pb-0.5">${timeHTMLSpan}</div>
             </div>`;
       }
       
@@ -638,7 +668,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       }
       fragment.appendChild(li);
       lastAuthorIdForMargin = message.authorId;
-  });
+  }
   
   // Handle spacing adjustment for prepended messages
   if (prepend && messages.length > 0) {
@@ -707,10 +737,13 @@ changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
         
         // Sync with Firebase
         await setDoc(doc(db, 'users', currentUserId), { avatarUrl: currentUserAvatar }, { merge: true });
-        
+        userProfilesCache[currentUserId] = { ...userProfilesCache[currentUserId], avatarUrl: currentUserAvatar };
+
         // Update all visible avatars for the current user
         document.querySelectorAll(`.message-avatar[data-author-id="${currentUserId}"]`).forEach(el => {
             el.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+            // also update the data attribute for future clicks within this session
+            el.dataset.authorAvatarUrl = currentUserAvatar || '';
         });
 
         changeUserAvatarInChatStatus.textContent = 'عکس با موفقیت ذخیره شد.';
@@ -825,7 +858,7 @@ const uploadConfirmedFile = async () => {
             });
         }
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-        await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
+        await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, /* Storing for fallback */ authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
         showView('chat-container');
         setTimeout(() => scrollToBottom('smooth'), 150); // Ensure scroll after render
     } catch (error) { 
@@ -912,7 +945,7 @@ const sendMessage = async () => {
 
     try {
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-        await addDoc(messagesCol, { type: 'text', text, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
+        await addDoc(messagesCol, { type: 'text', text, authorId: currentUserId, /* Storing for fallback */ authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
         sendSound.play().catch(err => console.error("Audio play failed:", err));
     } catch (error) {
         console.error("Error sending message:", error);
@@ -1158,6 +1191,9 @@ const startApp = async () => {
             currentUsername = userData.username || localStorage.getItem(USERNAME_KEY);
             currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY);
             
+            // Update local cache
+            userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
+
             localStorage.setItem(USERNAME_KEY, currentUsername);
             localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
         } else {
