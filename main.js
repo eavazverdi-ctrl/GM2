@@ -439,7 +439,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       if (messageDateStr !== lastDateStrInBatch) {
           const li = document.createElement('li');
           li.className = 'date-separator text-center my-3';
-          li.innerHTML = `<span class="bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1 text-center">${formatDateSeparator(message.timestamp)}</span>`;
+          li.innerHTML = `<span class="bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1 text-center whitespace-nowrap">${formatDateSeparator(message.timestamp)}</span>`;
           fragment.appendChild(li);
           lastDateStrInBatch = messageDateStr;
       }
