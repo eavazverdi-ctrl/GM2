@@ -7,5 +7,12 @@
   "theme_color": "#a7d7ff",
   "description": "یک اپلیکیشن چت آنلاین",
   "lang": "fa",
-  "dir": "rtl"
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icons/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
