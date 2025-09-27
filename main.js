@@ -12,10 +12,12 @@ const db = getFirestore(app);
 const roomsCollection = collection(db, 'rooms');
 
 // --- User Identity & Settings ---
+const APP_ACCESS_KEY = 'chat_app_access_v1';
 const USER_ID_KEY = 'chat_user_id_v2';
 const USERNAME_KEY = 'chat_username_v2';
 const USER_AVATAR_KEY = 'chat_user_avatar_v1';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
+const GLASS_MODE_KEY = 'chat_glass_mode_v1';
 const CREATOR_PASSWORD = '2025';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
@@ -36,6 +38,7 @@ let currentUserAvatar = null;
 let currentRoomId = null;
 let messagesUnsubscribe = null;
 let currentFontSize = 'sm';
+let currentGlassMode = 'off';
 
 // Pagination state
 let oldestMessageDoc = null;
@@ -46,6 +49,7 @@ let reachedEndOfMessages = false;
 const usernameModal = document.getElementById('username-modal');
 const usernameForm = document.getElementById('username-form');
 const usernameInput = document.getElementById('username-input');
+const initialPasswordInput = document.getElementById('initial-password-input');
 const lobbyContainer = document.getElementById('lobby-container');
 const roomList = document.getElementById('room-list');
 const createRoomBtn = document.getElementById('create-room-btn');
@@ -67,6 +71,7 @@ const userAvatarPreview = document.getElementById('user-avatar-preview');
 const userAvatarInput = document.getElementById('user-avatar-input');
 const changeUsernameInput = document.getElementById('change-username-input');
 const fontSizeOptions = document.getElementById('font-size-options');
+const glassModeOptions = document.getElementById('glass-mode-options');
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 const chatContainer = document.getElementById('chat-container');
 const chatBackground = document.getElementById('chat-background');
@@ -181,9 +186,24 @@ const applyFontSize = (size) => {
     });
 };
 
+const applyGlassModeSelection = (mode) => {
+    currentGlassMode = mode;
+    glassModeOptions.querySelectorAll('button').forEach(btn => {
+        btn.classList.toggle('glass-button-blue', btn.dataset.glass === mode);
+        btn.classList.toggle('text-white', btn.dataset.glass === mode);
+        btn.classList.toggle('glass-button-gray', btn.dataset.glass !== mode);
+    });
+};
+
 fontSizeOptions.addEventListener('click', (e) => {
     if (e.target.matches('.font-size-btn')) {
         applyFontSize(e.target.dataset.size);
+    }
+});
+
+glassModeOptions.addEventListener('click', (e) => {
+    if (e.target.matches('.glass-mode-btn')) {
+        applyGlassModeSelection(e.target.dataset.glass);
     }
 });
 
@@ -191,6 +211,7 @@ settingsBtn.addEventListener('click', () => {
     changeUsernameInput.value = currentUsername;
     userAvatarPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
     applyFontSize(currentFontSize);
+    applyGlassModeSelection(currentGlassMode);
     showView('settings-modal');
 });
 
@@ -216,6 +237,7 @@ userSettingsForm.addEventListener('submit', (e) => {
     }
     localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
     localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
+    localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
     showView('lobby-container');
 });
 
@@ -228,7 +250,7 @@ const renderRooms = (rooms) => {
   }
   rooms.forEach(room => {
     const li = document.createElement('li');
-    li.className = 'bg-white/40 backdrop-blur-md border border-white/20 p-3 rounded-xl shadow-sm hover:shadow-lg hover:bg-white/60 transition-all cursor-pointer flex items-center justify-between';
+    li.className = 'bg-white/40 backdrop-blur-md p-3 rounded-xl shadow-sm hover:shadow-lg hover:bg-white/60 transition-all cursor-pointer flex items-center justify-between';
     li.dataset.roomId = room.id;
     
     const roomName = room.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -373,6 +395,13 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
   if (!prepend && messagesList.innerHTML.includes('هنوز پیامی')) { messagesList.innerHTML = ''; }
   const fragment = document.createDocumentFragment();
 
+  const glassModeClasses = {
+      'off': { user: 'bg-green-500', other: 'bg-white' },
+      'low': { user: 'bg-green-500/70', other: 'bg-white/70' },
+      'high': { user: 'bg-green-500/40', other: 'bg-white/40' }
+  };
+  const selectedModeClasses = glassModeClasses[currentGlassMode] || glassModeClasses['off'];
+
   messages.forEach(message => {
     const isUser = message.authorId === currentUserId;
     
@@ -383,18 +412,18 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
 
     if (isUser) { // User: Green, Left
         li.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse';
-        bubbleClasses = 'bg-green-500/80 text-white';
-        bubbleTailClass = 'rounded-br-none'; // Tail: bottom-right
-        nameAlignmentClass = 'text-right';  // Name: top-right
-        timeAlignmentClass = 'left-2.5';    // Time: bottom-left
+        bubbleClasses = `${selectedModeClasses.user} text-white`;
+        bubbleTailClass = 'rounded-bl-none'; // Tail: bottom-left
+        nameAlignmentClass = 'text-left';   // Name: top-left
+        timeAlignmentClass = 'right-2.5';   // Time: bottom-right
         nameColorClass = 'text-gray-200/90';
         timeColorClass = 'text-gray-200/90';
     } else { // Others: White, Right
         li.className = 'flex justify-end items-start space-x-3 rtl:space-x-reverse';
-        bubbleClasses = 'bg-white/90 text-black shadow';
-        bubbleTailClass = 'rounded-bl-none'; // Tail: bottom-left
-        nameAlignmentClass = 'text-left';   // Name: top-left
-        timeAlignmentClass = 'right-2.5';   // Time: bottom-right
+        bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
+        bubbleTailClass = 'rounded-br-none'; // Tail: bottom-right
+        nameAlignmentClass = 'text-right';  // Name: top-right
+        timeAlignmentClass = 'left-2.5';    // Time: bottom-left
         nameColorClass = 'text-gray-500 opacity-70';
         timeColorClass = 'text-gray-500 opacity-70';
     }
@@ -403,7 +432,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     const nameHTML = `<div class="text-xs ${nameColorClass} mb-1 ${nameAlignmentClass}">${senderName}</div>`;
     
     const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
-    const avatarContainer = `<div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end">${avatarHTML}</div>`;
+    const avatarContainer = `<div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${avatarHTML}</div>`;
 
     let messageContentHTML = '';
     const timeHTML = `<span class="text-xs ${timeColorClass}" dir="ltr">${formatTime(message.timestamp)}</span>`;
@@ -415,13 +444,13 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       case 'file':
         const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const fileMetaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
-        messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm border border-white/20 p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
+        messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
         break;
       default: // text
         const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const metaHTML = `<div class="absolute bottom-1.5 ${timeAlignmentClass} flex items-center gap-1">${timeHTML}</div>`;
         messageContentHTML = `
-          <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md border border-white/20">
+          <div class="px-3 py-2 rounded-2xl ${bubbleClasses} ${bubbleTailClass} relative backdrop-blur-md">
             ${nameHTML}
             <p class="whitespace-pre-wrap pb-4 break-words message-text">${textContent}</p>
             ${metaHTML}
@@ -485,7 +514,7 @@ const handleFileSelect = async (e) => {
         tempLi.id = tempId;
         tempLi.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse opacity-50';
         tempLi.innerHTML = `
-            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end">${generateAvatar(currentUsername, currentUserAvatar)}</div>
+            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
             <div class="relative rounded-lg overflow-hidden max-w-xs lg:max-w-md">
                 <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -526,7 +555,22 @@ const handleFileSelect = async (e) => {
 fileInput.addEventListener('change', handleFileSelect);
 
 // --- Event Listeners & App Flow ---
-usernameForm.addEventListener('submit', (e) => { e.preventDefault(); const newUsername = usernameInput.value.trim(); if (newUsername) { localStorage.setItem(USERNAME_KEY, newUsername); startApp(); } });
+usernameForm.addEventListener('submit', (e) => { 
+    e.preventDefault(); 
+    const newUsername = usernameInput.value.trim(); 
+    const password = initialPasswordInput.value;
+    if (password !== CREATOR_PASSWORD) {
+        alert('رمز ورود به برنامه اشتباه است.');
+        initialPasswordInput.value = '';
+        initialPasswordInput.focus();
+        return;
+    }
+    if (newUsername) { 
+        localStorage.setItem(APP_ACCESS_KEY, 'true');
+        localStorage.setItem(USERNAME_KEY, newUsername); 
+        startApp(); 
+    } 
+});
 createRoomBtn.addEventListener('click', () => { createRoomForm.reset(); showView('create-room-modal'); newRoomNameInput.focus(); });
 cancelCreateRoomBtn.addEventListener('click', () => showView('lobby-container'));
 
@@ -682,9 +726,13 @@ const startApp = () => {
   currentUsername = localStorage.getItem(USERNAME_KEY);
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'sm';
+  const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
   applyFontSize(storedFontSize);
+  applyGlassModeSelection(storedGlassMode); // will set currentGlassMode
 
-  if (currentUsername) {
+  const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
+
+  if (appAccessGranted && currentUsername) {
     showView('lobby-container');
     listenForRooms();
   } else {
