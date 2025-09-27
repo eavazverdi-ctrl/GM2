@@ -247,7 +247,7 @@ userSettingsForm.addEventListener('submit', (e) => {
     const newUsername = changeUsernameInput.value.trim();
     if (newUsername && newUsername !== currentUsername) {
         currentUsername = newUsername;
-        localStorage.setItem(USERNAME_KEY, currentUsername);
+        localStorage.setItem(USERNAME_KEY, newUsername);
     }
     localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
     localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
@@ -465,20 +465,20 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       
       let bubbleClasses, bubbleTailClass, nameAlignmentClass, timeAlignmentClass, nameColorClass, timeColorClass, liClasses;
 
-      if (isUser) { // User: Green, Right
+      if (isUser) { // User: Profile Right, Bubble Left
           liClasses = 'justify-start'; // justify-start is RIGHT in RTL
           bubbleClasses = `${selectedModeClasses.user} text-white`;
-          bubbleTailClass = 'rounded-br-none'; // Tail: bottom-right
-          nameAlignmentClass = 'text-right';   // Name: top-right
-          timeAlignmentClass = 'left-2.5';   // Time: bottom-left
+          bubbleTailClass = 'rounded-br-none'; 
+          nameAlignmentClass = 'text-right';
+          timeAlignmentClass = 'left-2.5';
           nameColorClass = 'text-gray-200/90';
           timeColorClass = 'text-gray-200/90';
-      } else { // Others: White, Left
+      } else { // Others: Profile Left, Bubble Right
           liClasses = 'justify-end'; // justify-end is LEFT in RTL
           bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
-          bubbleTailClass = 'rounded-bl-none'; // Tail: bottom-left
-          nameAlignmentClass = 'text-left';  // Name: top-left
-          timeAlignmentClass = 'right-2.5';    // Time: bottom-right
+          bubbleTailClass = 'rounded-bl-none';
+          nameAlignmentClass = 'text-left';
+          timeAlignmentClass = 'right-2.5';
           nameColorClass = 'text-gray-500 opacity-70';
           timeColorClass = 'text-gray-500 opacity-70';
       }
@@ -516,9 +516,9 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       
       const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
 
-      if (isUser) { // User (Right): Profile Right, Bubble Left. DOM order: Bubble then Avatar
+      if (isUser) { // User (Profile Right, Bubble Left)
           li.innerHTML = bubbleContainer + avatarContainer;
-      } else { // Others (Left): Profile Left, Bubble Right. DOM order: Avatar then Bubble
+      } else { // Others (Profile Left, Bubble Right)
           li.innerHTML = avatarContainer + bubbleContainer;
       }
       fragment.appendChild(li);
@@ -735,9 +735,6 @@ const adjustTextareaHeight = () => {
     messageInput.style.height = 'auto';
     const scrollHeight = messageInput.scrollHeight;
     messageInput.style.height = `${scrollHeight}px`;
-
-    const inputContainer = messageInput.parentElement;
-    sendButton.style.height = `${inputContainer.clientHeight}px`;
 };
 
 messageInput.addEventListener('input', () => { 
@@ -767,7 +764,11 @@ openChangeBackgroundBtn.addEventListener('click', async () => {
 openChangeNameModalBtn.addEventListener('click', () => { changeRoomNameForm.reset(); changeNameStatus.textContent = ''; showView('change-room-name-modal'); });
 openSetPasswordModalBtn.addEventListener('click', () => { setRoomPasswordForm.reset(); setPasswordStatus.textContent = ''; showView('set-room-password-modal'); });
 openDeleteChatModalBtn.addEventListener('click', () => { deleteChatForm.reset(); deleteChatStatus.textContent = ''; showView('delete-chat-modal'); });
-cancelBtns.forEach(btn => { btn.addEventListener('click', () => showView('chat-settings-modal')); });
+cancelBtns.forEach(btn => { 
+    // Special case for the in-chat avatar modal cancel button
+    if(btn.closest('#change-user-avatar-in-chat-modal')) return;
+    btn.addEventListener('click', () => showView('chat-settings-modal')); 
+});
 
 changeRoomAvatarForm.addEventListener('submit', async (e) => {
     e.preventDefault(); if (!currentRoomId) return;

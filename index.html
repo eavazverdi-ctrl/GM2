@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="data:," />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>پیام‌رسان</title>
+    <title>Ariana Messenger</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       html, body { 
@@ -106,20 +106,20 @@
           <!-- Message Input -->
           <div class="flex-shrink-0 p-2 bg-gray-100 border-t border-gray-200 z-10">
               <form id="message-form" class="flex items-end space-x-2 rtl:space-x-reverse">
+                   <button type="submit" id="send-button" class="flex-shrink-0 self-end w-11 h-11 rounded-full transition-opacity disabled:opacity-40 flex items-center justify-center bg-blue-500" disabled>
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                        <path d="M12 4L12 20M12 4L18 10M12 4L6 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                  </button>
                   <div class="flex-1 relative bg-white rounded-2xl border border-gray-300 flex items-end">
+                      <textarea id="message-input" placeholder="پیام..." class="flex-1 bg-transparent text-gray-800 py-2.5 px-2 focus:outline-none resize-none" rows="1" style="max-height: 120px;"></textarea>
                       <label for="file-input" class="p-2 self-center rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
                               <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
                           </svg>
                           <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
                       </label>
-                      <textarea id="message-input" placeholder="پیام..." class="flex-1 bg-transparent text-gray-800 py-2.5 px-2 focus:outline-none resize-none" rows="1" style="max-height: 120px;"></textarea>
                   </div>
-                  <button type="submit" id="send-button" class="flex-shrink-0 self-stretch rounded-full transition-opacity disabled:opacity-40 flex items-center justify-center w-10 bg-blue-500" disabled>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
-                          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-                      </svg>
-                  </button>
               </form>
           </div>
         </div>
@@ -361,9 +361,9 @@
                <input type="file" id="user-avatar-in-chat-input" class="hidden" accept="image/*" />
             </div>
             <p id="change-user-avatar-in-chat-status" class="text-sm mt-2 text-center h-4"></p>
-            <div class="mt-4 flex justify-end space-x-3 rtl:space-x-reverse">
-              <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
+            <div class="mt-4 flex justify-center space-x-3 rtl:space-x-reverse">
               <button type="submit" class="glass-button-blue text-white font-bold py-2 px-4 rounded-md">ذخیره</button>
+              <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
             </div>
           </form>
         </div>
