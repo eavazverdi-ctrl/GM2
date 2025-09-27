@@ -35,7 +35,7 @@ let currentUsername = '';
 let currentUserAvatar = null;
 let currentRoomId = null;
 let messagesUnsubscribe = null;
-let currentFontSize = 'md';
+let currentFontSize = 'sm';
 
 // Pagination state
 let oldestMessageDoc = null;
@@ -380,24 +380,23 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     li.dataset.authorId = message.authorId;
     
     const bubbleClasses = isUser 
-        ? 'bg-blue-500/30 text-white rounded-tl-none' 
-        : 'bg-white/40 text-black rounded-tr-none shadow';
+        ? 'bg-green-500/60 text-white rounded-br-none' 
+        : 'bg-white/70 text-black rounded-bl-none shadow';
     
     const nameColor = hashStringToColor(message.authorId || '');
     const senderName = (message.authorName || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const nameHTML = `<div class="font-bold text-sm mb-1" style="color: #${nameColor};">${senderName}</div>`;
+    const nameHTML = `<div class="text-xs opacity-70 mb-1" style="color: #${nameColor};">${senderName}</div>`;
     
     const avatarHTML = generateAvatar(message.authorName, message.authorAvatar);
     const avatarContainer = `<div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end">${avatarHTML}</div>`;
 
     let messageContentHTML = '';
     const timeHTML = `<span class="text-xs opacity-70" dir="ltr">${formatTime(message.timestamp)}</span>`;
-    const tickHTML = isUser ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 15.5" class="w-4 h-4 inline-block ml-1 rtl:mr-1 opacity-80"><path d="M15.01 3.316l-8.333 8.333-3.667-3.667.917-.917 2.75 2.75 7.416-7.416.917.917z"></path></svg>` : '';
-    const metaHTML = `<div class="absolute bottom-1.5 right-2.5 flex items-center gap-1">${timeHTML}${tickHTML}</div>`;
+    const metaHTML = `<div class="absolute bottom-1.5 right-2.5 flex items-center gap-1">${timeHTML}</div>`;
 
     switch (message.type) {
       case 'image':
-        messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-xs text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${timeHTML}${tickHTML}</div></div>`;
+        messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-xs text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${timeHTML}</div></div>`;
         break;
       case 'file':
         const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -415,12 +414,12 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
     
     const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
 
-    if (isUser) { // User: Blue, Left
-        li.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse';
-        li.innerHTML = avatarContainer + bubbleContainer;
-    } else { // Others: White, Right
+    if (isUser) { // User: Green, Right
         li.className = 'flex justify-end items-start space-x-3 rtl:space-x-reverse';
         li.innerHTML = bubbleContainer + avatarContainer;
+    } else { // Others: White, Left
+        li.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse';
+        li.innerHTML = avatarContainer + bubbleContainer;
     }
 
     fragment.appendChild(li);
@@ -470,15 +469,16 @@ const handleFileSelect = async (e) => {
         const previewUrl = URL.createObjectURL(file);
         const tempLi = document.createElement('li');
         tempLi.id = tempId;
-        tempLi.className = 'flex justify-start items-start space-x-3 rtl:space-x-reverse opacity-50';
+        tempLi.className = 'flex justify-end items-start space-x-3 rtl:space-x-reverse opacity-50';
         tempLi.innerHTML = `
-            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end">${generateAvatar(currentUsername, currentUserAvatar)}</div>
             <div class="relative rounded-lg overflow-hidden max-w-xs lg:max-w-md">
                 <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                     <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </div>
-            </div>`;
+            </div>
+            <div class="w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end">${generateAvatar(currentUsername, currentUserAvatar)}</div>
+            `;
         messagesList.appendChild(tempLi);
         scrollToBottom('smooth');
     }
@@ -550,7 +550,7 @@ messageForm.addEventListener('submit', async (e) => {
     } catch (error) { console.error("Error sending message:", error); messageInput.value = tempInput; messageInput.dispatchEvent(new Event('input')); }
   }
 });
-messageInput.addEventListener('input', () => { const hasText = messageInput.value.trim().length > 0; sendButton.disabled = !hasText; sendButtonIcon.classList.toggle('text-white', hasText); sendButtonIcon.classList.toggle('text-gray-300', !hasText); });
+messageInput.addEventListener('input', () => { const hasText = messageInput.value.trim().length > 0; sendButton.disabled = !hasText; sendButtonIcon.classList.toggle('text-blue-500', hasText); sendButtonIcon.classList.toggle('text-gray-400', !hasText); });
 
 // --- Chat Settings Listeners ---
 chatSettingsBtn.addEventListener('click', () => showView('chat-settings-modal'));
@@ -667,7 +667,7 @@ deleteChatForm.addEventListener('submit', async (e) => {
 const startApp = () => {
   currentUsername = localStorage.getItem(USERNAME_KEY);
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
-  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
+  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'sm';
   applyFontSize(storedFontSize);
 
   if (currentUsername) {
