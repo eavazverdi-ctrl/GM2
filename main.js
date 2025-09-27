@@ -18,7 +18,7 @@ const USERNAME_KEY = 'chat_username_v2';
 const USER_AVATAR_KEY = 'chat_user_avatar_v1';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const GLASS_MODE_KEY = 'chat_glass_mode_v1';
-const BACKGROUND_MODE_KEY = 'chat_background_mode_v3'; // version up
+const BACKGROUND_MODE_KEY = 'chat_background_mode_v4'; // version up
 const STATIC_BACKGROUND_KEY = 'chat_background_static_v1';
 const CREATOR_PASSWORD = '2025';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
@@ -41,7 +41,7 @@ let currentRoomId = null;
 let messagesUnsubscribe = null;
 let currentFontSize = 'md';
 let currentGlassMode = 'off';
-let currentBackgroundMode = '1'; // New default
+let currentBackgroundMode = 'static'; // New default
 let currentStaticBackground = null;
 
 // --- State for Settings Modal ---
@@ -234,12 +234,17 @@ const applyBackgroundSettings = (mode, staticBgData) => {
                 appBackground.style.backgroundColor = '#f0f9ff'; // Fallback solid color
             }
             break;
-        case '1': // Glowing Dots
-        case '2': // Fluid Gradient
-            appBackground.classList.add(`bg-mode-${mode}`);
+        case 'animated':
+            appBackground.classList.add(`bg-mode-animated`);
             break;
-        default: // Fallback to mode 1
-            appBackground.classList.add('bg-mode-1');
+        default: // Fallback to static
+            if (staticBgData) {
+                appBackground.style.backgroundImage = `url(${staticBgData})`;
+                appBackground.style.backgroundSize = 'cover';
+                appBackground.style.backgroundPosition = 'center';
+            } else {
+                 appBackground.style.backgroundColor = '#f0f9ff';
+            }
             break;
     }
 };
@@ -336,7 +341,7 @@ userSettingsForm.addEventListener('submit', (e) => {
     
     // Finalize and save background settings
     const selectedBtn = backgroundModeOptions.querySelector('.bg-mode-btn.glass-button-blue');
-    const selectedMode = selectedBtn ? selectedBtn.dataset.mode : '1';
+    const selectedMode = selectedBtn ? selectedBtn.dataset.mode : 'static';
     
     currentBackgroundMode = selectedMode;
     localStorage.setItem(BACKGROUND_MODE_KEY, selectedMode);
@@ -344,13 +349,8 @@ userSettingsForm.addEventListener('submit', (e) => {
     if (selectedMode === 'static' && tempStaticBackground) {
         currentStaticBackground = tempStaticBackground;
         localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground);
-    } else if (selectedMode !== 'static') {
-        // If user switches away from static, we can clear the old static bg if we want
-        // For now, we'll keep it in case they switch back.
     }
     
-    // The background is already showing the preview, so no need to call applyBackgroundSettings again.
-    // Just ensure the final state is correct.
     const finalBgData = (currentBackgroundMode === 'static') ? (tempStaticBackground || currentStaticBackground) : null;
     applyBackgroundSettings(currentBackgroundMode, finalBgData);
     
@@ -427,6 +427,8 @@ const enterChatRoom = (roomId, roomData) => {
   // Set default background unless a custom one exists
   if (roomData.backgroundUrl) {
     chatBackground.style.backgroundImage = `url(${roomData.backgroundUrl})`;
+    chatBackground.style.backgroundSize = 'cover';
+    chatBackground.style.backgroundPosition = 'center';
   } else {
     chatBackground.style.backgroundImage = '';
   }
@@ -901,69 +903,75 @@ roomInfoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentRoomId) return;
 
+    // Get form data
     const newName = roomInfoNameInput.value.trim();
-    const newPasswordText = roomInfoNewPasswordInput.value; // Don't trim, could be spaces
+    const newPasswordText = roomInfoNewPasswordInput.value;
     const currentPassword = roomInfoCurrentPasswordInput.value;
     const avatarFile = roomInfoAvatarInput.files[0];
     const backgroundFile = roomInfoBackgroundInput.files[0];
-    
-    if (!currentPassword) {
-        alert('لطفا برای اعمال تغییرات، رمز فعلی را وارد کنید.');
-        return;
-    }
 
-    roomInfoStatus.textContent = 'در حال بررسی...';
+    roomInfoStatus.textContent = 'در حال پردازش...';
     roomInfoStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
-
+    
     try {
         const roomRef = doc(db, 'rooms', currentRoomId);
         const roomDoc = await getDoc(roomRef);
         if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
+        const roomData = roomDoc.data();
 
-        const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-        if (currentPassword !== correctPassword) {
-            roomInfoStatus.textContent = 'رمز فعلی اشتباه است.';
-            roomInfoStatus.classList.add('text-red-600');
-            return;
+        const updates = {};
+        const isChangingPassword = newPasswordText !== '';
+        
+        // --- Password Verification (only if needed) ---
+        if (isChangingPassword) {
+            if (!currentPassword) {
+                throw new Error("برای تغییر رمز، رمز فعلی لازم است.");
+            }
+            const correctPassword = roomData.password || CREATOR_PASSWORD;
+            if (currentPassword !== correctPassword) {
+                throw new Error("رمز فعلی اشتباه است.");
+            }
+            // If password is correct, add the new password to updates
+            updates.password = newPasswordText || null;
         }
 
-        const updateData = {};
-        let uiNeedsUpdate = false;
-
-        if (newName && newName !== roomDoc.data().name) {
-            updateData.name = newName;
-            uiNeedsUpdate = true;
-        }
-        // Check if password field was touched. An empty string means remove password.
-        if (roomInfoNewPasswordInput.value !== '') {
-            updateData.password = newPasswordText || null;
-            uiNeedsUpdate = true;
+        // --- Non-password changes (no verification needed) ---
+        if (newName && newName !== roomData.name) {
+            updates.name = newName;
         }
         if (avatarFile) {
-            updateData.avatarUrl = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
-            uiNeedsUpdate = true;
+            updates.avatarUrl = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
         }
         if (backgroundFile) {
-            updateData.backgroundUrl = await compressImage(backgroundFile, IMAGE_MAX_DIMENSION);
-            uiNeedsUpdate = true;
-        }
-
-        if (Object.keys(updateData).length > 0) {
-            await updateDoc(roomRef, updateData);
-            
-            if (updateData.name) chatRoomName.textContent = updateData.name;
-            if (updateData.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updateData.name || roomDoc.data().name, updateData.avatarUrl);
-            if (updateData.backgroundUrl) {
-                chatBackground.style.backgroundImage = `url(${updateData.backgroundUrl})`;
-            }
-            if (updateData.password !== undefined) {
-                localStorage.removeItem(`room_access_${currentRoomId}`);
-            }
+            updates.backgroundUrl = await compressImage(backgroundFile, IMAGE_MAX_DIMENSION);
         }
         
-        roomInfoStatus.textContent = 'تغییرات با موفقیت ذخیره شد.';
-        roomInfoStatus.classList.add('text-green-600');
-        setTimeout(() => showView('chat-container'), 1500);
+        // --- Apply Updates ---
+        if (Object.keys(updates).length > 0) {
+            await updateDoc(roomRef, updates);
+
+            // Update UI immediately
+            if (updates.name) chatRoomName.textContent = updates.name;
+            if (updates.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updates.name || roomData.name, updates.avatarUrl);
+            if (updates.backgroundUrl) {
+                chatBackground.style.backgroundImage = `url(${updates.backgroundUrl})`;
+                chatBackground.style.backgroundSize = 'cover';
+                chatBackground.style.backgroundPosition = 'center';
+            }
+            if (updates.password !== undefined) {
+                // Invalidate access key if password changes
+                localStorage.removeItem(`room_access_${currentRoomId}`);
+            }
+
+            roomInfoStatus.textContent = 'تغییرات با موفقیت ذخیره شد.';
+            roomInfoStatus.classList.add('text-green-600');
+            setTimeout(() => showView('chat-container'), 1500);
+        } else {
+            // No changes detected
+            roomInfoStatus.textContent = 'تغییری برای ذخیره وجود ندارد.';
+            roomInfoStatus.classList.add('text-yellow-600');
+            setTimeout(() => showView('chat-container'), 1000);
+        }
 
     } catch (error) {
         console.error("Error updating room info:", error);
@@ -1007,7 +1015,7 @@ const startApp = () => {
   currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
-  currentBackgroundMode = localStorage.getItem(BACKGROUND_MODE_KEY) || '1'; // Default to 1
+  currentBackgroundMode = localStorage.getItem(BACKGROUND_MODE_KEY) || 'static'; // Default to static
   currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
 
   applyFontSize(storedFontSize);

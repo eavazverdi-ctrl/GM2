@@ -32,53 +32,13 @@
       .font-size-lg .message-text { font-size: 18px; }
 
       /* --- NEW Animated Backgrounds --- */
-      .background-element { display: none; }
-      .bg-mode-1 .bg1-new-container { display: block; }
-      .bg-mode-2 {
+      .bg-mode-animated {
         background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-        background-size: 400% 400%; animation: bg2-gradient 15s ease infinite;
+        background-size: 400% 400%; animation: bg-animated-gradient 15s ease infinite;
       }
 
-      /* --- Background 1: Glowing Dots (from user's code) --- */
-      .bg-mode-1 { background: #123; }
-      .bg1-new-container {
-        font-size: 52px;
-        color: transparent;
-      }
-      .dot-layer {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        width: 3em;
-        height: 3em;
-        content: '.';
-        mix-blend-mode: screen;
-        animation: bg1-move infinite ease-in-out alternate;
-      }
-      .dot-layer-1 {
-        text-shadow: 2.22em 0.81em 7px hsla(13, 100%, 50%, .9), 0.72em 1.62em 7px hsla(347, 100%, 50%, .9), 2.29em -0.34em 7px hsla(118, 100%, 50%, .9), 1.94em 2.08em 7px hsla(28, 100%, 50%, .9), 0.53em 0.23em 7px hsla(283, 100%, 50%, .9), 0.57em -0.31em 7px hsla(180, 100%, 50%, .9), -0.49em 1.28em 7px hsla(217, 100%, 50%, .9), -0.46em 2.47em 7px hsla(295, 100%, 50%, .9), 1.48em 1.79em 7px hsla(305, 100%, 50%, .9), 1.05em 2.25em 7px hsla(18, 100%, 50%, .9), 2.14em 1.25em 7px hsla(190, 100%, 50%, .9), 1.67em 2.45em 7px hsla(307, 100%, 50%, .9), 2.14em 0.04em 7px hsla(143, 100%, 50%, .9), 0.69em 1.42em 7px hsla(24, 100%, 50%, .9), 2.19em 1.34em 7px hsla(109, 100%, 50%, .9), 2.26em 0.38em 7px hsla(333, 100%, 50%, .9), 0.55em 0.74em 7px hsla(196, 100%, 50%, .9), 2.12em 1.70em 7px hsla(32, 100%, 50%, .9), 1.78em 1.63em 7px hsla(311, 100%, 50%, .9), 0.05em 1.07em 7px hsla(168, 100%, 50%, .9), 0.75em 1.96em 7px hsla(320, 100%, 50%, .9), 1.83em 1.06em 7px hsla(321, 100%, 50%, .9), -0.11em 1.47em 7px hsla(20, 100%, 50%, .9), 0.54em 0.78em 7px hsla(21, 100%, 50%, .9), 2.20em 1.42em 7px hsla(322, 100%, 50%, .9), 1.05em -0.22em 7px hsla(134, 100%, 50%, .9), 1.39em 0.12em 7px hsla(259, 100%, 50%, .9), 1.98em 1.29em 7px hsla(11, 100%, 50%, .9), -0.29em 0.32em 7px hsla(35, 100%, 50%, .9), 1.26em 0.94em 7px hsla(140, 100%, 50%, .9), 2.17em 0.94em 7px hsla(334, 100%, 50%, .9), -0.37em 0.14em 7px hsla(347, 100%, 50%, .9), -0.05em 1.95em 7px hsla(156, 100%, 50%, .9), 1.37em 1.95em 7px hsla(158, 100%, 50%, .9), 1.36em 2.05em 7px hsla(212, 100%, 50%, .9), 2.49em 1.80em 7px hsla(10, 100%, 50%, .9), -0.19em 1.85em 7px hsla(23, 100%, 50%, .9), 2.07em 0.12em 7px hsla(132, 100%, 50%, .9), 2.41em 2.04em 7px hsla(259, 100%, 50%, .9);
-        animation-duration: 44s; animation-delay: -27s;
-      }
-      .dot-layer-2 {
-        text-shadow: 1.20em 1.23em 7px hsla(238, 100%, 50%, .9), 1.63em -0.13em 7px hsla(143, 100%, 50%, .9), 1.35em -0.07em 7px hsla(33, 100%, 50%, .9), 0.38em 0.81em 7px hsla(356, 100%, 50%, .9), 1.03em 1.98em 7px hsla(138, 100%, 50%, .9), 1.18em 2.30em 7px hsla(354, 100%, 50%, .9), 0.72em 1.70em 7px hsla(109, 100%, 50%, .9), 0.71em 1.69em 7px hsla(320, 100%, 50%, .9), 2.15em 1.99em 7px hsla(94, 100%, 50%, .9), 0.73em -0.19em 7px hsla(252, 100%, 50%, .9), 1.12em 2.22em 7px hsla(216, 100%, 50%, .9), 1.48em -0.14em 7px hsla(21, 100%, 50%, .9), 1.65em 0.02em 7px hsla(15, 100%, 50%, .9), 1.54em 1.25em 7px hsla(341, 100%, 50%, .9), 2.45em 0.61em 7px hsla(177, 100%, 50%, .9), 2.11em -0.32em 7px hsla(27, 100%, 50%, .9), 0.44em -0.13em 7px hsla(138, 100%, 50%, .9), 0.65em 2.21em 7px hsla(259, 100%, 50%, .9), 1.83em 1.53em 7px hsla(168, 100%, 50%, .9), 1.75em 1.28em 7px hsla(239, 100%, 50%, .9), 2.36em 1.23em 7px hsla(140, 100%, 50%, .9), 0.12em -0.06em 7px hsla(234, 100%, 50%, .9), 0.05em 1.49em 7px hsla(139, 100%, 50%, .9), 2.26em -0.07em 7px hsla(13, 100%, 50%, .9), 1.31em 1.05em 7px hsla(25, 100%, 50%, .9), -0.04em -0.13em 7px hsla(202, 100%, 50%, .9), 0.23em -0.15em 7px hsla(135, 100%, 50%, .9), 0.50em 1.91em 7px hsla(190, 100%, 50%, .9), 1.87em 2.15em 7px hsla(104, 100%, 50%, .9), 0.17em 0.82em 7px hsla(216, 100%, 50%, .9), -0.42em 1.94em 7px hsla(118, 100%, 50%, .9), -0.04em 2.18em 7px hsla(238, 100%, 50%, .9), 0.32em 0.81em 7px hsla(29, 100%, 50%, .9), -0.27em 2.05em 7px hsla(26, 100%, 50%, .9), 0.74em 1.13em 7px hsla(186, 100%, 50%, .9), 0.83em 1.55em 7px hsla(25, 100%, 50%, .9), 0.22em 0.38em 7px hsla(109, 100%, 50%, .9), 0.77em 0.79em 7px hsla(219, 100%, 50%, .9), 2.35em 0.72em 7px hsla(233, 100%, 50%, .9);
-        animation-duration: 43s; animation-delay: -32s;
-      }
-      .dot-layer-3 {
-        text-shadow: 2.30em 1.25em 7px hsla(158, 100%, 50%, .9), 2.15em 1.51em 7px hsla(190, 100%, 50%, .9), -0.34em 0.18em 7px hsla(305, 100%, 50%, .9), -0.36em 0.94em 7px hsla(121, 100%, 50%, .9), 2.45em -0.30em 7px hsla(153, 100%, 50%, .9), -0.15em 0.82em 7px hsla(123, 100%, 50%, .9), 1.76em 0.05em 7px hsla(314, 100%, 50%, .9), 2.45em 1.26em 7px hsla(280, 100%, 50%, .9), 2.48em 1.34em 7px hsla(139, 100%, 50%, .9), 1.83em 1.98em 7px hsla(339, 100%, 50%, .9), -0.22em -0.23em 7px hsla(232, 100%, 50%, .9), 2.19em -0.39em 7px hsla(167, 100%, 50%, .9), 1.28em -0.17em 7px hsla(105, 100%, 50%, .9), -0.20em 1.47em 7px hsla(242, 100%, 50%, .9), 1.17em 2.05em 7px hsla(153, 100%, 50%, .9), 2.45em 0.13em 7px hsla(293, 100%, 50%, .9), 0.52em 1.48em 7px hsla(274, 100%, 50%, .9), 1.81em 0.34em 7px hsla(177, 100%, 50%, .9), 0.26em -0.40em 7px hsla(111, 100%, 50%, .9), 0.63em 0.96em 7px hsla(276, 100%, 50%, .9), 0.04em 1.90em 7px hsla(337, 100%, 50%, .9), -0.21em 1.63em 7px hsla(337, 100%, 50%, .9), 1.90em 1.96em 7px hsla(174, 100%, 50%, .9), 2.39em 1.28em 7px hsla(279, 100%, 50%, .9), 1.15em 2.07em 7px hsla(233, 100%, 50%, .9), 1.93em 0.89em 7px hsla(185, 100%, 50%, .9), 0.77em 1.49em 7px hsla(347, 100%, 50%, .9), 0.58em 1.55em 7px hsla(238, 100%, 50%, .9), 1.05em 1.76em 7px hsla(190, 100%, 50%, .9), -0.30em 0.72em 7px hsla(144, 100%, 50%, .9), 0.56em 1.41em 7px hsla(109, 100%, 50%, .9), -0.43em -0.44em 7px hsla(10, 100%, 50%, .9), 1.34em -0.44em 7px hsla(30, 100%, 50%, .9), 0.66em 1.55em 7px hsla(10, 100%, 50%, .9), -0.21em 1.33em 7px hsla(174, 100%, 50%, .9), 1.63em 2.49em 7px hsla(266, 100%, 50%, .9), 2.46em 2.04em 7px hsla(320, 100%, 50%, .9), 0.15em 2.14em 7px hsla(353, 100%, 50%, .9), 1.64em 0.58em 7px hsla(139, 100%, 50%, .9);
-        animation-duration: 42s; animation-delay: -23s;
-      }
-      .dot-layer-4 {
-        text-shadow: 2.22em 0.11em 7px hsla(323, 100%, 50%, .9), 0.02em 1.56em 7px hsla(146, 100%, 50%, .9), -0.19em 0.81em 7px hsla(294, 100%, 50%, .9), 0.49em 0.68em 7px hsla(167, 100%, 50%, .9), 1.74em 0.99em 7px hsla(326, 100%, 50%, .9), 1.39em 0.17em 7px hsla(262, 100%, 50%, .9), 1.83em 1.57em 7px hsla(342, 100%, 50%, .9), -0.13em 0.40em 7px hsla(271, 100%, 50%, .9), 0.42em -0.49em 7px hsla(208, 100%, 50%, .9), 2.37em -0.28em 7px hsla(23, 100%, 50%, .9), 1.25em -0.17em 7px hsla(298, 100%, 50%, .9), 1.14em 0.77em 7px hsla(232, 100%, 50%, .9), 2.30em 0.89em 7px hsla(239, 100%, 50%, .9), -0.48em 0.94em 7px hsla(107, 100%, 50%, .9), 1.94em 1.39em 7px hsla(140, 100%, 50%, .9), 0.99em 0.08em 7px hsla(165, 100%, 50%, .9), 2.15em 0.28em 7px hsla(331, 100%, 50%, .9), 2.45em 0.43em 7px hsla(258, 100%, 50%, .9), 1.93em -0.37em 7px hsla(247, 100%, 50%, .9), 1.07em 0.48em 7px hsla(88, 100%, 50%, .9), 2.36em 2.44em 7px hsla(220, 100%, 50%, .9), -0.35em 1.96em 7px hsla(346, 100%, 50%, .9), 2.05em 1.97em 7px hsla(298, 100%, 50%, .9), -0.05em -0.23em 7px hsla(199, 100%, 50%, .9), 0.73em -0.06em 7px hsla(158, 100%, 50%, .9), 2.21em 0.03em 7px hsla(148, 100%, 50%, .9), 1.29em 1.09em 7px hsla(30, 100%, 50%, .9), 2.00em -0.47em 7px hsla(306, 100%, 50%, .9), 1.25em 2.02em 7px hsla(298, 100%, 50%, .9), 0.41em 2.19em 7px hsla(143, 100%, 50%, .9), -0.48em 1.62em 7px hsla(113, 100%, 50%, .9), 2.33em 2.49em 7px hsla(151, 100%, 50%, .9), 0.02em -0.29em 7px hsla(271, 100%, 50%, .9), 1.15em 1.39em 7px hsla(186, 100%, 50%, .9), -0.31em 1.35em 7px hsla(9, 100%, 50%, .9), 0.38em 2.02em 7px hsla(121, 100%, 50%, .9), -0.19em 1.24em 7px hsla(143, 100%, 50%, .9), 1.03em 0.35em 7px hsla(8, 100%, 50%, .9), 0.77em -0.07em 7px hsla(23, 100%, 50%, .9);
-        animation-duration: 41s; animation-delay: -19s;
-      }
-
-      @keyframes bg1-move {
-        from { transform: rotate(0deg) scale(12) translateX(-20px); }
-        to { transform: rotate(360deg) scale(18) translateX(20px); }
-      }
-
-      /* --- Background 2: Fluid Gradient (was BG 4) --- */
-      @keyframes bg2-gradient {
+      /* --- Fluid Gradient Animation --- */
+      @keyframes bg-animated-gradient {
         0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
       }
     </style>
@@ -96,13 +56,7 @@
   <body class="bg-gray-200 font-sans">
     <!-- Background Container -->
     <div id="app-background" class="fixed inset-0 -z-10 h-full w-full bg-sky-100 overflow-hidden">
-        <!-- BG 1 Container -->
-        <div class="background-element bg1-new-container">
-            <div class="dot-layer dot-layer-1"></div>
-            <div class="dot-layer dot-layer-2"></div>
-            <div class="dot-layer dot-layer-3"></div>
-            <div class="dot-layer dot-layer-4"></div>
-        </div>
+        <!-- Animated background elements will be controlled by classes -->
     </div>
 
     <!-- Main App Container -->
@@ -266,10 +220,9 @@
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">حالت پس‌زمینه</label>
-              <div class="grid grid-cols-3 gap-2 text-sm" id="background-mode-options">
+              <div class="grid grid-cols-2 gap-2 text-sm" id="background-mode-options">
                 <button type="button" data-mode="static" class="bg-mode-btn p-2 rounded-md glass-button-gray">ثابت</button>
-                <button type="button" data-mode="1" class="bg-mode-btn p-2 rounded-md glass-button-gray">۱</button>
-                <button type="button" data-mode="2" class="bg-mode-btn p-2 rounded-md glass-button-gray">۲</button>
+                <button type="button" data-mode="animated" class="bg-mode-btn p-2 rounded-md glass-button-gray">متحرک</button>
               </div>
               <div id="static-background-uploader" class="mt-2 text-center hidden">
                   <label for="background-image-input" class="cursor-pointer inline-block glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انتخاب عکس</label>
@@ -339,7 +292,7 @@
           <!-- Current Password for Verification -->
           <div>
             <label for="room-info-current-password-input" class="block text-sm font-medium text-gray-700 mb-1">رمز فعلی</label>
-            <input type="password" id="room-info-current-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="برای اعمال تغییرات لازم است" required />
+            <input type="password" id="room-info-current-password-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600" placeholder="فقط برای تغییر رمز لازم است" />
           </div>
 
           <p id="room-info-status" class="text-sm mt-2 text-center h-4"></p>
