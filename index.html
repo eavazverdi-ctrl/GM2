@@ -136,7 +136,7 @@
                   </svg>
                 </button>
                 <div class="flex-1 relative h-12">
-                    <textarea id="message-input" placeholder="پیام..." class="w-full bg-white/50 backdrop-blur-sm text-gray-800 border border-gray-300/50 rounded-2xl py-2.5 pl-4 pr-10 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
+                    <textarea id="message-input" placeholder="پیام..." class="w-full bg-white/50 backdrop-blur-sm text-gray-800 border border-gray-300/50 rounded-2xl py-2.5 pl-10 pr-4 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
                     <label for="file-input" class="absolute top-1/2 -translate-y-1/2 left-2 p-1 rounded-full transition-colors cursor-pointer persistent-hover-bg">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
@@ -150,7 +150,7 @@
     </div>
     
     <!-- Username Modal -->
-    <div id="username-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+    <div id="username-modal" class="fixed inset-0 bg-black/30 flex justify-center items-start pt-20 z-50 p-4 view-hidden">
       <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm text-center">
         <h2 class="text-xl font-bold mb-4 text-gray-800">به پیام رسان آریانا خوش آمدید!</h2>
         <form id="username-form" class="space-y-4">
@@ -162,7 +162,7 @@
     </div>
 
     <!-- Create Room Modal -->
-    <div id="create-room-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+    <div id="create-room-modal" class="fixed inset-0 bg-black/30 flex justify-center items-start pt-20 z-50 p-4 view-hidden">
       <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">ایجاد گفتگوی جدید</h2>
         <form id="create-room-form">
@@ -179,7 +179,7 @@
     </div>
 
     <!-- Password Modal -->
-    <div id="password-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+    <div id="password-modal" class="fixed inset-0 bg-black/30 flex justify-center items-start pt-20 z-50 p-4 view-hidden">
       <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">ورود به <span id="password-modal-room-name" class="text-blue-600"></span></h2>
         <form id="password-form">
@@ -251,7 +251,7 @@
 
             <div class="flex justify-center pt-4 space-x-3 rtl:space-x-reverse">
                <button id="settings-cancel-btn" type="button" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
-               <button id="settings-ok-btn" type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md">OK</button>
+               <button id="settings-ok-btn" type="submit" class="w-full glass-button-blue text-white font-bold py-2 px-4 rounded-md">تایید</button>
             </div>
           </form>
 
@@ -259,7 +259,7 @@
     </div>
 
     <!-- Chat Settings Modal (Three-dot menu) -->
-    <div id="chat-settings-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+    <div id="chat-settings-modal" class="fixed inset-0 bg-black/30 flex justify-center items-start pt-20 z-50 p-4 view-hidden">
         <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-6 text-center text-gray-800">گزینه‌ها</h2>
           <div class="space-y-3">
@@ -291,7 +291,7 @@
     </div>
     
     <!-- Room Info & Settings Modal (Clicked on Header) -->
-    <div id="room-info-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+    <div id="room-info-modal" class="fixed inset-0 bg-black/30 flex justify-center items-start pt-20 z-50 p-4 view-hidden">
       <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm overflow-y-auto max-h-[85vh]">
         <h2 class="text-xl font-bold mb-4 text-center text-gray-800">تنظیمات گفتگو</h2>
         <form id="room-info-form" class="space-y-5">
@@ -329,7 +329,7 @@
     </div>
 
     <!-- Delete Chat Modal -->
-    <div id="delete-chat-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
+    <div id="delete-chat-modal" class="fixed inset-0 bg-black/30 flex justify-center items-start pt-20 z-50 p-4 view-hidden">
         <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
           <h2 class="text-xl font-bold mb-4 text-center text-red-600">پاک کردن گفتگو</h2>
           <p class="text-center text-gray-700 mb-4">تمام پیام‌های این گفتگو برای همیشه حذف خواهند شد. این عمل قابل بازگشت نیست.</p>

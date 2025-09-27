@@ -271,7 +271,7 @@ backgroundImageInput.addEventListener('change', async (e) => {
         tempStaticBackground = await compressImage(file, IMAGE_MAX_DIMENSION);
         // Apply live preview of the new image
         applyBackgroundSettings(tempStaticBackground);
-        backgroundUploadStatus.textContent = 'عکس آماده شد. برای ذخیره OK را بزنید.';
+        backgroundUploadStatus.textContent = 'عکس آماده شد. برای ذخیره تایید را بزنید.';
         backgroundUploadStatus.classList.add('text-green-600');
 
     } catch (error) {
@@ -587,7 +587,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       const marginClass = isConsecutive ? 'mb-1' : 'mb-2';
       
       li.className = `flex items-start space-x-3 rtl:space-x-reverse ${marginClass} ${liClasses}`;
-      const nameHTML = `<div class="text-xs ${nameColorClass} mb-0.5 ${nameAlignmentClass}">${senderName}</div>`;
+      const nameHTML = `<div class="text-xs ${nameColorClass} ${nameAlignmentClass}">${senderName}</div>`;
 
       let messageContentHTML = '';
 
@@ -610,7 +610,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
             <div class="px-3 py-1.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col">
               ${nameHTML}
               <p class="whitespace-pre-wrap break-words message-text self-stretch">${textContent}</p>
-              <div class="w-full ${timeAlignmentClass} -mb-0.5 mt-1">${timeHTMLSpan}</div>
+              <div class="w-full ${timeAlignmentClass} -mb-0.5 mt-0.5">${timeHTMLSpan}</div>
             </div>`;
       }
       
@@ -809,6 +809,7 @@ const uploadConfirmedFile = async () => {
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
         await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
         showView('chat-container');
+        setTimeout(() => scrollToBottom('smooth'), 150); // Ensure scroll after render
     } catch (error) { 
         console.error("Error processing/uploading file:", error); 
         fileConfirmStatus.textContent = 'خطا در ارسال فایل.';
