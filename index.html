@@ -44,7 +44,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-gray-200 font-sans">
     <!-- Gradient Background -->
@@ -108,20 +107,20 @@
           <!-- Message Input -->
           <div class="flex-shrink-0 p-2 bg-gray-100 border-t border-gray-200 z-10">
             <form id="message-form" class="flex items-end space-x-2 rtl:space-x-reverse">
+                <button type="submit" id="send-button" class="flex-shrink-0 w-11 h-11 rounded-full transition-opacity disabled:opacity-40 flex items-center justify-center bg-blue-500" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-white">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L6 12Zm0 0h7.5" />
+                    </svg>
+                </button>
                 <div class="flex-1 relative">
-                    <textarea id="message-input" placeholder="پیام..." class="w-full bg-white text-gray-800 border border-gray-300 rounded-2xl py-2.5 pl-10 pr-4 focus:outline-none resize-none h-11 overflow-y-auto" inputmode="text"></textarea>
-                    <label for="file-input" class="absolute bottom-2 left-2 p-1 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
+                    <textarea id="message-input" placeholder="پیام..." class="w-full bg-white text-gray-800 border border-gray-300 rounded-2xl py-2.5 pr-10 pl-4 focus:outline-none resize-none h-11 overflow-y-auto" inputmode="text"></textarea>
+                    <label for="file-input" class="absolute bottom-2 right-2 p-1 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
                         </svg>
                         <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
                     </label>
                 </div>
-                <button type="submit" id="send-button" class="flex-shrink-0 self-end w-11 h-11 rounded-full transition-opacity disabled:opacity-40 flex items-center justify-center bg-blue-500" disabled>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-white">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
-                    </svg>
-                </button>
             </form>
           </div>
         </div>
@@ -337,6 +336,5 @@
     <audio id="send-sound" src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YUFOSE9PZw==" preload="auto"></audio>
 
     <script type="module" src="./main.js"></script>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>
