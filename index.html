@@ -25,8 +25,9 @@
         -webkit-backdrop-filter: blur(16px) saturate(180%);
       }
       .shared-background {
-        background-image: linear-gradient(to right, rgba(240, 240, 240, 0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(240, 240, 240, 0.5) 1px, transparent 1px), radial-gradient(circle 800px at 10% 10%, #C9EBFF, transparent), radial-gradient(circle 800px at 90% 90%, #a7d7ff, transparent);
-        background-size: 6rem 4rem, 6rem 4rem, auto, auto;
+        background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23C9EBFF' offset='0%25'/%3E%3Cstop stop-color='%23a7d7ff' offset='100%25'/%3E%3C/linearGradient%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='5' seed='10'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='120'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='800' height='800' fill='url(%23g)'/%3E%3Crect width='800' height='800' fill='url(%23g)' filter='url(%23f)'/%3E%3C/svg%3E");
+        background-size: cover;
+        background-position: center;
       }
       .glass-button-blue { background-color: rgba(59, 130, 246, 0.7); }
       .glass-button-red { background-color: rgba(239, 68, 68, 0.7); }
@@ -56,7 +57,7 @@
         <!-- Lobby Container -->
         <div id="lobby-container" class="w-full h-full flex flex-col view-hidden">
           <!-- Header -->
-          <div class="bg-gray-100 px-4 py-3 flex-shrink-0 flex justify-center items-center">
+          <div class="bg-white/20 backdrop-blur-lg px-4 py-3 flex-shrink-0 flex justify-center items-center border-b border-white/20">
             <h1 class="text-2xl font-bold text-gray-800">گفتگوها</h1>
           </div>
           <!-- Room List -->
@@ -64,7 +65,7 @@
             <!-- Rooms will be injected by main.js -->
           </ul>
           <!-- Bottom Nav -->
-          <div class="bg-gray-100 h-16 flex-shrink-0 flex justify-around items-center px-2">
+          <div class="bg-white/20 backdrop-blur-lg h-16 flex-shrink-0 flex justify-around items-center px-2 border-t border-white/20">
              <button id="settings-btn" class="p-2 rounded-full hover:bg-gray-300/50 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
              </button>
@@ -76,9 +77,9 @@
 
         <!-- Chat Container -->
         <div id="chat-container" class="w-full h-full flex flex-col view-hidden bg-transparent relative z-0">
-          <div id="chat-background" class="absolute inset-0 w-full h-full bg-cover bg-center -z-10 shared-background opacity-50"></div>
+          <div id="chat-background" class="absolute inset-0 w-full h-full bg-cover bg-center -z-10"></div>
           <!-- Header -->
-          <div class="bg-gray-100 px-4 py-2 flex-shrink-0 z-10">
+          <div class="bg-white/20 backdrop-blur-lg px-4 py-2 flex-shrink-0 z-10 border-b border-white/20">
             <div class="flex items-center justify-between relative h-10">
               <button id="back-to-lobby-btn" class="p-2 rounded-full hover:bg-gray-300/50 transition-colors">
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7 text-gray-600 transform rtl:rotate-180"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
@@ -106,15 +107,15 @@
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
           </button>
           <!-- Message Input -->
-          <div class="flex-shrink-0 h-20 px-2 bg-gray-100 border-t border-gray-200 z-10 flex items-center">
+          <div class="flex-shrink-0 h-16 px-2 bg-white/20 backdrop-blur-lg z-10 flex items-center">
             <form id="message-form" class="flex items-center space-x-2 rtl:space-x-reverse w-full">
-                <button type="submit" id="send-button" class="flex-shrink-0 w-16 h-16 rounded-full transition-opacity disabled:opacity-40 bg-blue-500 text-white flex items-center justify-center" disabled>
-                  <svg class="w-8 h-8" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <button type="submit" id="send-button" class="flex-shrink-0 w-12 h-12 rounded-full transition-opacity disabled:opacity-40 bg-green-500 text-white flex items-center justify-center" disabled>
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 5 L5 15 L19 15 Z" fill="white"/>
                   </svg>
                 </button>
-                <div class="flex-1 relative h-16">
-                    <textarea id="message-input" placeholder="پیام..." class="w-full bg-white text-gray-800 border border-gray-300 rounded-2xl py-2.5 pl-10 pr-4 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
+                <div class="flex-1 relative h-12">
+                    <textarea id="message-input" placeholder="پیام..." class="w-full bg-white/50 backdrop-blur-sm text-gray-800 border border-gray-300/50 rounded-2xl py-2.5 pl-10 pr-4 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
                     <label for="file-input" class="absolute top-1/2 -translate-y-1/2 left-2 p-1 rounded-full hover:bg-gray-200 transition-colors cursor-pointer">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />

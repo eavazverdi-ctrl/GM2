@@ -314,7 +314,6 @@ const enterChatRoom = (roomId, roomData) => {
     chatBackground.classList.remove('shared-background', 'opacity-50');
   } else {
     chatBackground.style.backgroundImage = '';
-    chatBackground.classList.add('shared-background', 'opacity-50');
   }
 
   messagesList.innerHTML = '';
