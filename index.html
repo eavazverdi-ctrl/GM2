@@ -129,8 +129,8 @@
           </button>
           <!-- Message Input -->
           <div class="flex-shrink-0 h-16 px-2 bg-white/20 backdrop-blur-lg z-10 flex items-center">
-            <form id="message-form" class="flex items-center space-x-2 rtl:space-x-reverse w-full">
-                <button type="submit" id="send-button" class="flex-shrink-0 w-12 h-12 rounded-full transition-opacity disabled:opacity-40 bg-green-500 text-white flex items-center justify-center" disabled>
+            <div class="flex items-center space-x-2 rtl:space-x-reverse w-full">
+                <button type="button" id="send-button" class="flex-shrink-0 w-12 h-12 rounded-full transition-opacity disabled:opacity-40 bg-green-500 text-white flex items-center justify-center" disabled>
                   <svg class="w-7 h-7" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 5 L5 15 L19 15 Z" fill="white"/>
                   </svg>
@@ -144,7 +144,7 @@
                         <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
                     </label>
                 </div>
-            </form>
+            </div>
           </div>
         </div>
     </div>
