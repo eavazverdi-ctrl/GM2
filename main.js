@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
-  limit, getDocs, startAfter, writeBatch
+  limit, getDocs, startAfter, writeBatch, setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -25,7 +25,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
-const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUfG5/AAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
+const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUfG5gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
 
 // --- Global State ---
 let currentRoomId = null;
@@ -157,7 +157,7 @@ const showView = (viewId) => {
 // --- Helper Functions ---
 const formatTime = (date) => {
   if (!date || !(date instanceof Date)) return '';
-  return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 
 const formatDateSeparator = (date) => {
@@ -319,15 +319,23 @@ userAvatarInput.addEventListener('change', async (e) => {
     }
 });
 
-userSettingsForm.addEventListener('submit', (e) => {
+userSettingsForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const newUsername = changeUsernameInput.value.trim();
+    
+    const userUpdates = {};
+
     if (newUsername && newUsername !== currentUsername) {
         currentUsername = newUsername;
         localStorage.setItem(USERNAME_KEY, newUsername);
+        userUpdates.username = newUsername;
     }
     
+    // currentUserAvatar is updated directly on file selection and stored in the global var
+    userUpdates.avatarUrl = currentUserAvatar || null;
     localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+
+    // Device-specific settings remain in localStorage only
     localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
     localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
     localStorage.setItem(SEND_WITH_ENTER_KEY, currentSendWithEnter);
@@ -336,10 +344,19 @@ userSettingsForm.addEventListener('submit', (e) => {
     if (tempStaticBackground) {
         currentStaticBackground = tempStaticBackground;
         localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground);
+        userUpdates.backgroundUrl = currentStaticBackground;
+    }
+    
+    // Sync with Firebase
+    if (Object.keys(userUpdates).length > 0) {
+        try {
+            await setDoc(doc(db, 'users', currentUserId), userUpdates, { merge: true });
+        } catch (error) {
+            console.error("Error syncing user settings:", error);
+        }
     }
     
     applyBackgroundSettings(currentStaticBackground || DEFAULT_BACKGROUND_BASE64);
-    
     showView('lobby-container');
 });
 
@@ -584,7 +601,7 @@ const renderMessages = (messages, prepend = false, isInitialLoad = false) => {
       const marginClass = isConsecutive ? 'mb-1' : 'mb-2';
       
       li.className = `flex items-start space-x-3 rtl:space-x-reverse ${marginClass} ${liClasses}`;
-      const nameHTML = `<div class="text-xs ${nameColorClass} ${nameAlignmentClass} leading-tight">${senderName}</div>`;
+      const nameHTML = !isUser ? `<div class="text-xs ${nameColorClass} ${nameAlignmentClass} leading-tight">${senderName}</div>` : '';
 
       let messageContentHTML = '';
 
@@ -686,6 +703,9 @@ changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
         const compressedAvatar = await compressImage(file, AVATAR_MAX_DIMENSION);
         currentUserAvatar = compressedAvatar;
         localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+        
+        // Sync with Firebase
+        await setDoc(doc(db, 'users', currentUserId), { avatarUrl: currentUserAvatar }, { merge: true });
         
         // Update all visible avatars for the current user
         document.querySelectorAll(`.message-avatar[data-author-id="${currentUserId}"]`).forEach(el => {
@@ -828,7 +848,7 @@ cancelFileUploadBtn.addEventListener('click', () => {
 confirmFileUploadBtn.addEventListener('click', uploadConfirmedFile);
 
 // --- Event Listeners & App Flow ---
-usernameForm.addEventListener('submit', (e) => { 
+usernameForm.addEventListener('submit', async (e) => { 
     e.preventDefault(); 
     const newUsername = usernameInput.value.trim(); 
     const password = initialPasswordInput.value;
@@ -840,7 +860,12 @@ usernameForm.addEventListener('submit', (e) => {
     }
     if (newUsername) { 
         localStorage.setItem(APP_ACCESS_KEY, 'true');
-        localStorage.setItem(USERNAME_KEY, newUsername); 
+        localStorage.setItem(USERNAME_KEY, newUsername);
+        try {
+            await setDoc(doc(db, 'users', currentUserId), { username: newUsername }, { merge: true });
+        } catch(error) {
+            console.error("Error creating user profile in Firestore:", error);
+        }
         startApp(); 
     } 
 });
@@ -1089,26 +1114,55 @@ deleteChatForm.addEventListener('submit', async (e) => {
 });
 
 // --- App Entry Point ---
-const startApp = () => {
-  currentUsername = localStorage.getItem(USERNAME_KEY);
-  currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
+const startApp = async () => {
+  // Get local device settings as fallbacks
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
   currentSendWithEnter = localStorage.getItem(SEND_WITH_ENTER_KEY) || 'on';
-  currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
-
+  
   applyFontSize(storedFontSize);
   applyGlassModeSelection(storedGlassMode);
   applySendWithEnterSelection(currentSendWithEnter);
-  applyBackgroundSettings(currentStaticBackground || DEFAULT_BACKGROUND_BASE64);
 
   const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
 
-  if (appAccessGranted && currentUsername) {
-    showView('lobby-container');
-    listenForRooms();
-    updateSendButtonState();
+  if (appAccessGranted) {
+    // User has logged in before, fetch their synced profile
+    try {
+        const userDoc = await getDoc(doc(db, 'users', currentUserId));
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            currentUsername = userData.username || localStorage.getItem(USERNAME_KEY);
+            currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY);
+            currentStaticBackground = userData.backgroundUrl || localStorage.getItem(STATIC_BACKGROUND_KEY);
+            
+            localStorage.setItem(USERNAME_KEY, currentUsername);
+            localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+            localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground || '');
+        } else {
+            currentUsername = localStorage.getItem(USERNAME_KEY);
+            currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
+            currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
+        }
+    } catch (error) {
+        console.error("Error fetching user profile, using local data:", error);
+        currentUsername = localStorage.getItem(USERNAME_KEY);
+        currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
+        currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
+    }
+    
+    applyBackgroundSettings(currentStaticBackground || DEFAULT_BACKGROUND_BASE64);
+    
+    if (currentUsername) {
+        showView('lobby-container');
+        listenForRooms();
+        updateSendButtonState();
+    } else {
+        showView('username-modal');
+        usernameInput.focus();
+    }
   } else {
+    applyBackgroundSettings(DEFAULT_BACKGROUND_BASE64);
     showView('username-modal');
     usernameInput.focus();
   }
