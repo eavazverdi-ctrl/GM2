@@ -116,7 +116,6 @@ const fileConfirmStatus = document.getElementById('file-confirm-status');
 const cancelFileUploadBtn = document.getElementById('cancel-file-upload');
 const confirmFileUploadBtn = document.getElementById('confirm-file-upload');
 // New Navigation Elements
-const mainContentSlider = document.getElementById('main-content-slider');
 const navChatBtn = document.getElementById('nav-chat-btn');
 const navStudioBtn = document.getElementById('nav-studio-btn');
 // Video Call Elements
@@ -129,7 +128,7 @@ const toggleCameraBtn = document.getElementById('toggle-camera-btn');
 
 // --- View Management ---
 const showView = (viewId) => {
-    // This function now only manages modals. Main views are handled by the slider.
+    // This function now only manages modals. Main views are handled by switchTab.
     const modals = [
         usernameModal, settingsModal, viewAvatarModal, 
         changeUserAvatarInChatModal, fileConfirmModal
@@ -156,32 +155,40 @@ const showView = (viewId) => {
 
 const switchTab = async (tabName) => {
     if (tabName === 'studio') {
+        // Leaving Chat, Entering Studio
         if (messagesUnsubscribe) {
             messagesUnsubscribe();
             messagesUnsubscribe = null;
         }
-        mainContentSlider.style.transform = 'translateX(0%)';
+        
+        chatContainer.classList.add('view-hidden');
+        videoCallContainer.classList.remove('view-hidden');
+        
         lastActiveViewId = 'video-call-container';
         enterVideoCallRoom();
 
         // Style buttons
-        navStudioBtn.classList.add('glass-button-blue', 'text-white');
-        navStudioBtn.classList.remove('glass-button-gray', 'text-gray-700');
-        navChatBtn.classList.add('glass-button-gray', 'text-gray-700');
-        navChatBtn.classList.remove('glass-button-blue', 'text-white');
+        navStudioBtn.classList.add('bg-green-500', 'text-white');
+        navStudioBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        navChatBtn.classList.add('bg-gray-200', 'text-gray-700');
+        navChatBtn.classList.remove('bg-green-500', 'text-white');
 
     } else if (tabName === 'chat') {
+        // Leaving Studio, Entering Chat
         if (currentRoomId === VIDEO_CALL_ROOM_ID) {
             await cleanUpVideoCall();
         }
-        mainContentSlider.style.transform = 'translateX(-50%)';
+        
+        videoCallContainer.classList.add('view-hidden');
+        chatContainer.classList.remove('view-hidden');
+        
         lastActiveViewId = 'chat-container';
 
         // Style buttons
-        navChatBtn.classList.add('glass-button-blue', 'text-white');
-        navChatBtn.classList.remove('glass-button-gray', 'text-gray-700');
-        navStudioBtn.classList.add('glass-button-gray', 'text-gray-700');
-        navStudioBtn.classList.remove('glass-button-blue', 'text-white');
+        navChatBtn.classList.add('bg-green-500', 'text-white');
+        navChatBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        navStudioBtn.classList.add('bg-gray-200', 'text-gray-700');
+        navStudioBtn.classList.remove('bg-green-500', 'text-white');
         
         if (currentRoomId !== GLOBAL_CHAT_ROOM_ID) {
             try {
@@ -1203,19 +1210,19 @@ const setupVideoCallListeners = () => {
     const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
     const unsubscribeSlots = onSnapshot(slotsCol, async (snapshot) => {
       const onlineUsers = new Map();
-      for (const docSnap of snapshot.docs) {
+      snapshot.forEach(docSnap => {
           const slotData = docSnap.data();
           const slotId = parseInt(docSnap.id.split('_')[1]);
           onlineUsers.set(slotData.occupantId, { ...slotData, slotId });
 
           const slotEl = document.getElementById(`video-slot-${slotId}`);
-          if (!slotEl) continue;
+          if (!slotEl) return;
 
           slotEl.dataset.occupantId = slotData.occupantId;
           slotEl.querySelector('.name-pill').textContent = slotData.occupantName;
           slotEl.querySelector('.empty-placeholder').classList.add('hidden');
 
-          if (slotData.occupantId === currentUserId) continue;
+          if (slotData.occupantId === currentUserId) return;
           
           if (slotData.isCameraOff) {
             slotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(slotData.occupantName, slotData.occupantAvatar);
@@ -1224,12 +1231,11 @@ const setupVideoCallListeners = () => {
           } else {
             slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
             slotEl.querySelector('.video-feed').classList.remove('hidden');
-            // Optimization: The listener is the single source of truth for creating connections
             if (myVideoSlotId && !peerConnections[slotData.occupantId]) {
                  startPeerConnection(slotData.occupantId, slotId);
             }
           }
-      }
+      });
 
       document.querySelectorAll('.video-slot').forEach(slotEl => {
           const occupant = slotEl.dataset.occupantId;
@@ -1461,5 +1467,15 @@ const startApp = async () => {
     usernameInput.focus();
   }
 };
+
+// Add cleanup listener for when the user closes the page
+window.addEventListener('beforeunload', (e) => {
+    if (myVideoSlotId) {
+        // This is a "fire-and-forget" operation. The browser may not wait for the promise to resolve,
+        // but it will initiate the request to delete the user's slot from Firestore.
+        hangUp(true);
+    }
+});
+
 
 startApp();
