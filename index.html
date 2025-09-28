@@ -146,8 +146,8 @@
                         <div class="flex-1 relative h-12">
                             <textarea id="message-input" placeholder="پیام..." class="w-full bg-white/50 backdrop-blur-sm text-gray-800 border border-gray-300/50 rounded-2xl py-2.5 pl-12 pr-4 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
                             <label for="file-input" class="absolute top-1/2 -translate-y-1/2 left-2 p-1 rounded-full transition-colors cursor-pointer persistent-hover-bg">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                   <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"></path>
                                 </svg>
                                 <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
                             </label>
@@ -227,20 +227,29 @@
                 <button type="button" data-value="off" class="send-with-enter-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">غیرفعال</button>
               </div>
             </div>
-
-            <div class="flex items-center">
-               <label class="w-1/2 text-sm font-medium text-gray-700">پس‌زمینه برنامه</label>
-               <div id="static-background-uploader" class="w-1/2">
-                   <label for="background-image-input" class="cursor-pointer block w-full text-center bg-white/50 text-gray-800 font-bold py-2 px-4 rounded-md text-xs transition-colors hover:bg-white/80">انتخاب عکس</label>
-                   <input type="file" id="background-image-input" class="hidden" accept="image/*" />
-               </div>
+            
+            <div>
+                <div class="flex items-center">
+                   <label class="w-1/2 text-sm font-medium text-gray-700">پس‌زمینه برنامه</label>
+                   <div id="static-background-uploader" class="w-1/2">
+                       <label for="background-image-input" class="cursor-pointer block w-full text-center bg-white/50 text-gray-800 font-bold py-2 px-4 rounded-md text-xs transition-colors hover:bg-white/80">انتخاب عکس</label>
+                       <input type="file" id="background-image-input" class="hidden" accept="image/*" />
+                   </div>
+                </div>
+                 <p id="background-upload-status" class="text-sm text-center h-4"></p>
             </div>
-             <p id="background-upload-status" class="text-sm text-center h-4"></p>
             
             <div class="flex items-center">
               <label class="w-1/2 text-sm font-medium text-gray-700">حذف تمام مکالمات</label>
               <div class="w-1/2">
                 <button id="delete-all-messages-btn" type="button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-xs transition-colors">حذف</button>
+              </div>
+            </div>
+
+            <div class="flex items-center">
+              <label class="w-1/2 text-sm font-medium text-gray-700">پاکسازی استدیو</label>
+              <div class="w-1/2">
+                <button id="clear-studio-cache-btn" type="button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md text-xs transition-colors">پاکسازی</button>
               </div>
             </div>
 

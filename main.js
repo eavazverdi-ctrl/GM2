@@ -98,6 +98,7 @@ const backgroundUploadStatus = document.getElementById('background-upload-status
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 const deleteAllMessagesBtn = document.getElementById('delete-all-messages-btn');
+const clearStudioCacheBtn = document.getElementById('clear-studio-cache-btn');
 const chatContainer = document.getElementById('chat-container');
 const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
@@ -380,8 +381,9 @@ deleteAllMessagesBtn.addEventListener('click', async () => {
         const originalText = deleteAllMessagesBtn.textContent;
         settingsOkBtn.disabled = true;
         settingsCancelBtn.disabled = true;
-        deleteAllMessagesBtn.textContent = 'در حال حذف...';
         deleteAllMessagesBtn.disabled = true;
+        clearStudioCacheBtn.disabled = true;
+        deleteAllMessagesBtn.textContent = 'در حال حذف...';
 
         try {
             const messagesCol = collection(db, 'rooms', GLOBAL_CHAT_ROOM_ID, 'messages');
@@ -401,7 +403,43 @@ deleteAllMessagesBtn.addEventListener('click', async () => {
             settingsOkBtn.disabled = false;
             settingsCancelBtn.disabled = false;
             deleteAllMessagesBtn.disabled = false;
+            clearStudioCacheBtn.disabled = false;
             showView(lastActiveViewId); // Close settings modal
+        }
+    }
+});
+
+clearStudioCacheBtn.addEventListener('click', async () => {
+    if (confirm('آیا از پاکسازی تمام جایگاه‌های استدیو مطمئن هستید؟ این کار ممکن است تماس‌های فعال را قطع کند.')) {
+        const originalText = clearStudioCacheBtn.textContent;
+        settingsOkBtn.disabled = true;
+        settingsCancelBtn.disabled = true;
+        deleteAllMessagesBtn.disabled = true;
+        clearStudioCacheBtn.disabled = true;
+        clearStudioCacheBtn.textContent = 'در حال پاکسازی...';
+
+        try {
+            const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+            const snapshot = await getDocs(slotsRef);
+            if (snapshot.empty) {
+                alert('استدیو از قبل خالی بود.');
+            } else {
+                const batch = writeBatch(db);
+                snapshot.docs.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+                alert('استدیو با موفقیت پاکسازی شد.');
+            }
+        } catch (error) {
+            console.error("Error clearing studio slots:", error);
+            alert('خطا در پاکسازی استدیو.');
+        } finally {
+            clearStudioCacheBtn.textContent = originalText;
+            settingsOkBtn.disabled = false;
+            settingsCancelBtn.disabled = false;
+            deleteAllMessagesBtn.disabled = false;
+            clearStudioCacheBtn.disabled = false;
         }
     }
 });
