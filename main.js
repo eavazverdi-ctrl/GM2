@@ -41,7 +41,13 @@ let currentSendWithEnter = 'on';
 let currentStaticBackground = null;
 let messagesUnsubscribe = null;
 let userProfilesCache = {}; // Cache for user profiles { userId: { username, avatarUrl } }
-let lastActiveViewId = 'chat-container'; // For settings modal return
+let lastActiveViewId = 'chat-container'; 
+
+// --- New Navigation/Animation State ---
+let activeTab = 'chat';
+let isSwitchingTabs = false;
+let isInitialLoad = true;
+
 
 // --- WebRTC State ---
 let localStream = null;
@@ -115,10 +121,8 @@ const filePreviewContainer = document.getElementById('file-preview-container');
 const fileConfirmStatus = document.getElementById('file-confirm-status');
 const cancelFileUploadBtn = document.getElementById('cancel-file-upload');
 const confirmFileUploadBtn = document.getElementById('confirm-file-upload');
-// New Navigation Elements
 const navChatBtn = document.getElementById('nav-chat-btn');
 const navStudioBtn = document.getElementById('nav-studio-btn');
-// Video Call Elements
 const videoCallContainer = document.getElementById('video-call-container');
 const videoGridContainer = document.getElementById('video-grid-container');
 const videoControlsBar = document.getElementById('video-controls-bar');
@@ -128,22 +132,18 @@ const toggleCameraBtn = document.getElementById('toggle-camera-btn');
 
 // --- View Management ---
 const showView = (viewId) => {
-    // This function now only manages modals. Main views are handled by switchTab.
     const modals = [
         usernameModal, settingsModal, viewAvatarModal, 
         changeUserAvatarInChatModal, fileConfirmModal
     ];
     
-    // Hide all modals
     modals.forEach(el => el.classList.add('view-hidden'));
     
-    // Show the requested modal if it exists
     const targetModal = document.getElementById(viewId);
     if (targetModal && modals.includes(targetModal)) {
         targetModal.classList.remove('view-hidden');
     }
 
-    // Special handling for username modal to hide main app UI
     if (viewId === 'username-modal') {
         globalNav.classList.add('view-hidden');
         mainContentWrapper.classList.add('view-hidden');
@@ -154,51 +154,79 @@ const showView = (viewId) => {
 };
 
 const switchTab = async (tabName) => {
+    if (tabName === activeTab || isSwitchingTabs) return;
+
+    isSwitchingTabs = true;
+    const previousTab = activeTab;
+    activeTab = tabName;
+
+    const studioBtn = navStudioBtn;
+    const chatBtn = navChatBtn;
+    
+    const activeContainer = document.getElementById(`${previousTab === 'studio' ? 'video-call' : 'chat'}-container`);
+    const newContainer = document.getElementById(`${tabName === 'studio' ? 'video-call' : 'chat'}-container`);
+
+    // 1. Animate buttons
+    const activeBtnClasses = ['bg-green-500/80', 'text-white'];
+    const inactiveBtnClasses = ['bg-white/30', 'text-gray-200'];
+
     if (tabName === 'studio') {
-        // Leaving Chat, Entering Studio
+        studioBtn.style.order = 1;
+        studioBtn.style.flexBasis = '50%';
+        chatBtn.style.order = 2;
+        chatBtn.style.flexBasis = '35%';
+        settingsBtn.style.order = 3;
+        settingsBtn.style.flexBasis = '15%';
+
+        studioBtn.classList.remove(...inactiveBtnClasses);
+        studioBtn.classList.add(...activeBtnClasses);
+        chatBtn.classList.remove(...activeBtnClasses);
+        chatBtn.classList.add(...inactiveBtnClasses);
+    } else { // chat becomes active
+        chatBtn.style.order = 1;
+        chatBtn.style.flexBasis = '50%';
+        studioBtn.style.order = 2;
+        studioBtn.style.flexBasis = '35%';
+        settingsBtn.style.order = 3;
+        settingsBtn.style.flexBasis = '15%';
+
+        chatBtn.classList.remove(...inactiveBtnClasses);
+        chatBtn.classList.add(...activeBtnClasses);
+        studioBtn.classList.remove(...activeBtnClasses);
+        studioBtn.classList.add(...inactiveBtnClasses);
+    }
+
+    // 2. Animate containers
+    if (!isInitialLoad) {
+        activeContainer.classList.add('opacity-0');
+        setTimeout(() => {
+            activeContainer.classList.add('view-hidden');
+            newContainer.classList.remove('view-hidden');
+            setTimeout(() => newContainer.classList.remove('opacity-0'), 20);
+        }, 300); // Match CSS transition duration
+    }
+
+    // 3. Handle room logic
+    if (tabName === 'studio') {
         if (messagesUnsubscribe) {
             messagesUnsubscribe();
             messagesUnsubscribe = null;
         }
-        
-        chatContainer.classList.add('view-hidden');
-        videoCallContainer.classList.remove('view-hidden');
-        
-        lastActiveViewId = 'video-call-container';
-        enterVideoCallRoom();
-
-        // Style buttons
-        navStudioBtn.classList.add('bg-green-500', 'text-white');
-        navStudioBtn.classList.remove('bg-gray-200', 'text-gray-700');
-        navChatBtn.classList.add('bg-gray-200', 'text-gray-700');
-        navChatBtn.classList.remove('bg-green-500', 'text-white');
-
-    } else if (tabName === 'chat') {
-        // Leaving Studio, Entering Chat
+        await enterVideoCallRoom();
+    } else { // chat
         if (currentRoomId === VIDEO_CALL_ROOM_ID) {
             await cleanUpVideoCall();
         }
-        
-        videoCallContainer.classList.add('view-hidden');
-        chatContainer.classList.remove('view-hidden');
-        
-        lastActiveViewId = 'chat-container';
-
-        // Style buttons
-        navChatBtn.classList.add('bg-green-500', 'text-white');
-        navChatBtn.classList.remove('bg-gray-200', 'text-gray-700');
-        navStudioBtn.classList.add('bg-gray-200', 'text-gray-700');
-        navStudioBtn.classList.remove('bg-green-500', 'text-white');
-        
         if (currentRoomId !== GLOBAL_CHAT_ROOM_ID) {
-            try {
-                const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
-                if (roomDoc.exists()) {
-                    enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
-                }
-            } catch (error) { console.error("Failed to enter global chat room:", error); }
+            const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
+            if (roomDoc.exists()) {
+                enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
+            }
         }
     }
+    
+    lastActiveViewId = newContainer.id;
+    setTimeout(() => { isSwitchingTabs = false; }, 500);
 };
 
 navChatBtn.addEventListener('click', () => switchTab('chat'));
@@ -401,7 +429,7 @@ settingsBtn.addEventListener('click', () => {
 
 settingsCancelBtn.addEventListener('click', () => {
     applyBackgroundSettings(initialSettingsState.staticBg);
-    showView(lastActiveViewId); // This will correctly hide the modal
+    showView(lastActiveViewId);
 });
 
 
@@ -1082,21 +1110,23 @@ const enterVideoCallRoom = async () => {
 const initializeVideoUI = () => {
   document.querySelectorAll('.video-slot').forEach((slot, index) => {
     const slotId = index + 1;
-    slot.innerHTML = `
-      <div class="relative w-full h-full bg-white/10 backdrop-blur-3xl rounded-2xl overflow-hidden flex items-center justify-center">
-        <video class="video-feed w-full h-full object-cover hidden transform -scale-x-100" autoplay playsinline></video>
-        <div class="avatar-placeholder absolute inset-0 w-full h-full hidden flex items-center justify-center"></div>
-        <div class="empty-placeholder absolute inset-0 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300 hover:bg-black/10">
-          <svg class="w-1/4 h-1/4 max-w-[64px] max-h-[64px] text-gray-400/80"><use href="#placeholder-person-svg" /></svg>
-          <span class="text-white/70 text-sm mt-2 font-semibold">متصل شوید</span>
+    if (slot.innerHTML.trim() === '') { // Only initialize if empty
+        slot.innerHTML = `
+        <div class="relative w-full h-full bg-white/10 backdrop-blur-3xl rounded-2xl overflow-hidden flex items-center justify-center">
+            <video class="video-feed w-full h-full object-cover hidden transform -scale-x-100" autoplay playsinline></video>
+            <div class="avatar-placeholder absolute inset-0 w-full h-full hidden flex items-center justify-center"></div>
+            <div class="empty-placeholder absolute inset-0 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300 hover:bg-black/10">
+            <svg class="w-1/4 h-1/4 max-w-[64px] max-h-[64px] text-gray-400/80"><use href="#placeholder-person-svg" /></svg>
+            <span class="text-white/70 text-sm mt-2 font-semibold">متصل شوید</span>
+            </div>
+            <div class="name-pill absolute bottom-2 right-2 px-3 py-1 bg-white/20 backdrop-blur-lg text-gray-300 text-xs font-semibold rounded-full whitespace-nowrap"></div>
         </div>
-        <div class="name-pill absolute bottom-2 right-2 px-3 py-1 bg-white/20 backdrop-blur-lg text-gray-300 text-xs font-semibold rounded-full whitespace-nowrap"></div>
-      </div>
-    `;
-    slot.querySelector('.empty-placeholder').addEventListener('click', () => {
-        if(localStream) joinVideoSlot(slotId)
-        else alert('برای جابجایی نیاز به دسترسی دوربین و میکروفون دارید.');
-    });
+        `;
+        slot.querySelector('.empty-placeholder').addEventListener('click', () => {
+            if(localStream) joinVideoSlot(slotId)
+            else alert('برای جابجایی نیاز به دسترسی دوربین و میکروفون دارید.');
+        });
+    }
   });
   
   toggleMicBtn.disabled = true;
@@ -1141,7 +1171,6 @@ const joinVideoSlot = async (slotId) => {
     occupantAvatar: currentUserAvatar,
     isCameraOff: false 
   });
-  // NOTE: Starting peer connections is now handled by the Firestore listener to prevent race conditions.
 };
 
 const startPeerConnection = async (remoteUserId, remoteSlotId) => {
@@ -1393,6 +1422,22 @@ const ensureGlobalChatRoomExists = async () => {
   }
 };
 
+const clearAllVideoSlots = async () => {
+    const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    try {
+        const snapshot = await getDocs(slotsCol);
+        if (snapshot.empty) return;
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+        console.log("All previous video slots cleared.");
+    } catch (error) {
+        console.error("Error clearing video slots:", error);
+    }
+};
+
 
 const listenForGlobalSettings = () => {
     const globalSettingsRef = doc(db, 'app_settings', 'global');
@@ -1428,6 +1473,7 @@ const startApp = async () => {
   try {
     await ensureVideoCallRoomExists();
     await ensureGlobalChatRoomExists();
+    await clearAllVideoSlots();
   } catch(e) {
     console.error("Fatal error during startup (ensure rooms exist):", e);
     document.body.innerHTML = '<h1>خطای راه اندازی برنامه</h1><p>لطفا صفحه را رفرش کنید.</p>';
@@ -1455,9 +1501,27 @@ const startApp = async () => {
     }
     
     if (currentUsername) {
+        // Setup initial UI state without animations
+        videoCallContainer.classList.add('view-hidden', 'opacity-0');
+        chatContainer.classList.remove('view-hidden', 'opacity-0');
+        const activeBtnClasses = ['bg-green-500/80', 'text-white'];
+        const inactiveBtnClasses = ['bg-white/30', 'text-gray-200'];
+        navChatBtn.style.order = 1;
+        navChatBtn.style.flexBasis = '50%';
+        navStudioBtn.style.order = 2;
+        navStudioBtn.style.flexBasis = '35%';
+        settingsBtn.style.order = 3;
+        settingsBtn.style.flexBasis = '15%';
+        navChatBtn.classList.remove(...inactiveBtnClasses);
+        navChatBtn.classList.add(...activeBtnClasses);
+        navStudioBtn.classList.remove(...activeBtnClasses);
+        navStudioBtn.classList.add(...inactiveBtnClasses);
+        
         showView('main'); // Hides modals and shows main app content
         updateSendButtonState();
         switchTab('chat');
+        isInitialLoad = false;
+
     } else {
         showView('username-modal');
         usernameInput.focus();
@@ -1468,11 +1532,8 @@ const startApp = async () => {
   }
 };
 
-// Add cleanup listener for when the user closes the page
 window.addEventListener('beforeunload', (e) => {
     if (myVideoSlotId) {
-        // This is a "fire-and-forget" operation. The browser may not wait for the promise to resolve,
-        // but it will initiate the request to delete the user's slot from Firestore.
         hangUp(true);
     }
 });
