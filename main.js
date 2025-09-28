@@ -167,14 +167,14 @@ const switchTab = async (tabName) => {
     const newContainer = document.getElementById(`${tabName === 'studio' ? 'video-call' : 'chat'}-container`);
 
     // 1. Animate buttons
-    const activeBtnClasses = ['bg-green-500/80', 'text-white'];
+    const activeBtnClasses = ['bg-green-500', 'text-white'];
     const inactiveBtnClasses = ['bg-white/20', 'text-gray-200', 'backdrop-blur-lg'];
 
     if (tabName === 'studio') {
         studioBtn.style.flexBasis = '50%';
         chatBtn.style.flexBasis = '35%';
 
-        studioBtn.classList.remove(...inactiveBtnClasses);
+        studioBtn.classList.remove(...inactiveBtnClasses, 'backdrop-blur-lg');
         studioBtn.classList.add(...activeBtnClasses);
         chatBtn.classList.remove(...activeBtnClasses);
         chatBtn.classList.add(...inactiveBtnClasses);
@@ -182,7 +182,7 @@ const switchTab = async (tabName) => {
         chatBtn.style.flexBasis = '50%';
         studioBtn.style.flexBasis = '35%';
 
-        chatBtn.classList.remove(...inactiveBtnClasses);
+        chatBtn.classList.remove(...inactiveBtnClasses, 'backdrop-blur-lg');
         chatBtn.classList.add(...activeBtnClasses);
         studioBtn.classList.remove(...activeBtnClasses);
         studioBtn.classList.add(...inactiveBtnClasses);
@@ -246,8 +246,7 @@ const generateAvatar = (name, url) => {
     if (url && url !== 'null' && url !== 'undefined') {
         return `<img src="${url}" class="w-full h-full object-cover" alt="${name || 'avatar'}"/>`;
     }
-    // Return the placeholder SVG HTML instead of the initial
-    return `<svg class="w-full h-full text-gray-400/80 p-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>`;
+    return `<svg class="w-full h-full text-gray-400/80 p-1" viewBox="0 0 24 24" fill="currentColor"><use href="#placeholder-person-svg"></use></svg>`;
 };
 
 
@@ -279,7 +278,7 @@ const applyFontSize = (size) => {
     currentFontSize = size;
     // Visually update selected button
     fontSizeOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('bg-green-500/50', btn.dataset.size === size);
+        btn.classList.toggle('bg-green-500', btn.dataset.size === size);
         btn.classList.toggle('text-white', btn.dataset.size === size);
         btn.classList.toggle('bg-white/50', btn.dataset.size !== size);
         btn.classList.toggle('text-gray-800', btn.dataset.size !== size);
@@ -289,7 +288,7 @@ const applyFontSize = (size) => {
 const applyGlassModeSelection = (mode) => {
     currentGlassMode = mode;
     glassModeOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('bg-green-500/50', btn.dataset.glass === mode);
+        btn.classList.toggle('bg-green-500', btn.dataset.glass === mode);
         btn.classList.toggle('text-white', btn.dataset.glass === mode);
         btn.classList.toggle('bg-white/50', btn.dataset.glass !== mode);
         btn.classList.toggle('text-gray-800', btn.dataset.glass !== mode);
@@ -299,7 +298,7 @@ const applyGlassModeSelection = (mode) => {
 const applySendWithEnterSelection = (value) => {
     currentSendWithEnter = value;
     sendWithEnterOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('bg-green-500/50', btn.dataset.value === value);
+        btn.classList.toggle('bg-green-500', btn.dataset.value === value);
         btn.classList.toggle('text-white', btn.dataset.value === value);
         btn.classList.toggle('bg-white/50', btn.dataset.value !== value);
         btn.classList.toggle('text-gray-800', btn.dataset.value !== value);
@@ -453,6 +452,11 @@ userSettingsForm.addEventListener('submit', async (e) => {
         try {
             await setDoc(doc(db, 'users', currentUserId), userUpdates, { merge: true });
             userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
+             // If user is in a video slot, update their avatar there too for real-time sync
+            if (myVideoSlotId) {
+                const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+                await updateDoc(slotRef, { occupantAvatar: currentUserAvatar });
+            }
         } catch (error) { console.error("Error syncing user settings:", error); }
     }
     
@@ -737,6 +741,11 @@ changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
         
         await setDoc(doc(db, 'users', currentUserId), { avatarUrl: currentUserAvatar }, { merge: true });
         userProfilesCache[currentUserId] = { ...userProfilesCache[currentUserId], avatarUrl: currentUserAvatar };
+        
+        if (myVideoSlotId) {
+            const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+            await updateDoc(slotRef, { occupantAvatar: currentUserAvatar });
+        }
 
         document.querySelectorAll(`.message-avatar[data-author-id="${currentUserId}"]`).forEach(el => {
             el.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
@@ -1103,11 +1112,9 @@ const initializeVideoUI = () => {
 };
 
 const reconnectToAllPeers = async () => {
-    // First, close all existing connections cleanly.
     Object.values(peerConnections).forEach(pc => pc.close());
     peerConnections = {};
 
-    // Now, find all other users and initiate new connections.
     const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
     try {
         const slotsSnapshot = await getDocs(slotsRef);
@@ -1116,8 +1123,7 @@ const reconnectToAllPeers = async () => {
             const remoteUserId = slotData.occupantId;
             const remoteSlotId = parseInt(docSnap.id.split('_')[1]);
 
-            // Don't connect to self or users without video feed
-            if (remoteUserId !== currentUserId && !slotData.isCameraOff) {
+            if (remoteUserId !== currentUserId && !slotData.isCameraOff && remoteUserId > currentUserId) {
                 await startPeerConnection(remoteUserId, remoteSlotId);
             }
         }
@@ -1131,19 +1137,11 @@ const joinVideoSlot = async (slotId) => {
         alert("دسترسی به مدیا وجود ندارد. لطفا صفحه را رفرش کنید.");
         return;
     }
-    if (myVideoSlotId === slotId) return; // Already in this slot.
+    if (myVideoSlotId === slotId) return;
     
-    // If we are already in another slot, leave it first.
     if (myVideoSlotId) {
         const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
         await deleteDoc(oldSlotRef);
-        const oldSlotEl = document.getElementById(`video-slot-${myVideoSlotId}`);
-        if (oldSlotEl) {
-            const oldVideo = oldSlotEl.querySelector('video');
-            if (oldVideo && oldVideo.srcObject === localStream) {
-                oldVideo.srcObject = null;
-            }
-        }
     }
 
     myVideoSlotId = slotId;
@@ -1153,6 +1151,7 @@ const joinVideoSlot = async (slotId) => {
     videoEl.muted = true;
     slotEl.querySelector('.video-feed').classList.remove('hidden');
     slotEl.querySelector('.empty-placeholder').classList.add('hidden');
+    slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
     slotEl.querySelector('.name-pill').textContent = currentUsername;
 
     isMicOn = localStream.getAudioTracks()[0]?.enabled ?? true;
@@ -1184,7 +1183,9 @@ const startPeerConnection = async (remoteUserId, remoteSlotId) => {
 }
 
 const createPeerConnection = (remoteUserId, remoteSlotId) => {
-    if (peerConnections[remoteUserId]) return peerConnections[remoteUserId];
+    if (peerConnections[remoteUserId]) {
+       peerConnections[remoteUserId].close();
+    }
 
     const pc = new RTCPeerConnection(stunServers);
     
@@ -1249,14 +1250,15 @@ const setupVideoCallListeners = () => {
 
           if (slotData.occupantId === currentUserId) return;
           
-          if (slotData.isCameraOff) {
+          if (slotData.isCameraOff || !localStream) {
             slotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(slotData.occupantName, slotData.occupantAvatar);
             slotEl.querySelector('.avatar-placeholder').classList.remove('hidden');
             slotEl.querySelector('.video-feed').classList.add('hidden');
           } else {
             slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
             slotEl.querySelector('.video-feed').classList.remove('hidden');
-            if (myVideoSlotId && !peerConnections[slotData.occupantId]) {
+            // Politeness: only initiate call if my ID is smaller
+            if (myVideoSlotId && !peerConnections[slotData.occupantId] && currentUserId < slotData.occupantId) {
                  startPeerConnection(slotData.occupantId, slotId);
             }
           }
@@ -1287,7 +1289,7 @@ const setupVideoCallListeners = () => {
 
                 if (data.offer) {
                     await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                    if (localStream) { // Only create answer if we can send media back
+                    if (localStream) {
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
                         const answerRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
@@ -1326,8 +1328,6 @@ const hangUp = async (fullCleanup = true) => {
     if (myVideoSlotId) {
         const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
         await deleteDoc(slotRef).catch(err => console.error("Error deleting slot doc:", err));
-        const slotEl = document.getElementById(`video-slot-${myVideoSlotId}`);
-        if(slotEl) resetVideoSlot(slotEl);
         myVideoSlotId = null;
     }
     
@@ -1482,18 +1482,18 @@ const startApp = async () => {
         if (userDoc.exists()) {
             const userData = userDoc.data();
             currentUsername = userData.username || localStorage.getItem(USERNAME_KEY);
-            currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY);
+            currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY) || null;
             userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
             localStorage.setItem(USERNAME_KEY, currentUsername);
             localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
         } else {
             currentUsername = localStorage.getItem(USERNAME_KEY);
-            currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
+            currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
         }
     } catch (error) {
         console.error("Error fetching user profile, using local data:", error);
         currentUsername = localStorage.getItem(USERNAME_KEY);
-        currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
+        currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
     }
     
     if (currentUsername) {
@@ -1501,14 +1501,14 @@ const startApp = async () => {
         videoCallContainer.classList.add('view-hidden', 'opacity-0');
         chatContainer.classList.remove('view-hidden', 'opacity-0');
         
-        const activeBtnClasses = ['bg-green-500/80', 'text-white'];
+        const activeBtnClasses = ['bg-green-500', 'text-white'];
         const inactiveBtnClasses = ['bg-white/20', 'text-gray-200', 'backdrop-blur-lg'];
         
         navChatBtn.style.flexBasis = '50%';
         navStudioBtn.style.flexBasis = '35%';
         settingsBtn.style.flexBasis = '15%';
 
-        navChatBtn.classList.remove(...inactiveBtnClasses);
+        navChatBtn.classList.remove(...inactiveBtnClasses, 'backdrop-blur-lg');
         navChatBtn.classList.add(...activeBtnClasses);
         navStudioBtn.classList.remove(...activeBtnClasses);
         navStudioBtn.classList.add(...inactiveBtnClasses);
@@ -1536,7 +1536,7 @@ const startApp = async () => {
 
 window.addEventListener('beforeunload', (e) => {
     if (myVideoSlotId) {
-        hangUp(true);
+        hangUp(false); // Use false to avoid stopping the stream which might not finish before unload
     }
 });
 
