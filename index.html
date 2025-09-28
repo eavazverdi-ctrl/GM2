@@ -54,7 +54,7 @@
           }
       }
 
-      #video-call-background {
+      #video-call-background.animated-bg {
         background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
         background-size: 400% 400%;
         animation: gradient 15s ease infinite;
@@ -91,31 +91,64 @@
     </div>
 
     <!-- Main App Container -->
-    <div class="w-full h-full max-w-md mx-auto bg-transparent sm:rounded-3xl overflow-hidden flex flex-col sm:h-[95vh] sm:my-[2.5vh]">
+    <div id="app-container" class="w-full h-full max-w-md mx-auto bg-transparent sm:rounded-3xl overflow-hidden flex flex-col sm:h-[95vh] sm:my-[2.5vh]">
 
-        <!-- Lobby Container -->
-        <div id="lobby-container" class="w-full h-full flex flex-col view-hidden">
-          <!-- Header -->
-          <div class="bg-white/20 backdrop-blur-lg px-4 py-3 flex-shrink-0 flex justify-center items-center border-b border-white/20">
-            <h1 class="text-2xl font-bold text-gray-800">گفتگوها</h1>
-          </div>
-          <!-- Room List -->
-          <ul id="room-list" class="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
-            <!-- Rooms will be injected by main.js -->
-          </ul>
-          <!-- Bottom Nav -->
-          <div class="bg-white/20 backdrop-blur-lg h-16 flex-shrink-0 flex justify-around items-center px-2 border-t border-white/20">
-             <button id="settings-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-             </button>
-             <button id="create-room-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-             </button>
-          </div>
+        <!-- Global Navigation Bar -->
+        <div id="global-nav-bar" class="bg-white/20 backdrop-blur-lg h-16 flex-shrink-0 flex justify-center items-center gap-4 px-4 border-b border-white/20 z-20">
+            <button id="nav-video-btn" class="nav-btn flex-1 py-2 rounded-lg text-lg font-semibold transition-colors text-gray-700 bg-white/40">استدیو تماس</button>
+            <button id="nav-chat-btn" class="nav-btn flex-1 py-2 rounded-lg text-lg font-semibold transition-colors text-white bg-green-500/80">گفتگو</button>
         </div>
 
-        <!-- Chat Container -->
-        <div id="chat-container" class="w-full h-full flex flex-col view-hidden bg-transparent relative z-0">
+        <!-- This container holds the switchable pages -->
+        <div id="page-container" class="flex-1 min-h-0 relative">
+            
+            <!-- Lobby/Conversation Page -->
+            <div id="lobby-container" class="w-full h-full flex flex-col absolute inset-0">
+              <!-- Room List -->
+              <ul id="room-list" class="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
+                <!-- Rooms will be injected by main.js -->
+              </ul>
+              <!-- Bottom Nav -->
+              <div class="bg-white/20 backdrop-blur-lg h-16 flex-shrink-0 flex justify-center items-center px-2 border-t border-white/20">
+                 <button id="create-room-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                 </button>
+              </div>
+            </div>
+
+            <!-- Video Call Page -->
+            <div id="video-call-container" class="w-full h-full flex flex-col view-hidden absolute inset-0 bg-transparent z-0">
+              <div id="video-call-background" class="absolute inset-0 w-full h-full bg-cover bg-center -z-10 animated-bg"></div>
+              <!-- Video Grid -->
+              <div id="video-grid-container" class="flex-1 grid grid-cols-2 grid-rows-4 p-2 gap-2 min-h-0">
+                <div id="video-slot-1" class="video-slot row-span-2"></div>
+                <div id="video-slot-2" class="video-slot row-span-2"></div>
+                <div id="video-slot-3" class="video-slot"></div>
+                <div id="video-slot-4" class="video-slot"></div>
+                <div id="video-slot-5" class="video-slot"></div>
+                <div id="video-slot-6" class="video-slot"></div>
+              </div>
+              <!-- Video Controls -->
+              <div id="video-controls-bar" class="bg-white/20 backdrop-blur-lg h-20 flex-shrink-0 flex justify-between items-center gap-4 px-4 border-t border-white/20">
+                <button id="settings-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                </button>
+                <div class="flex justify-center items-center gap-4">
+                  <button id="toggle-mic-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
+                      <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#mic-on-svg" /></svg>
+                  </button>
+                  <button id="toggle-camera-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
+                       <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#camera-on-svg" /></svg>
+                  </button>
+                </div>
+                <div class="w-11 h-11"></div> <!-- Spacer to center the controls -->
+              </div>
+            </div>
+
+        </div>
+
+        <!-- Chat Container (overlays the current page) -->
+        <div id="chat-container" class="w-full h-full flex flex-col view-hidden bg-transparent absolute inset-0 z-30">
           <div id="chat-background" class="absolute inset-0 w-full h-full bg-cover bg-center -z-10"></div>
           <!-- Header -->
           <div class="bg-white/20 backdrop-blur-lg px-4 py-2 flex-shrink-0 z-10 border-b border-white/20">
@@ -166,40 +199,6 @@
           </div>
         </div>
         
-        <!-- Video Call Container -->
-        <div id="video-call-container" class="w-full h-full flex flex-col view-hidden bg-transparent relative z-0">
-          <div id="video-call-background" class="absolute inset-0 w-full h-full bg-cover bg-center -z-10"></div>
-          <!-- Header -->
-          <div id="video-room-header" class="bg-white/20 backdrop-blur-lg px-4 py-2 flex-shrink-0 z-10 border-b border-white/20">
-            <div class="flex items-center justify-between relative h-10">
-              <button id="back-to-lobby-from-video-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
-                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7 text-gray-600 transform rtl:rotate-180"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-              </button>
-              <div class="absolute left-1/2 -translate-x-1/2 flex items-center">
-                <span id="video-room-name" class="text-lg font-semibold whitespace-nowrap text-gray-800 cursor-pointer">استدیو تماس</span>
-              </div>
-            </div>
-          </div>
-          <!-- Video Grid -->
-          <div id="video-grid-container" class="flex-1 grid grid-cols-2 grid-rows-4 p-2 gap-2 min-h-0">
-            <div id="video-slot-1" class="video-slot row-span-2"></div>
-            <div id="video-slot-2" class="video-slot row-span-2"></div>
-            <div id="video-slot-3" class="video-slot"></div>
-            <div id="video-slot-4" class="video-slot"></div>
-            <div id="video-slot-5" class="video-slot"></div>
-            <div id="video-slot-6" class="video-slot"></div>
-          </div>
-          <!-- Video Controls -->
-          <div id="video-controls-bar" class="bg-white/20 backdrop-blur-lg h-20 flex-shrink-0 flex justify-center items-center gap-4 px-2 border-t border-white/20">
-            <button id="toggle-mic-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
-                <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#mic-on-svg" /></svg>
-            </button>
-            <button id="toggle-camera-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
-                 <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#camera-on-svg" /></svg>
-            </button>
-          </div>
-        </div>
-
     </div>
     
     <!-- Username Modal -->
@@ -257,7 +256,7 @@
 
     <!-- General Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/30 flex justify-center items-center z-50 p-4 view-hidden">
-        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm">
+        <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto">
           <form id="user-settings-form" class="space-y-4">
             <div class="flex flex-col items-center">
                 <label for="user-avatar-input" class="cursor-pointer">
@@ -310,6 +309,16 @@
                </div>
             </div>
             <p id="background-upload-status" class="text-sm text-center h-4"></p>
+
+            <div class="flex items-center pt-4 border-t border-white/30">
+               <label class="w-1/2 text-sm font-medium text-gray-700">پس‌زمینه استدیو</label>
+               <div class="w-1/2 flex gap-1" id="video-bg-options">
+                 <button type="button" data-bg="animated" class="video-bg-btn p-2 rounded-md text-xs flex-1 text-center">متحرک</button>
+                 <label for="video-background-image-input" class="cursor-pointer video-bg-btn p-2 rounded-md text-xs flex-1 text-center glass-button-gray text-gray-800" data-bg="static">ثابت</label>
+                 <input type="file" id="video-background-image-input" class="hidden" accept="image/*" />
+               </div>
+            </div>
+            <p id="video-background-upload-status" class="text-sm text-center h-4"></p>
 
             <div class="flex justify-center pt-4 space-x-3 rtl:space-x-reverse">
                <button id="settings-cancel-btn" type="button" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
