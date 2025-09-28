@@ -113,6 +113,7 @@ const fileConfirmStatus = document.getElementById('file-confirm-status');
 const cancelFileUploadBtn = document.getElementById('cancel-file-upload');
 const confirmFileUploadBtn = document.getElementById('confirm-file-upload');
 // New Navigation Elements
+const mainContentSlider = document.getElementById('main-content-slider');
 const navChatBtn = document.getElementById('nav-chat-btn');
 const navStudioBtn = document.getElementById('nav-studio-btn');
 // Video Call Elements
@@ -125,16 +126,22 @@ const toggleCameraBtn = document.getElementById('toggle-camera-btn');
 
 // --- View Management ---
 const showView = (viewId) => {
-  [
-    chatContainer, usernameModal, settingsModal, viewAvatarModal, 
-    changeUserAvatarInChatModal, fileConfirmModal, videoCallContainer
-  ].forEach(el => {
-    if (el.id === viewId) {
-      el.classList.remove('view-hidden');
-    } else {
-      el.classList.add('view-hidden');
+    // This function now only manages modals. Main views are handled by the slider.
+    const modals = [
+        usernameModal, settingsModal, viewAvatarModal, 
+        changeUserAvatarInChatModal, fileConfirmModal
+    ];
+    
+    // Hide all modals
+    modals.forEach(el => el.classList.add('view-hidden'));
+    
+    // Show the requested modal if it exists
+    const targetModal = document.getElementById(viewId);
+    if (targetModal && modals.includes(targetModal)) {
+        targetModal.classList.remove('view-hidden');
     }
-  });
+    // If viewId is 'chat-container' or 'video-call-container', it does nothing,
+    // which correctly returns the user to the active main view from a modal.
 };
 
 const switchTab = async (tabName) => {
@@ -142,23 +149,22 @@ const switchTab = async (tabName) => {
         if (currentRoomId === VIDEO_CALL_ROOM_ID) {
             await cleanUpVideoCall();
         }
-        showView('chat-container');
+        mainContentSlider.style.transform = 'translateX(0%)';
         lastActiveViewId = 'chat-container';
+
+        // Style buttons
         navChatBtn.classList.add('glass-button-blue', 'text-white');
         navChatBtn.classList.remove('glass-button-gray', 'text-gray-700');
         navStudioBtn.classList.add('glass-button-gray', 'text-gray-700');
         navStudioBtn.classList.remove('glass-button-blue', 'text-white');
         
-        // Enter the global chat room if not already in it
         if (currentRoomId !== GLOBAL_CHAT_ROOM_ID) {
             try {
                 const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
                 if (roomDoc.exists()) {
                     enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
                 }
-            } catch (error) {
-                console.error("Failed to enter global chat room:", error);
-            }
+            } catch (error) { console.error("Failed to enter global chat room:", error); }
         }
 
     } else if (tabName === 'studio') {
@@ -166,9 +172,11 @@ const switchTab = async (tabName) => {
             messagesUnsubscribe();
             messagesUnsubscribe = null;
         }
-        showView('video-call-container');
+        mainContentSlider.style.transform = 'translateX(-50%)';
         lastActiveViewId = 'video-call-container';
         enterVideoCallRoom();
+
+        // Style buttons
         navStudioBtn.classList.add('glass-button-blue', 'text-white');
         navStudioBtn.classList.remove('glass-button-gray', 'text-gray-700');
         navChatBtn.classList.add('glass-button-gray', 'text-gray-700');
@@ -341,7 +349,7 @@ settingsBtn.addEventListener('click', () => {
 
 settingsCancelBtn.addEventListener('click', () => {
     applyBackgroundSettings(initialSettingsState.staticBg);
-    showView(lastActiveViewId);
+    showView(lastActiveViewId); // This will correctly hide the modal
 });
 
 
@@ -389,7 +397,7 @@ userSettingsForm.addEventListener('submit', async (e) => {
         } catch (error) { console.error("Error syncing user settings:", error); }
     }
     
-    showView(lastActiveViewId);
+    showView('settings-modal'); // This will hide the settings modal
 });
 
 // --- Chat Room Logic ---
@@ -401,8 +409,6 @@ const enterChatRoom = (roomId, roomData) => {
   isLoadingOlderMessages = false;
   reachedEndOfMessages = false;
   scrollToBottomBtn.classList.add('view-hidden', 'opacity-0');
-  
-  showView('chat-container');
   
   if (messagesUnsubscribe) messagesUnsubscribe();
 
@@ -830,22 +836,23 @@ usernameForm.addEventListener('submit', async (e) => {
     const password = initialPasswordInput.value;
     const avatarFile = initialUserAvatarInput.files[0];
 
-    if (!avatarFile) {
-        alert('لطفا یک عکس پروفایل انتخاب کنید.');
-        return;
-    }
     if (password !== CREATOR_PASSWORD) {
         alert('رمز ورود به برنامه اشتباه است.');
         initialPasswordInput.value = '';
         initialPasswordInput.focus();
         return;
     }
+
     if (newUsername) { 
         try {
-            const compressedAvatar = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
+            let compressedAvatar = null;
+            if (avatarFile) {
+                compressedAvatar = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
+            }
+            
             localStorage.setItem(APP_ACCESS_KEY, 'true');
             localStorage.setItem(USERNAME_KEY, newUsername);
-            localStorage.setItem(USER_AVATAR_KEY, compressedAvatar);
+            localStorage.setItem(USER_AVATAR_KEY, compressedAvatar || '');
 
             await setDoc(doc(db, 'users', currentUserId), { 
                 username: newUsername,
@@ -915,11 +922,32 @@ const findAndJoinEmptySlot = async (withMedia) => {
     const occupiedSlots = new Set(slotsSnapshot.docs.map(d => parseInt(d.id.split('_')[1])));
     
     let targetSlotId = -1;
-    for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
-      if (!occupiedSlots.has(i)) {
-        targetSlotId = i;
-        break;
-      }
+
+    if (!withMedia) {
+        // Prioritize small slots (3-6) for users without media
+        for (let i = 3; i <= NUM_VIDEO_SLOTS; i++) {
+            if (!occupiedSlots.has(i)) {
+                targetSlotId = i;
+                break;
+            }
+        }
+        // If small are full, check large slots (1-2)
+        if (targetSlotId === -1) {
+            for (let i = 1; i <= 2; i++) {
+                if (!occupiedSlots.has(i)) {
+                    targetSlotId = i;
+                    break;
+                }
+            }
+        }
+    } else {
+        // Normal check for anyone with media, find first available
+        for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
+          if (!occupiedSlots.has(i)) {
+            targetSlotId = i;
+            break;
+          }
+        }
     }
   
     if (targetSlotId !== -1) {
@@ -1044,16 +1072,7 @@ const joinVideoSlot = async (slotId) => {
     occupantAvatar: currentUserAvatar,
     isCameraOff: false 
   });
-  
-  const allSlotsQuery = query(collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots'));
-  const allSlotsSnapshot = await getDocs(allSlotsQuery);
-  allSlotsSnapshot.forEach(docSnap => {
-      const { occupantId } = docSnap.data();
-      if (occupantId && occupantId !== currentUserId) {
-          startPeerConnection(occupantId, parseInt(docSnap.id.split('_')[1]));
-      }
-  });
-
+  // NOTE: Starting peer connections is now handled by the Firestore listener to prevent race conditions.
 };
 
 const startPeerConnection = async (remoteUserId, remoteSlotId) => {
@@ -1143,6 +1162,7 @@ const setupVideoCallListeners = () => {
           } else {
             slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
             slotEl.querySelector('.video-feed').classList.remove('hidden');
+            // Optimization: The listener is the single source of truth for creating connections
             if (myVideoSlotId && !peerConnections[slotData.occupantId]) {
                  startPeerConnection(slotData.occupantId, slotId);
             }
@@ -1370,9 +1390,12 @@ const startApp = async () => {
     }
     
     if (currentUsername) {
+        // Hide username modal immediately, then switch to chat
+        usernameModal.classList.add('view-hidden');
         updateSendButtonState();
         switchTab('chat');
     } else {
+        // This case should be rare, but handles corrupted local storage
         showView('username-modal');
         usernameInput.focus();
     }
