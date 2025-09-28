@@ -168,7 +168,7 @@ const switchTab = async (tabName) => {
 
     // 1. Animate buttons
     const activeBtnClasses = ['bg-green-500', 'text-white'];
-    const inactiveBtnClasses = ['bg-white/20', 'text-gray-200', 'backdrop-blur-lg'];
+    const inactiveBtnClasses = ['bg-white/20', 'text-gray-800', 'backdrop-blur-lg'];
 
     if (tabName === 'studio') {
         studioBtn.style.flexBasis = '50%';
@@ -242,11 +242,32 @@ const scrollToBottom = (behavior = 'auto') => {
   messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior });
 };
 
+const avatarColors = [
+    'rgba(255, 99, 132, 0.7)',  // Red
+    'rgba(54, 162, 235, 0.7)',  // Blue
+    'rgba(255, 206, 86, 0.7)',  // Yellow
+    'rgba(75, 192, 192, 0.7)',  // Green
+    'rgba(153, 102, 255, 0.7)', // Purple
+    'rgba(255, 159, 64, 0.7)',  // Orange
+];
+
+const getColorForName = (name) => {
+    if (!name) return 'rgba(231, 233, 237, 0.7)'; // Gray for fallback
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash % avatarColors.length);
+    return avatarColors[index];
+};
+
 const generateAvatar = (name, url) => {
     if (url && url !== 'null' && url !== 'undefined') {
         return `<img src="${url}" class="w-full h-full object-cover" alt="${name || 'avatar'}"/>`;
     }
-    return `<svg class="w-full h-full text-gray-400/80 p-1" viewBox="0 0 24 24" fill="currentColor"><use href="#placeholder-person-svg"></use></svg>`;
+    const initial = (name || '?').charAt(0).toUpperCase();
+    const color = getColorForName(name);
+    return `<div class="w-full h-full flex items-center justify-center text-white font-bold text-xl" style="background-color: ${color}; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">${initial}</div>`;
 };
 
 
@@ -1111,29 +1132,8 @@ const initializeVideoUI = () => {
   toggleCameraBtn.classList.add('bg-white/40');
 };
 
-const reconnectToAllPeers = async () => {
-    Object.values(peerConnections).forEach(pc => pc.close());
-    peerConnections = {};
-
-    const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
-    try {
-        const slotsSnapshot = await getDocs(slotsRef);
-        for (const docSnap of slotsSnapshot.docs) {
-            const slotData = docSnap.data();
-            const remoteUserId = slotData.occupantId;
-            const remoteSlotId = parseInt(docSnap.id.split('_')[1]);
-
-            if (remoteUserId !== currentUserId && !slotData.isCameraOff && remoteUserId > currentUserId) {
-                await startPeerConnection(remoteUserId, remoteSlotId);
-            }
-        }
-    } catch (error) {
-        console.error("Error reconnecting to peers:", error);
-    }
-};
-
 const joinVideoSlot = async (slotId) => {
-    if (!localStream) {
+    if (localStream === null) {
         alert("دسترسی به مدیا وجود ندارد. لطفا صفحه را رفرش کنید.");
         return;
     }
@@ -1164,13 +1164,10 @@ const joinVideoSlot = async (slotId) => {
       occupantAvatar: currentUserAvatar,
       isCameraOff: !isCameraOn 
     });
-
-    await reconnectToAllPeers();
 };
 
 const startPeerConnection = async (remoteUserId, remoteSlotId) => {
-    if(!localStream) return;
-    const pc = createPeerConnection(remoteUserId, remoteSlotId);
+    const pc = createPeerConnection(remoteUserId);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
@@ -1182,7 +1179,7 @@ const startPeerConnection = async (remoteUserId, remoteSlotId) => {
     });
 }
 
-const createPeerConnection = (remoteUserId, remoteSlotId) => {
+const createPeerConnection = (remoteUserId) => {
     if (peerConnections[remoteUserId]) {
        peerConnections[remoteUserId].close();
     }
@@ -1194,7 +1191,7 @@ const createPeerConnection = (remoteUserId, remoteSlotId) => {
     }
 
     pc.ontrack = event => {
-        const slotEl = document.getElementById(`video-slot-${remoteSlotId}`);
+        const slotEl = document.querySelector(`div[id^="video-slot-"][data-occupant-id="${remoteUserId}"]`);
         if (slotEl) {
             const remoteVideo = slotEl.querySelector('video');
             if (remoteVideo.srcObject !== event.streams[0]) {
@@ -1206,7 +1203,7 @@ const createPeerConnection = (remoteUserId, remoteSlotId) => {
     };
     
     pc.onicecandidate = event => {
-        if (event.candidate && localStream) {
+        if (event.candidate) {
             const signalingRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
             addDoc(signalingRef, { 
                 from: currentUserId, 
@@ -1250,7 +1247,7 @@ const setupVideoCallListeners = () => {
 
           if (slotData.occupantId === currentUserId) return;
           
-          if (slotData.isCameraOff || !localStream) {
+          if (slotData.isCameraOff) {
             slotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(slotData.occupantName, slotData.occupantAvatar);
             slotEl.querySelector('.avatar-placeholder').classList.remove('hidden');
             slotEl.querySelector('.video-feed').classList.add('hidden');
@@ -1285,20 +1282,18 @@ const setupVideoCallListeners = () => {
                 const remoteUserId = data.from;
                 const remoteSlotId = data.fromSlot;
 
-                const pc = peerConnections[remoteUserId] || createPeerConnection(remoteUserId, remoteSlotId);
+                const pc = peerConnections[remoteUserId] || createPeerConnection(remoteUserId);
 
                 if (data.offer) {
                     await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-                    if (localStream) {
-                        const answer = await pc.createAnswer();
-                        await pc.setLocalDescription(answer);
-                        const answerRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
-                        await addDoc(answerRef, { 
-                            from: currentUserId, 
-                            fromSlot: myVideoSlotId,
-                            answer: { type: answer.type, sdp: answer.sdp } 
-                        });
-                    }
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    const answerRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+                    await addDoc(answerRef, { 
+                        from: currentUserId, 
+                        fromSlot: myVideoSlotId,
+                        answer: { type: answer.type, sdp: answer.sdp } 
+                    });
                 } else if (data.answer) {
                     if (pc.signalingState !== 'stable') {
                         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -1502,7 +1497,7 @@ const startApp = async () => {
         chatContainer.classList.remove('view-hidden', 'opacity-0');
         
         const activeBtnClasses = ['bg-green-500', 'text-white'];
-        const inactiveBtnClasses = ['bg-white/20', 'text-gray-200', 'backdrop-blur-lg'];
+        const inactiveBtnClasses = ['bg-white/20', 'text-gray-800', 'backdrop-blur-lg'];
         
         navChatBtn.style.flexBasis = '50%';
         navStudioBtn.style.flexBasis = '35%';
