@@ -160,7 +160,7 @@ const switchTab = async (tabName) => {
             messagesUnsubscribe();
             messagesUnsubscribe = null;
         }
-        mainContentSlider.style.transform = 'translateX(-50%)';
+        mainContentSlider.style.transform = 'translateX(0%)';
         lastActiveViewId = 'video-call-container';
         enterVideoCallRoom();
 
@@ -174,7 +174,7 @@ const switchTab = async (tabName) => {
         if (currentRoomId === VIDEO_CALL_ROOM_ID) {
             await cleanUpVideoCall();
         }
-        mainContentSlider.style.transform = 'translateX(0%)';
+        mainContentSlider.style.transform = 'translateX(-50%)';
         lastActiveViewId = 'chat-container';
 
         // Style buttons
