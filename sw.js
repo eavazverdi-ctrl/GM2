@@ -1,21 +1,29 @@
-const CACHE = "pwa-messenger-v1";
+const CACHE = "pwa-messenger-v4";
 const ASSETS = [
   "./",
   "./index.html",
   "./main.js",
   "./config.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./icons/icon.png",
+  "https://cdn.tailwindcss.com"
 ];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.action === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
 });
 

@@ -1,5 +1,6 @@
 // Import Firebase and config
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
   limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc, where
@@ -9,6 +10,15 @@ import { FIREBASE_CONFIG } from './config.js';
 // --- App Initialization ---
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
+
+// --- App Check Initialization ---
+// TODO: Replace 'YOUR_RECAPTCHA_V3_SITE_KEY' with your actual site key from the Google reCAPTCHA admin console.
+// This is a public key and is safe to be exposed in the client-side code.
+const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LfPjdcrAAAAAFBVZqhaXAsFqekQhBgvKWu24rTm'),
+  isTokenAutoRefreshEnabled: true
+});
+
 
 // --- User Identity & Settings ---
 const APP_ACCESS_KEY = 'chat_app_access_v1';
@@ -27,7 +37,7 @@ const MESSAGES_PER_PAGE = 15;
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
 const VIDEO_CALL_ROOM_NAME = 'استدیو';
 const GLOBAL_CHAT_ROOM_ID = '_ariana_global_chat_';
-const GLOBAL_CHAT_ROOM_NAME = 'گفتگو';
+const GLOBAL_CHAT_ROOM_NAME = 'خودمونی';
 const NUM_VIDEO_SLOTS = 6;
 
 // --- Global State ---
@@ -99,6 +109,8 @@ const settingsOkBtn = document.getElementById('settings-ok-btn');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 const deleteAllMessagesBtn = document.getElementById('delete-all-messages-btn');
 const clearStudioCacheBtn = document.getElementById('clear-studio-cache-btn');
+const updateAppBtn = document.getElementById('update-app-btn');
+const updateStatusText = document.getElementById('update-status-text');
 const chatContainer = document.getElementById('chat-container');
 const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
@@ -274,21 +286,26 @@ const generateAvatar = (name, url) => {
 
 // --- Profile Caching ---
 const getUserProfile = async (userId) => {
-    // Always try to fetch fresh data to ensure profile updates are reflected.
-    // Fallback to cache only if the network request fails.
+    // 1. Check cache first for immediate response
+    if (userProfilesCache[userId]) {
+        return userProfilesCache[userId];
+    }
+
+    // 2. If not in cache, fetch from Firestore
     try {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
             const userData = userDoc.data();
-            userProfilesCache[userId] = userData; // Update cache with fresh data
+            // 3. Store in cache for future use
+            userProfilesCache[userId] = userData;
             return userData;
         }
-        // User document doesn't exist. Check cache for very old users or return fallback.
-        return userProfilesCache[userId] || { username: 'کاربر ناشناس', avatarUrl: null };
+        // Handle case where user document doesn't exist
+        return { username: 'کاربر ناشناس', avatarUrl: null };
     } catch (error) {
         console.error(`Error fetching profile for user ${userId}:`, error);
-        // On error (e.g., offline), fall back to cache to maintain functionality.
-        return userProfilesCache[userId] || { username: 'کاربر', avatarUrl: null };
+        // On error (e.g., offline), return a fallback to avoid crashing.
+        return { username: 'کاربر', avatarUrl: null };
     }
 };
 
@@ -445,6 +462,64 @@ clearStudioCacheBtn.addEventListener('click', async () => {
 });
 
 
+updateAppBtn.addEventListener('click', async () => {
+    if (!('serviceWorker' in navigator)) {
+        updateStatusText.textContent = 'آپدیت پشتیبانی نمی‌شود.';
+        updateStatusText.className = 'text-sm text-center h-4 text-red-500';
+        return;
+    }
+
+    updateStatusText.textContent = 'در حال بررسی...';
+    updateStatusText.className = 'text-sm text-center h-4 text-gray-600';
+    updateAppBtn.disabled = true;
+
+    try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+            updateStatusText.textContent = 'خطا در بررسی آپدیت.';
+            updateStatusText.className = 'text-sm text-center h-4 text-red-500';
+            return;
+        }
+
+        // Manually trigger the update check
+        await registration.update();
+
+        const handleUpdate = (worker) => {
+            updateStatusText.textContent = 'نسخه جدید پیدا شد، در حال نصب...';
+            worker.addEventListener('statechange', () => {
+                if (worker.state === 'installed') {
+                    // The new worker is installed and waiting
+                    worker.postMessage({ action: 'SKIP_WAITING' });
+                }
+            });
+        };
+
+        if (registration.installing) {
+            handleUpdate(registration.installing);
+        } else if (registration.waiting) {
+            handleUpdate(registration.waiting);
+        } else {
+            updateStatusText.textContent = 'شما آخرین آپدیت را دارید.';
+            updateStatusText.className = 'text-sm text-center h-4 text-green-600';
+            setTimeout(() => { updateStatusText.textContent = ''; }, 3000);
+        }
+    } catch (error) {
+        console.error('Error during service worker update check:', error);
+        updateStatusText.textContent = 'خطا در آپدیت.';
+        updateStatusText.className = 'text-sm text-center h-4 text-red-500';
+    } finally {
+        updateAppBtn.disabled = false;
+    }
+
+    let refreshing;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        updateStatusText.textContent = 'اعمال تغییرات...';
+        window.location.reload();
+        refreshing = true;
+    });
+});
+
 settingsBtn.addEventListener('click', () => {
     initialSettingsState = {
         staticBg: currentStaticBackground
@@ -459,6 +534,8 @@ settingsBtn.addEventListener('click', () => {
     tempStaticBackground = null;
     backgroundImageInput.value = '';
     backgroundUploadStatus.textContent = '';
+    updateStatusText.textContent = '';
+
 
     showView('settings-modal');
 });
@@ -609,8 +686,10 @@ const renderMessages = async (messages, prepend = false, isInitialLoad = false) 
   if (!prepend && messagesList.innerHTML.includes('هنوز پیامی')) { messagesList.innerHTML = ''; }
   const fragment = document.createDocumentFragment();
 
-  const authorIds = [...new Set(messages.map(m => m.authorId))];
-  await Promise.all(authorIds.map(id => getUserProfile(id)));
+  const authorIds = [...new Set(messages.map(m => m.authorId).filter(id => !userProfilesCache[id]))];
+  if(authorIds.length > 0) {
+    await Promise.all(authorIds.map(id => getUserProfile(id)));
+  }
 
   const glassModeClasses = {
       'off': { user: 'bg-green-500', other: 'bg-white' },
@@ -1523,21 +1602,32 @@ const listenForGlobalSettings = () => {
 };
 
 const startApp = async () => {
+  // First, check if the user has logged in before.
+  const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
+
+  if (!appAccessGranted) {
+    // If not, show the login modal and stop here.
+    showView('username-modal');
+    usernameInput.focus();
+    return;
+  }
+
+  // --- If access is granted, proceed to load the app directly ---
+
+  // Load and apply settings
   const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
   const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
   currentSendWithEnter = localStorage.getItem(SEND_WITH_ENTER_KEY) || 'on';
-  
   applyFontSize(storedFontSize);
   applyGlassModeSelection(storedGlassMode);
   applySendWithEnterSelection(currentSendWithEnter);
 
-  const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
-
+  // Load and apply background
   currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
   applyBackgroundSettings(currentStaticBackground);
-  
   listenForGlobalSettings();
   
+  // Ensure backend rooms exist
   try {
     await ensureVideoCallRoomExists();
     await ensureGlobalChatRoomExists();
@@ -1547,65 +1637,57 @@ const startApp = async () => {
     return;
   }
 
-  if (appAccessGranted) {
-    try {
-        const userDoc = await getDoc(doc(db, 'users', currentUserId));
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            currentUsername = userData.username || localStorage.getItem(USERNAME_KEY);
-            currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY) || null;
-            userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
-            localStorage.setItem(USERNAME_KEY, currentUsername);
-            localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
-        } else {
-            currentUsername = localStorage.getItem(USERNAME_KEY);
-            currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
-        }
-    } catch (error) {
-        console.error("Error fetching user profile, using local data:", error);
+  // Load user profile, relying on localStorage as the source of truth
+  try {
+    const userDoc = await getDoc(doc(db, 'users', currentUserId));
+    if (userDoc.exists()) {
+        const userData = userDoc.data();
+        currentUsername = userData.username || localStorage.getItem(USERNAME_KEY);
+        currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY) || null;
+        userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
+        localStorage.setItem(USERNAME_KEY, currentUsername);
+        localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+    } else {
+        // User not found in Firestore, use local data.
         currentUsername = localStorage.getItem(USERNAME_KEY);
         currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
     }
-    
-    if (currentUsername) {
-        // Clear any stale video slots from previous sessions before starting UI
-        await clearMyPreviousSlotOnStartup();
-
-        // Setup initial UI state without animations
-        videoCallContainer.classList.add('view-hidden', 'opacity-0');
-        chatContainer.classList.remove('view-hidden', 'opacity-0');
-        
-        const activeBtnClasses = ['bg-green-500', 'text-white'];
-        const inactiveBtnClasses = ['bg-white/20', 'text-black', 'backdrop-blur-lg'];
-        
-        navChatBtn.style.flexBasis = '50%';
-        navStudioBtn.style.flexBasis = '35%';
-        settingsBtn.style.flexBasis = '15%';
-
-        navChatBtn.classList.remove(...inactiveBtnClasses, 'backdrop-blur-lg');
-        navChatBtn.classList.add(...activeBtnClasses);
-        navStudioBtn.classList.remove(...activeBtnClasses);
-        navStudioBtn.classList.add(...inactiveBtnClasses);
-        
-        showView('main'); // Hides modals and shows main app content
-        updateSendButtonState();
-        
-        // Directly enter the chat room on initial load
-        const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
-        if (roomDoc.exists()) {
-            enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
-        }
-        
-        isInitialLoad = false;
-
-    } else {
-        showView('username-modal');
-        usernameInput.focus();
-    }
-  } else {
-    showView('username-modal');
-    usernameInput.focus();
+  } catch (error) {
+    // Firestore is unavailable, use local data.
+    console.error("Error fetching user profile, using local data:", error);
+    currentUsername = localStorage.getItem(USERNAME_KEY);
+    currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
   }
+  
+  // Clear any stale video slots from previous sessions before starting UI
+  await clearMyPreviousSlotOnStartup();
+
+  // Setup initial UI state without animations
+  videoCallContainer.classList.add('view-hidden', 'opacity-0');
+  chatContainer.classList.remove('view-hidden', 'opacity-0');
+  
+  const activeBtnClasses = ['bg-green-500', 'text-white'];
+  const inactiveBtnClasses = ['bg-white/20', 'text-black', 'backdrop-blur-lg'];
+  
+  navChatBtn.style.flexBasis = '50%';
+  navStudioBtn.style.flexBasis = '35%';
+  settingsBtn.style.flexBasis = '15%';
+
+  navChatBtn.classList.remove(...inactiveBtnClasses, 'backdrop-blur-lg');
+  navChatBtn.classList.add(...activeBtnClasses);
+  navStudioBtn.classList.remove(...activeBtnClasses);
+  navStudioBtn.classList.add(...inactiveBtnClasses);
+  
+  showView('main'); // Hides modals and shows main app content
+  updateSendButtonState();
+  
+  // Directly enter the chat room on initial load
+  const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
+  if (roomDoc.exists()) {
+      enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
+  }
+  
+  isInitialLoad = false;
 };
 
 window.addEventListener('beforeunload', (e) => {
