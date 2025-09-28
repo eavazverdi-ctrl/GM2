@@ -18,15 +18,12 @@ const USER_AVATAR_KEY = 'chat_user_avatar_v1';
 const FONT_SIZE_KEY = 'chat_font_size_v1';
 const GLASS_MODE_KEY = 'chat_glass_mode_v1';
 const SEND_WITH_ENTER_KEY = 'chat_send_with_enter_v1';
-const STATIC_BACKGROUND_KEY = 'chat_background_static_v1';
-const VIDEO_BG_MODE_KEY = 'video_bg_mode_v1';
-const VIDEO_BG_STATIC_KEY = 'video_bg_static_v1';
+const STATIC_BACKGROUND_KEY = 'chat_background_static_v2'; // Updated key for unified background
 const CREATOR_PASSWORD = '2025';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
-const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUf35gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAADq33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
 const VIDEO_CALL_ROOM_NAME = 'استدیو تماس';
 const GLOBAL_CHAT_ROOM_ID = '_ariana_global_chat_';
@@ -44,6 +41,7 @@ let currentSendWithEnter = 'on';
 let currentStaticBackground = null;
 let messagesUnsubscribe = null;
 let userProfilesCache = {}; // Cache for user profiles { userId: { username, avatarUrl } }
+let lastActiveViewId = 'chat-container'; // For settings modal return
 
 // --- WebRTC State ---
 let localStream = null;
@@ -61,7 +59,6 @@ if (!localStorage.getItem(USER_ID_KEY)) {
 
 // --- State for Settings Modal ---
 let tempStaticBackground = null;
-let tempVideoStaticBackground = null;
 let initialSettingsState = {};
 let fileToUpload = null;
 
@@ -93,7 +90,6 @@ const backgroundUploadStatus = document.getElementById('background-upload-status
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 const chatContainer = document.getElementById('chat-container');
-const chatBackground = document.getElementById('chat-background');
 const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
 const messageInput = document.getElementById('message-input');
@@ -121,16 +117,10 @@ const navChatBtn = document.getElementById('nav-chat-btn');
 const navStudioBtn = document.getElementById('nav-studio-btn');
 // Video Call Elements
 const videoCallContainer = document.getElementById('video-call-container');
-const videoCallBackground = document.getElementById('video-call-background');
 const videoGridContainer = document.getElementById('video-grid-container');
 const videoControlsBar = document.getElementById('video-controls-bar');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const toggleCameraBtn = document.getElementById('toggle-camera-btn');
-// Video Background Settings Elements
-const videoBgModeOptions = document.getElementById('video-bg-mode-options');
-const videoStaticBackgroundUploader = document.getElementById('video-static-background-uploader');
-const videoBackgroundImageInput = document.getElementById('video-background-image-input');
-const videoBackgroundUploadStatus = document.getElementById('video-background-upload-status');
 
 
 // --- View Management ---
@@ -153,6 +143,7 @@ const switchTab = async (tabName) => {
             await cleanUpVideoCall();
         }
         showView('chat-container');
+        lastActiveViewId = 'chat-container';
         navChatBtn.classList.add('glass-button-blue', 'text-white');
         navChatBtn.classList.remove('glass-button-gray', 'text-gray-700');
         navStudioBtn.classList.add('glass-button-gray', 'text-gray-700');
@@ -175,6 +166,8 @@ const switchTab = async (tabName) => {
             messagesUnsubscribe();
             messagesUnsubscribe = null;
         }
+        showView('video-call-container');
+        lastActiveViewId = 'video-call-container';
         enterVideoCallRoom();
         navStudioBtn.classList.add('glass-button-blue', 'text-white');
         navStudioBtn.classList.remove('glass-button-gray', 'text-gray-700');
@@ -279,49 +272,16 @@ const applySendWithEnterSelection = (value) => {
 };
 
 const applyBackgroundSettings = (staticBgData) => {
-    // Reset all background states
-    appBackground.style.backgroundImage = '';
-    appBackground.style.backgroundColor = 'transparent';
-    appBackground.className = 'fixed inset-0 -z-10 h-full w-full bg-sky-100 overflow-hidden'; // Reset classes
-
     if (staticBgData) {
+        appBackground.classList.remove('animated-gradient');
         appBackground.style.backgroundImage = `url(${staticBgData})`;
         appBackground.style.backgroundSize = 'cover';
         appBackground.style.backgroundPosition = 'center';
     } else {
-        appBackground.style.backgroundColor = '#f0f9ff'; // Fallback solid color
+        appBackground.style.backgroundImage = ''; // Clear inline style
+        appBackground.classList.add('animated-gradient');
     }
 };
-
-const applyVideoBgModeSelection = (mode) => {
-    videoStaticBackgroundUploader.classList.toggle('hidden', mode !== 'static');
-    videoBgModeOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('glass-button-blue', btn.dataset.mode === mode);
-        btn.classList.toggle('text-white', btn.dataset.mode === mode);
-        btn.classList.toggle('glass-button-gray', btn.dataset.mode !== mode);
-    });
-};
-
-videoBgModeOptions.addEventListener('click', (e) => {
-    if (e.target.matches('.video-bg-mode-btn')) {
-        applyVideoBgModeSelection(e.target.dataset.mode);
-    }
-});
-
-videoBackgroundImageInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    videoBackgroundUploadStatus.textContent = 'در حال پردازش...';
-    try {
-        tempVideoStaticBackground = await compressImage(file, IMAGE_MAX_DIMENSION);
-        videoBackgroundUploadStatus.textContent = 'عکس آماده شد. برای ذخیره تایید را بزنید.';
-        videoBackgroundUploadStatus.classList.add('text-green-600');
-    } catch (error) {
-        console.error("Error compressing video background image:", error);
-        videoBackgroundUploadStatus.textContent = 'خطا در پردازش تصویر.';
-        videoBackgroundUploadStatus.classList.add('text-red-600');
-    }
-});
 
 fontSizeOptions.addEventListener('click', (e) => {
     if (e.target.matches('.font-size-btn')) {
@@ -346,11 +306,11 @@ backgroundImageInput.addEventListener('change', async (e) => {
     if (!file) return;
     
     backgroundUploadStatus.textContent = 'در حال پردازش...';
-    backgroundUploadStatus.className = 'text-sm text-center h-4 mt-2 text-gray-600';
+    backgroundUploadStatus.className = 'text-sm text-center h-4 text-gray-600';
 
     try {
         tempStaticBackground = await compressImage(file, IMAGE_MAX_DIMENSION);
-        applyBackgroundSettings(tempStaticBackground);
+        applyBackgroundSettings(tempStaticBackground); // Preview
         backgroundUploadStatus.textContent = 'عکس آماده شد. برای ذخیره تایید را بزنید.';
         backgroundUploadStatus.classList.add('text-green-600');
 
@@ -363,9 +323,7 @@ backgroundImageInput.addEventListener('change', async (e) => {
 
 settingsBtn.addEventListener('click', () => {
     initialSettingsState = {
-        staticBg: currentStaticBackground,
-        videoBgMode: localStorage.getItem(VIDEO_BG_MODE_KEY) || 'animated',
-        videoStaticBg: localStorage.getItem(VIDEO_BG_STATIC_KEY)
+        staticBg: currentStaticBackground
     };
     
     changeUsernameInput.value = currentUsername;
@@ -373,22 +331,17 @@ settingsBtn.addEventListener('click', () => {
     applyFontSize(currentFontSize);
     applyGlassModeSelection(currentGlassMode);
     applySendWithEnterSelection(currentSendWithEnter);
-    applyVideoBgModeSelection(initialSettingsState.videoBgMode);
     
     tempStaticBackground = null;
-    tempVideoStaticBackground = null;
     backgroundImageInput.value = '';
-    videoBackgroundImageInput.value = '';
     backgroundUploadStatus.textContent = '';
-    videoBackgroundUploadStatus.textContent = '';
 
     showView('settings-modal');
 });
 
 settingsCancelBtn.addEventListener('click', () => {
-    applyBackgroundSettings(initialSettingsState.staticBg || DEFAULT_BACKGROUND_BASE64);
-    const activeTabContainerId = videoCallContainer.classList.contains('view-hidden') ? 'chat-container' : 'video-call-container';
-    showView(activeTabContainerId);
+    applyBackgroundSettings(initialSettingsState.staticBg);
+    showView(lastActiveViewId);
 });
 
 
@@ -428,22 +381,6 @@ userSettingsForm.addEventListener('submit', async (e) => {
             await setDoc(doc(db, 'app_settings', 'global'), { backgroundUrl: tempStaticBackground }, { merge: true });
         } catch (error) { console.error("Error updating global background:", error); }
     }
-    
-    // Handle Video Background Update
-    const videoBgMode = videoBgModeOptions.querySelector('.glass-button-blue').dataset.mode;
-    localStorage.setItem(VIDEO_BG_MODE_KEY, videoBgMode);
-    const videoRoomUpdates = {};
-    if (videoBgMode === 'animated') {
-        videoRoomUpdates.backgroundUrl = null;
-        localStorage.removeItem(VIDEO_BG_STATIC_KEY);
-    } else if (tempVideoStaticBackground) {
-        videoRoomUpdates.backgroundUrl = tempVideoStaticBackground;
-        localStorage.setItem(VIDEO_BG_STATIC_KEY, tempVideoStaticBackground);
-    }
-
-    if (Object.keys(videoRoomUpdates).length > 0) {
-        await updateDoc(doc(db, 'rooms', VIDEO_CALL_ROOM_ID), videoRoomUpdates);
-    }
 
     if (Object.keys(userUpdates).length > 0) {
         try {
@@ -452,22 +389,13 @@ userSettingsForm.addEventListener('submit', async (e) => {
         } catch (error) { console.error("Error syncing user settings:", error); }
     }
     
-    const activeTabContainerId = videoCallContainer.classList.contains('view-hidden') ? 'chat-container' : 'video-call-container';
-    showView(activeTabContainerId);
+    showView(lastActiveViewId);
 });
 
 // --- Chat Room Logic ---
 const enterChatRoom = (roomId, roomData) => {
   currentRoomId = roomId;
   
-  if (roomData.backgroundUrl) {
-    chatBackground.style.backgroundImage = `url(${roomData.backgroundUrl})`;
-    chatBackground.style.backgroundSize = 'cover';
-    chatBackground.style.backgroundPosition = 'center';
-  } else {
-    chatBackground.style.backgroundImage = '';
-  }
-
   messagesList.innerHTML = '';
   oldestMessageDoc = null;
   isLoadingOlderMessages = false;
@@ -1030,27 +958,7 @@ const joinVideoSlotWithoutMedia = async (slotId) => {
 };
 
 const enterVideoCallRoom = async () => {
-    showView('video-call-container');
     currentRoomId = VIDEO_CALL_ROOM_ID;
-
-    try {
-        const roomDoc = await getDoc(doc(db, 'rooms', VIDEO_CALL_ROOM_ID));
-        if (roomDoc.exists()) {
-            const roomData = roomDoc.data();
-            if (roomData.backgroundUrl) {
-                videoCallBackground.style.animation = 'none';
-                videoCallBackground.style.backgroundImage = `url(${roomData.backgroundUrl})`;
-                videoCallBackground.style.backgroundSize = 'cover';
-                videoCallBackground.style.backgroundPosition = 'center';
-            } else {
-                videoCallBackground.style.backgroundImage = '';
-                videoCallBackground.style.animation = 'gradient 15s ease infinite';
-            }
-        }
-    } catch (e) {
-        console.error("Error fetching video room background", e);
-    }
-
     initializeVideoUI();
     setupVideoCallListeners();
 
@@ -1373,7 +1281,7 @@ const ensureVideoCallRoomExists = async () => {
         createdAt: serverTimestamp(),
         password: null,
         avatarUrl: null,
-        backgroundUrl: null
+        // No backgroundUrl here, it's global now
       });
     }
   } catch(error) {
@@ -1391,7 +1299,7 @@ const ensureGlobalChatRoomExists = async () => {
         createdAt: serverTimestamp(),
         password: null,
         avatarUrl: null,
-        backgroundUrl: null
+        // No backgroundUrl here, it's global now
       });
     }
   } catch(error) {
@@ -1403,14 +1311,15 @@ const ensureGlobalChatRoomExists = async () => {
 const listenForGlobalSettings = () => {
     const globalSettingsRef = doc(db, 'app_settings', 'global');
     onSnapshot(globalSettingsRef, (docSnap) => {
+        let newBackground = null;
         if (docSnap.exists()) {
-            const settings = docSnap.data();
-            const newBackground = settings.backgroundUrl;
-            if (newBackground && newBackground !== currentStaticBackground) {
-                currentStaticBackground = newBackground;
-                applyBackgroundSettings(currentStaticBackground);
-                localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground);
-            }
+            newBackground = docSnap.data().backgroundUrl;
+        }
+        // Only update if it has changed
+        if (newBackground !== currentStaticBackground) {
+            currentStaticBackground = newBackground;
+            applyBackgroundSettings(currentStaticBackground);
+            localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground || '');
         }
     });
 };
@@ -1427,7 +1336,7 @@ const startApp = async () => {
   const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
 
   currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
-  applyBackgroundSettings(currentStaticBackground || DEFAULT_BACKGROUND_BASE64);
+  applyBackgroundSettings(currentStaticBackground);
   
   listenForGlobalSettings();
   
