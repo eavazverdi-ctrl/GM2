@@ -267,7 +267,7 @@ const generateAvatar = (name, url) => {
     }
     const initial = (name || '?').charAt(0).toUpperCase();
     const color = getColorForName(name);
-    return `<div class="w-full h-full flex items-center justify-center text-white font-bold text-xl" style="background-color: ${color}; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">${initial}</div>`;
+    return `<div class="w-full h-full flex items-center justify-center text-white font-bold text-xl" style="background-color: ${color}; backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);">${initial}</div>`;
 };
 
 
@@ -1194,9 +1194,11 @@ const createPeerConnection = (remoteUserId) => {
         const slotEl = document.querySelector(`div[id^="video-slot-"][data-occupant-id="${remoteUserId}"]`);
         if (slotEl) {
             const remoteVideo = slotEl.querySelector('video');
-            if (remoteVideo.srcObject !== event.streams[0]) {
-              remoteVideo.srcObject = event.streams[0];
+            if (!remoteVideo.srcObject) {
+                remoteVideo.srcObject = new MediaStream();
             }
+            remoteVideo.srcObject.addTrack(event.track);
+
             slotEl.querySelector('.video-feed').classList.remove('hidden');
             slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
         }
@@ -1481,7 +1483,6 @@ const startApp = async () => {
   try {
     await ensureVideoCallRoomExists();
     await ensureGlobalChatRoomExists();
-    await clearAllVideoSlots();
   } catch(e) {
     console.error("Fatal error during startup (ensure rooms exist):", e);
     document.body.innerHTML = '<h1>خطای راه اندازی برنامه</h1><p>لطفا صفحه را رفرش کنید.</p>';
