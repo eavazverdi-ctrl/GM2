@@ -95,13 +95,44 @@
         
         <!-- Global Top Navigation -->
         <div id="global-nav" class="bg-white/20 backdrop-blur-lg px-2 h-16 flex-shrink-0 z-10 flex justify-center items-center gap-2 border-b border-white/20">
-            <button id="nav-chat-btn" class="nav-btn flex-1 py-2 rounded-lg transition-colors text-sm font-semibold glass-button-blue text-white">چت</button>
             <button id="nav-studio-btn" class="nav-btn flex-1 py-2 rounded-lg transition-colors text-sm font-semibold glass-button-gray text-gray-700">استدیو تماس</button>
+            <button id="nav-chat-btn" class="nav-btn flex-1 py-2 rounded-lg transition-colors text-sm font-semibold glass-button-blue text-white">چت</button>
         </div>
 
         <!-- Main Content Wrapper for Animation -->
         <div id="main-content-wrapper" class="w-full flex-1 relative z-0 min-h-0 overflow-hidden">
             <div id="main-content-slider" class="flex h-full w-[200%] transition-transform duration-300 ease-in-out">
+                <!-- Video Call Container (width: 50%) -->
+                <div id="video-call-container" class="w-1/2 h-full flex flex-col bg-transparent">
+                  <!-- Video Grid -->
+                  <div id="video-grid-container" class="flex-1 grid grid-cols-2 grid-rows-4 p-2 gap-2 min-h-0">
+                    <div id="video-slot-1" class="video-slot row-span-2"></div>
+                    <div id="video-slot-2" class="video-slot row-span-2"></div>
+                    <div id="video-slot-3" class="video-slot"></div>
+                    <div id="video-slot-4" class="video-slot"></div>
+                    <div id="video-slot-5" class="video-slot"></div>
+                    <div id="video-slot-6" class="video-slot"></div>
+                  </div>
+                  <!-- Video Controls -->
+                  <div id="video-controls-bar" class="bg-white/20 backdrop-blur-lg h-16 flex-shrink-0 flex justify-between items-center px-4 border-t border-white/20">
+                    <!-- Left Spacer -->
+                    <div class="w-8"></div>
+                    <!-- Centered Controls -->
+                    <div class="flex justify-center items-center gap-4">
+                        <button id="toggle-mic-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
+                            <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#mic-on-svg" /></svg>
+                        </button>
+                        <button id="toggle-camera-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
+                             <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#camera-on-svg" /></svg>
+                        </button>
+                    </div>
+                    <!-- Right-aligned Settings -->
+                    <button id="settings-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                    </button>
+                  </div>
+                </div>
+                
                 <!-- Chat Container (width: 50%) -->
                 <div id="chat-container" class="w-1/2 h-full flex flex-col bg-transparent">
                   <!-- Messages Container -->
@@ -135,45 +166,14 @@
                     </div>
                   </div>
                 </div>
-                
-                <!-- Video Call Container (width: 50%) -->
-                <div id="video-call-container" class="w-1/2 h-full flex flex-col bg-transparent">
-                  <!-- Video Grid -->
-                  <div id="video-grid-container" class="flex-1 grid grid-cols-2 grid-rows-4 p-2 gap-2 min-h-0">
-                    <div id="video-slot-1" class="video-slot row-span-2"></div>
-                    <div id="video-slot-2" class="video-slot row-span-2"></div>
-                    <div id="video-slot-3" class="video-slot"></div>
-                    <div id="video-slot-4" class="video-slot"></div>
-                    <div id="video-slot-5" class="video-slot"></div>
-                    <div id="video-slot-6" class="video-slot"></div>
-                  </div>
-                  <!-- Video Controls -->
-                  <div id="video-controls-bar" class="bg-white/20 backdrop-blur-lg h-16 flex-shrink-0 flex justify-between items-center px-4 border-t border-white/20">
-                    <!-- Left Spacer -->
-                    <div class="w-8"></div>
-                    <!-- Centered Controls -->
-                    <div class="flex justify-center items-center gap-4">
-                        <button id="toggle-mic-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
-                            <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#mic-on-svg" /></svg>
-                        </button>
-                        <button id="toggle-camera-btn" class="p-3 rounded-2xl transition-colors bg-white/40 disabled:opacity-50">
-                             <svg class="w-7 h-7 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><use href="#camera-on-svg" /></svg>
-                        </button>
-                    </div>
-                    <!-- Right-aligned Settings -->
-                    <button id="settings-btn" class="p-2 rounded-full transition-colors relative persistent-hover-bg">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.438.995s.145.755.438.995l1.003.827c.424.35.534.954.26 1.431l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.437-.995s-.145-.755-.437-.995l-1.004-.827a1.125 1.125 0 0 1-.26-1.431l1.296-2.247a1.125 1.125 0 0 1 1.37.49l1.217.456c.355.133.75.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-                    </button>
-                  </div>
-                </div>
             </div>
         </div>
 
     </div>
     
     <!-- Username Modal -->
-    <div id="username-modal" class="fixed inset-0 bg-gray-100 flex justify-center items-center z-50 p-4">
-      <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm text-center">
+    <div id="username-modal" class="fixed inset-0 bg-transparent flex justify-center items-center z-50 p-4">
+      <div class="glass-modal p-6 rounded-2xl shadow-xl w-full max-w-sm text-center">
         <h2 class="text-xl font-bold mb-4 text-gray-800">به پیام رسان آریانا خوش آمدید!</h2>
         <form id="username-form" class="space-y-4">
           <div class="flex flex-col items-center">
@@ -185,9 +185,9 @@
               <input type="file" id="initial-user-avatar-input" class="hidden" accept="image/*" />
               <span class="text-sm text-gray-600">انتخاب عکس پروفایل (اختیاری)</span>
           </div>
-          <input type="text" id="username-input" class="w-full bg-gray-200/50 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="نام کاربری..." required />
-          <input type="password" id="initial-password-input" class="w-full bg-gray-200/50 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز برنامه..." required />
-          <button type="submit" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">ورود</button>
+          <input type="text" id="username-input" class="w-full bg-gray-200/50 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-green-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="نام کاربری..." required />
+          <input type="password" id="initial-password-input" class="w-full bg-gray-200/50 rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-green-400 placeholder:text-gray-500 placeholder:text-sm" placeholder="رمز برنامه..." required />
+          <button type="submit" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-md hover:bg-green-600 transition-colors">ورود</button>
         </form>
       </div>
     </div>
@@ -209,48 +209,52 @@
             <div class="flex items-center">
               <label for="change-username-input" class="w-1/2 text-sm font-medium text-gray-700">نام کاربری</label>
               <div class="w-1/2">
-                <input type="text" id="change-username-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 placeholder:text-sm" />
+                <input type="text" id="change-username-input" class="w-full bg-white/50 backdrop-blur-sm rounded-md p-2 text-right focus:outline-none focus:ring-2 focus:ring-green-400 placeholder:text-gray-500 placeholder:text-sm" />
               </div>
             </div>
 
             <div class="flex items-center">
               <label class="w-1/2 text-sm font-medium text-gray-700">اندازه فونت پیام‌ها</label>
               <div class="w-1/2 flex gap-1" id="font-size-options">
-                <button type="button" data-size="sm" class="font-size-btn p-2 rounded-md glass-button-gray text-xs flex-1 text-center">کوچک</button>
-                <button type="button" data-size="md" class="font-size-btn p-2 rounded-md glass-button-gray text-xs flex-1 text-center">معمولی</button>
-                <button type="button" data-size="lg" class="font-size-btn p-2 rounded-md glass-button-gray text-xs flex-1 text-center">بزرگ</button>
+                <button type="button" data-size="sm" class="font-size-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">کوچک</button>
+                <button type="button" data-size="md" class="font-size-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">معمولی</button>
+                <button type="button" data-size="lg" class="font-size-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">بزرگ</button>
               </div>
             </div>
             
             <div class="flex items-center">
               <label class="w-1/2 text-sm font-medium text-gray-700">حالت شیشه‌ای</label>
               <div class="w-1/2 flex gap-1" id="glass-mode-options">
-                <button type="button" data-glass="off" class="glass-mode-btn p-2 rounded-md text-xs flex-1 text-center">خاموش</button>
-                <button type="button" data-glass="low" class="glass-mode-btn p-2 rounded-md text-xs flex-1 text-center">کم</button>
-                <button type="button" data-glass="high" class="glass-mode-btn p-2 rounded-md text-xs flex-1 text-center">زیاد</button>
+                <button type="button" data-glass="off" class="glass-mode-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">خاموش</button>
+                <button type="button" data-glass="low" class="glass-mode-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">کم</button>
+                <button type="button" data-glass="high" class="glass-mode-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">زیاد</button>
               </div>
             </div>
 
             <div class="flex items-center">
               <label class="w-1/2 text-sm font-medium text-gray-700">ارسال پیام با اینتر</label>
               <div class="w-1/2 flex gap-1" id="send-with-enter-options">
-                <button type="button" data-value="on" class="send-with-enter-btn p-2 rounded-md text-xs flex-1 text-center">فعال</button>
-                <button type="button" data-value="off" class="send-with-enter-btn p-2 rounded-md text-xs flex-1 text-center">غیرفعال</button>
+                <button type="button" data-value="on" class="send-with-enter-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">فعال</button>
+                <button type="button" data-value="off" class="send-with-enter-btn p-2 rounded-md bg-white/50 text-gray-800 text-xs flex-1 text-center transition-colors hover:bg-white/80">غیرفعال</button>
               </div>
             </div>
 
             <div class="flex items-center">
                <label class="w-1/2 text-sm font-medium text-gray-700">پس‌زمینه برنامه</label>
                <div id="static-background-uploader" class="w-1/2">
-                   <label for="background-image-input" class="cursor-pointer block w-full text-center glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md text-xs">انتخاب عکس</label>
+                   <label for="background-image-input" class="cursor-pointer block w-full text-center bg-white/50 text-gray-800 font-bold py-2 px-4 rounded-md text-xs transition-colors hover:bg-white/80">انتخاب عکس</label>
                    <input type="file" id="background-image-input" class="hidden" accept="image/*" />
                </div>
             </div>
             <p id="background-upload-status" class="text-sm text-center h-4"></p>
             
+            <div class="pt-4 border-t border-white/30 mt-4">
+              <button id="delete-all-messages-btn" type="button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors">حذف تمام مکالمات</button>
+            </div>
+
             <div class="flex justify-center pt-4 space-x-3 rtl:space-x-reverse border-t border-white/30 mt-4">
                <button id="settings-cancel-btn" type="button" class="w-full glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
-               <button id="settings-ok-btn" type="submit" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-md">تایید</button>
+               <button id="settings-ok-btn" type="submit" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-md hover:bg-green-600 transition-colors">تایید</button>
             </div>
           </form>
 
@@ -285,7 +289,7 @@
             <p id="change-user-avatar-in-chat-status" class="text-sm mt-2 text-center h-4"></p>
             <div class="mt-4 flex justify-center space-x-3 rtl:space-x-reverse">
               <button type="button" class="cancel-btn glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
-              <button type="submit" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-md">ذخیره</button>
+              <button type="submit" class="bg-green-500 text-white font-bold py-2 px-4 rounded-md hover:bg-green-600">ذخیره</button>
             </div>
           </form>
         </div>
@@ -301,7 +305,7 @@
         <p id="file-confirm-status" class="text-sm text-center h-4 mb-4">برای ارسال تایید کنید.</p>
         <div class="mt-4 flex justify-end space-x-3 rtl:space-x-reverse">
           <button type="button" id="cancel-file-upload" class="glass-button-gray text-gray-800 font-bold py-2 px-4 rounded-md">انصراف</button>
-          <button type="button" id="confirm-file-upload" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-md">تایید</button>
+          <button type="button" id="confirm-file-upload" class="bg-green-500 text-white font-bold py-2 px-4 rounded-md hover:bg-green-600">تایید</button>
         </div>
       </div>
     </div>

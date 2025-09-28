@@ -69,6 +69,8 @@ let reachedEndOfMessages = false;
 
 // --- DOM Elements ---
 const appBackground = document.getElementById('app-background');
+const globalNav = document.getElementById('global-nav');
+const mainContentWrapper = document.getElementById('main-content-wrapper');
 const usernameModal = document.getElementById('username-modal');
 const usernameForm = document.getElementById('username-form');
 const usernameInput = document.getElementById('username-input');
@@ -89,6 +91,7 @@ const backgroundImageInput = document.getElementById('background-image-input');
 const backgroundUploadStatus = document.getElementById('background-upload-status');
 const settingsOkBtn = document.getElementById('settings-ok-btn');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
+const deleteAllMessagesBtn = document.getElementById('delete-all-messages-btn');
 const chatContainer = document.getElementById('chat-container');
 const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
@@ -140,16 +143,38 @@ const showView = (viewId) => {
     if (targetModal && modals.includes(targetModal)) {
         targetModal.classList.remove('view-hidden');
     }
-    // If viewId is 'chat-container' or 'video-call-container', it does nothing,
-    // which correctly returns the user to the active main view from a modal.
+
+    // Special handling for username modal to hide main app UI
+    if (viewId === 'username-modal') {
+        globalNav.classList.add('view-hidden');
+        mainContentWrapper.classList.add('view-hidden');
+    } else {
+        globalNav.classList.remove('view-hidden');
+        mainContentWrapper.classList.remove('view-hidden');
+    }
 };
 
 const switchTab = async (tabName) => {
-    if (tabName === 'chat') {
+    if (tabName === 'studio') {
+        if (messagesUnsubscribe) {
+            messagesUnsubscribe();
+            messagesUnsubscribe = null;
+        }
+        mainContentSlider.style.transform = 'translateX(0%)';
+        lastActiveViewId = 'video-call-container';
+        enterVideoCallRoom();
+
+        // Style buttons
+        navStudioBtn.classList.add('glass-button-blue', 'text-white');
+        navStudioBtn.classList.remove('glass-button-gray', 'text-gray-700');
+        navChatBtn.classList.add('glass-button-gray', 'text-gray-700');
+        navChatBtn.classList.remove('glass-button-blue', 'text-white');
+
+    } else if (tabName === 'chat') {
         if (currentRoomId === VIDEO_CALL_ROOM_ID) {
             await cleanUpVideoCall();
         }
-        mainContentSlider.style.transform = 'translateX(0%)';
+        mainContentSlider.style.transform = 'translateX(-50%)';
         lastActiveViewId = 'chat-container';
 
         // Style buttons
@@ -166,21 +191,6 @@ const switchTab = async (tabName) => {
                 }
             } catch (error) { console.error("Failed to enter global chat room:", error); }
         }
-
-    } else if (tabName === 'studio') {
-        if (messagesUnsubscribe) {
-            messagesUnsubscribe();
-            messagesUnsubscribe = null;
-        }
-        mainContentSlider.style.transform = 'translateX(-50%)';
-        lastActiveViewId = 'video-call-container';
-        enterVideoCallRoom();
-
-        // Style buttons
-        navStudioBtn.classList.add('glass-button-blue', 'text-white');
-        navStudioBtn.classList.remove('glass-button-gray', 'text-gray-700');
-        navChatBtn.classList.add('glass-button-gray', 'text-gray-700');
-        navChatBtn.classList.remove('glass-button-blue', 'text-white');
     }
 };
 
@@ -255,27 +265,30 @@ const applyFontSize = (size) => {
     currentFontSize = size;
     // Visually update selected button
     fontSizeOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('glass-button-blue', btn.dataset.size === size);
+        btn.classList.toggle('bg-green-500/50', btn.dataset.size === size);
         btn.classList.toggle('text-white', btn.dataset.size === size);
-        btn.classList.toggle('glass-button-gray', btn.dataset.size !== size);
+        btn.classList.toggle('bg-white/50', btn.dataset.size !== size);
+        btn.classList.toggle('text-gray-800', btn.dataset.size !== size);
     });
 };
 
 const applyGlassModeSelection = (mode) => {
     currentGlassMode = mode;
     glassModeOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('glass-button-blue', btn.dataset.glass === mode);
+        btn.classList.toggle('bg-green-500/50', btn.dataset.glass === mode);
         btn.classList.toggle('text-white', btn.dataset.glass === mode);
-        btn.classList.toggle('glass-button-gray', btn.dataset.glass !== mode);
+        btn.classList.toggle('bg-white/50', btn.dataset.glass !== mode);
+        btn.classList.toggle('text-gray-800', btn.dataset.glass !== mode);
     });
 };
 
 const applySendWithEnterSelection = (value) => {
     currentSendWithEnter = value;
     sendWithEnterOptions.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('glass-button-blue', btn.dataset.value === value);
+        btn.classList.toggle('bg-green-500/50', btn.dataset.value === value);
         btn.classList.toggle('text-white', btn.dataset.value === value);
-        btn.classList.toggle('glass-button-gray', btn.dataset.value !== value);
+        btn.classList.toggle('bg-white/50', btn.dataset.value !== value);
+        btn.classList.toggle('text-gray-800', btn.dataset.value !== value);
     });
 };
 
@@ -328,6 +341,38 @@ backgroundImageInput.addEventListener('change', async (e) => {
         backgroundUploadStatus.classList.add('text-red-600');
     }
 });
+
+deleteAllMessagesBtn.addEventListener('click', async () => {
+    if (confirm('آیا از حذف تمام پیام‌ها در چت عمومی مطمئن هستید؟ این عمل غیرقابل بازگشت است.')) {
+        const originalText = deleteAllMessagesBtn.textContent;
+        settingsOkBtn.disabled = true;
+        settingsCancelBtn.disabled = true;
+        deleteAllMessagesBtn.textContent = 'در حال حذف...';
+        deleteAllMessagesBtn.disabled = true;
+
+        try {
+            const messagesCol = collection(db, 'rooms', GLOBAL_CHAT_ROOM_ID, 'messages');
+            const snapshot = await getDocs(messagesCol);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            alert('تمام پیام‌ها با موفقیت حذف شدند.');
+            messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
+        } catch (error) {
+            console.error("Error deleting all messages:", error);
+            alert('خطا در حذف پیام‌ها.');
+        } finally {
+            deleteAllMessagesBtn.textContent = originalText;
+            settingsOkBtn.disabled = false;
+            settingsCancelBtn.disabled = false;
+            deleteAllMessagesBtn.disabled = false;
+            showView(lastActiveViewId); // Close settings modal
+        }
+    }
+});
+
 
 settingsBtn.addEventListener('click', () => {
     initialSettingsState = {
@@ -397,7 +442,7 @@ userSettingsForm.addEventListener('submit', async (e) => {
         } catch (error) { console.error("Error syncing user settings:", error); }
     }
     
-    showView('settings-modal'); // This will hide the settings modal
+    showView(lastActiveViewId);
 });
 
 // --- Chat Room Logic ---
@@ -652,8 +697,8 @@ messagesList.addEventListener('click', (e) => {
     }
 });
 
-closeViewAvatarModalBtn.addEventListener('click', () => showView('chat-container'));
-document.querySelector('#change-user-avatar-in-chat-modal .cancel-btn').addEventListener('click', () => showView('chat-container'));
+closeViewAvatarModalBtn.addEventListener('click', () => showView(lastActiveViewId));
+document.querySelector('#change-user-avatar-in-chat-modal .cancel-btn').addEventListener('click', () => showView(lastActiveViewId));
 
 userAvatarInChatInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -667,6 +712,8 @@ changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
     const file = userAvatarInChatInput.files[0];
     if (!file) { alert("لطفا یک عکس انتخاب کنید."); return; }
     
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
     changeUserAvatarInChatStatus.textContent = 'در حال ذخیره...';
     changeUserAvatarInChatStatus.classList.remove('text-red-600', 'text-green-600');
     try {
@@ -684,12 +731,14 @@ changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
 
         changeUserAvatarInChatStatus.textContent = 'عکس با موفقیت ذخیره شد.';
         changeUserAvatarInChatStatus.classList.add('text-green-600');
-        setTimeout(() => showView('chat-container'), 1500);
+        setTimeout(() => showView(lastActiveViewId), 1500);
 
     } catch(error) {
         console.error("Error changing user avatar in chat:", error);
         changeUserAvatarInChatStatus.textContent = 'خطا در ذخیره عکس.';
         changeUserAvatarInChatStatus.classList.add('text-red-600');
+    } finally {
+        submitBtn.disabled = false;
     }
 });
 
@@ -754,6 +803,8 @@ const uploadConfirmedFile = async () => {
     const isImage = file.type.startsWith('image/');
     let fileDataUrl;
     
+    confirmFileUploadBtn.disabled = true;
+    cancelFileUploadBtn.disabled = true;
     fileConfirmStatus.textContent = 'در حال ارسال...';
     
     const tempId = `temp_${Date.now()}`;
@@ -784,6 +835,8 @@ const uploadConfirmedFile = async () => {
                 fileConfirmStatus.textContent = `حجم فایل نباید بیشتر از 5 مگابایت باشد.`;
                 fileConfirmStatus.classList.add('text-red-600');
                 fileToUpload = null;
+                confirmFileUploadBtn.disabled = false;
+                cancelFileUploadBtn.disabled = false;
                 return;
              }
             fileDataUrl = await new Promise((resolve, reject) => {
@@ -795,7 +848,7 @@ const uploadConfirmedFile = async () => {
         }
         const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
         await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
-        showView('chat-container');
+        showView(lastActiveViewId);
         setTimeout(() => scrollToBottom('smooth'), 150);
     } catch (error) { 
         console.error("Error processing/uploading file:", error); 
@@ -807,13 +860,15 @@ const uploadConfirmedFile = async () => {
             if(tempEl) tempEl.remove();
         }
         fileToUpload = null;
+        confirmFileUploadBtn.disabled = false;
+        cancelFileUploadBtn.disabled = false;
     }
 };
 
 fileInput.addEventListener('change', handleFileSelect);
 cancelFileUploadBtn.addEventListener('click', () => {
     fileToUpload = null;
-    showView('chat-container');
+    showView(lastActiveViewId);
 });
 confirmFileUploadBtn.addEventListener('click', uploadConfirmedFile);
 
@@ -832,6 +887,9 @@ initialUserAvatarInput.addEventListener('change', (e) => {
 
 usernameForm.addEventListener('submit', async (e) => { 
     e.preventDefault(); 
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
     const newUsername = usernameInput.value.trim(); 
     const password = initialPasswordInput.value;
     const avatarFile = initialUserAvatarInput.files[0];
@@ -840,6 +898,7 @@ usernameForm.addEventListener('submit', async (e) => {
         alert('رمز ورود به برنامه اشتباه است.');
         initialPasswordInput.value = '';
         initialPasswordInput.focus();
+        submitBtn.disabled = false;
         return;
     }
 
@@ -863,8 +922,11 @@ usernameForm.addEventListener('submit', async (e) => {
         } catch (error) {
             console.error("Error processing avatar or creating user:", error);
             alert('خطا در پردازش عکس یا ساخت کاربر.');
+            submitBtn.disabled = false;
         }
-    } 
+    } else {
+        submitBtn.disabled = false;
+    }
 });
 
 const updateSendButtonState = () => {
@@ -1301,7 +1363,6 @@ const ensureVideoCallRoomExists = async () => {
         createdAt: serverTimestamp(),
         password: null,
         avatarUrl: null,
-        // No backgroundUrl here, it's global now
       });
     }
   } catch(error) {
@@ -1319,7 +1380,6 @@ const ensureGlobalChatRoomExists = async () => {
         createdAt: serverTimestamp(),
         password: null,
         avatarUrl: null,
-        // No backgroundUrl here, it's global now
       });
     }
   } catch(error) {
@@ -1335,7 +1395,6 @@ const listenForGlobalSettings = () => {
         if (docSnap.exists()) {
             newBackground = docSnap.data().backgroundUrl;
         }
-        // Only update if it has changed
         if (newBackground !== currentStaticBackground) {
             currentStaticBackground = newBackground;
             applyBackgroundSettings(currentStaticBackground);
@@ -1390,12 +1449,10 @@ const startApp = async () => {
     }
     
     if (currentUsername) {
-        // Hide username modal immediately, then switch to chat
-        usernameModal.classList.add('view-hidden');
+        showView('main'); // Hides modals and shows main app content
         updateSendButtonState();
         switchTab('chat');
     } else {
-        // This case should be rare, but handles corrupted local storage
         showView('username-modal');
         usernameInput.focus();
     }
