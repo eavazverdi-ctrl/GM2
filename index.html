@@ -54,6 +54,24 @@
           }
       }
 
+      #video-call-background {
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+      }
+
+      @keyframes gradient {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
     </style>
   <script type="importmap">
 {
@@ -158,24 +176,18 @@
                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-7 h-7 text-gray-600 transform rtl:rotate-180"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
               </button>
               <div class="absolute left-1/2 -translate-x-1/2 flex items-center">
-                <span id="video-room-name" class="text-lg font-semibold whitespace-nowrap text-gray-800 cursor-pointer">اتاق تماس تصویری</span>
+                <span id="video-room-name" class="text-lg font-semibold whitespace-nowrap text-gray-800 cursor-pointer">استدیو تماس</span>
               </div>
             </div>
           </div>
           <!-- Video Grid -->
-          <div id="video-grid-container" class="flex-1 grid grid-rows-2 p-2 gap-2">
-            <!-- Top Row (2 large slots) -->
-            <div class="flex-1 flex gap-2">
-              <div id="video-slot-1" class="video-slot flex-1"></div>
-              <div id="video-slot-2" class="video-slot flex-1"></div>
-            </div>
-            <!-- Bottom Row (4 small slots) -->
-            <div class="flex-1 grid grid-cols-2 grid-rows-2 gap-2">
-              <div id="video-slot-3" class="video-slot"></div>
-              <div id="video-slot-4" class="video-slot"></div>
-              <div id="video-slot-5" class="video-slot"></div>
-              <div id="video-slot-6" class="video-slot"></div>
-            </div>
+          <div id="video-grid-container" class="flex-1 grid grid-cols-2 grid-rows-4 p-2 gap-2 min-h-0">
+            <div id="video-slot-1" class="video-slot row-span-2"></div>
+            <div id="video-slot-2" class="video-slot row-span-2"></div>
+            <div id="video-slot-3" class="video-slot"></div>
+            <div id="video-slot-4" class="video-slot"></div>
+            <div id="video-slot-5" class="video-slot"></div>
+            <div id="video-slot-6" class="video-slot"></div>
           </div>
           <!-- Video Controls -->
           <div id="video-controls-bar" class="bg-white/20 backdrop-blur-lg h-20 flex-shrink-0 flex justify-center items-center gap-4 px-2 border-t border-white/20">
