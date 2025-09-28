@@ -1049,7 +1049,8 @@ const resetVideoSlot = (slotEl) => {
     if(!slotEl) return;
     const video = slotEl.querySelector('video');
     if (video && video.srcObject) {
-        video.srcObject.getTracks().forEach(track => track.stop());
+        // Don't stop tracks, just clear the srcObject
+        // The stream might be needed elsewhere if it's a remote stream
         video.srcObject = null;
     }
     slotEl.querySelector('.video-feed').classList.add('hidden');
@@ -1059,12 +1060,13 @@ const resetVideoSlot = (slotEl) => {
     delete slotEl.dataset.occupantId;
 };
 
-const findAndJoinEmptySlot = async (hasMedia) => {
+const findAndJoinEmptySlot = async () => {
     const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
     const slotsSnapshot = await getDocs(slotsRef);
     const occupiedSlots = new Set(slotsSnapshot.docs.map(d => parseInt(d.id.split('_')[1])));
     
     let targetSlotId = -1;
+    const hasMedia = !!localStream;
 
     // Users with media can join any slot, prioritizing large ones.
     // Users without media can only join small slots.
@@ -1078,47 +1080,11 @@ const findAndJoinEmptySlot = async (hasMedia) => {
     }
   
     if (targetSlotId !== -1) {
-        if (hasMedia) {
-          await joinVideoSlot(targetSlotId);
-        } else {
-          await joinVideoSlotWithoutMedia(targetSlotId);
-        }
+        await joinVideoSlot(targetSlotId);
     } else {
       alert("استدیو تماس پر است یا جای خالی مناسب شما وجود ندارد.");
       switchTab('chat');
     }
-};
-
-const joinVideoSlotWithoutMedia = async (slotId) => {
-    if (myVideoSlotId === slotId) return;
-
-    if (myVideoSlotId) {
-        const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
-        await deleteDoc(oldSlotRef);
-    }
-    
-    // Close old connections to force re-establishment after moving.
-    Object.values(peerConnections).forEach(pc => pc.close());
-    peerConnections = {};
-
-    myVideoSlotId = slotId;
-    const slotEl = document.getElementById(`video-slot-${slotId}`);
-    
-    slotEl.querySelector('.video-feed').classList.add('hidden');
-    slotEl.querySelector('.empty-placeholder').classList.add('hidden');
-    const avatarPlaceholder = slotEl.querySelector('.avatar-placeholder');
-    avatarPlaceholder.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
-    avatarPlaceholder.classList.remove('hidden');
-    slotEl.querySelector('.name-pill').textContent = currentUsername;
-    slotEl.dataset.occupantId = currentUserId;
-
-    const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
-    await setDoc(slotRef, { 
-        occupantId: currentUserId, 
-        occupantName: currentUsername,
-        occupantAvatar: currentUserAvatar,
-        isCameraOff: true
-    });
 };
 
 const enterVideoCallRoom = async () => {
@@ -1128,15 +1094,14 @@ const enterVideoCallRoom = async () => {
 
     try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        isMicOn = true;
+        isCameraOn = true;
         toggleMicBtn.disabled = false;
         toggleCameraBtn.disabled = false;
         toggleMicBtn.classList.add('bg-green-500/80');
         toggleCameraBtn.classList.add('bg-green-500/80');
         toggleMicBtn.classList.remove('bg-white/40');
         toggleCameraBtn.classList.remove('bg-white/40');
-        isMicOn = true;
-        isCameraOn = true;
-        await findAndJoinEmptySlot(true);
     } catch (err) {
         console.error("Error accessing media devices. Joining without media.", err);
         localStream = null;
@@ -1144,8 +1109,8 @@ const enterVideoCallRoom = async () => {
         isCameraOn = false;
         toggleMicBtn.disabled = true;
         toggleCameraBtn.disabled = true;
-        await findAndJoinEmptySlot(false);
     }
+    await findAndJoinEmptySlot();
 };
 
 const initializeVideoUI = () => {
@@ -1163,21 +1128,10 @@ const initializeVideoUI = () => {
             <div class="name-pill absolute bottom-2 right-2 px-3 py-0.5 bg-black/30 backdrop-blur-lg text-white text-[10px] font-semibold rounded-full whitespace-nowrap"></div>
         </div>
         `;
-    }
-    slot.querySelector('.empty-placeholder').addEventListener('click', () => {
-        if (localStream) { // User has media, can move anywhere
+        slot.querySelector('.empty-placeholder').addEventListener('click', () => {
             joinVideoSlot(slotId);
-        } else if (myVideoSlotId) { // User has no media, but is in the room
-            if (slotId > 2) { // Can only move to small slots
-                joinVideoSlotWithoutMedia(slotId);
-            } else {
-                alert('برای استفاده از کادرهای بزرگ نیاز به دسترسی دوربین و میکروفون دارید.');
-            }
-        } else {
-            // This case shouldn't happen if user is already in the room
-            alert('ابتدا باید به استدیو متصل شوید.');
-        }
-    });
+        });
+    }
   });
   
   toggleMicBtn.disabled = true;
@@ -1189,36 +1143,62 @@ const initializeVideoUI = () => {
 };
 
 const joinVideoSlot = async (slotId) => {
-    if (localStream === null) {
-        alert("دسترسی به دوربین و میکروفون وجود ندارد. لطفا صفحه را رفرش کنید.");
+    if (myVideoSlotId === slotId) return;
+
+    if (!localStream && slotId <= 2) {
+        alert('برای استفاده از کادرهای بزرگ نیاز به دسترسی دوربین و میکروفون دارید.');
         return;
     }
-    if (myVideoSlotId === slotId) return;
-    
-    // Hang up from the old slot before joining the new one
-    await hangUp(false);
 
+    const oldSlotId = myVideoSlotId;
     myVideoSlotId = slotId;
-    const slotEl = document.getElementById(`video-slot-${slotId}`);
-    const videoEl = slotEl.querySelector('video');
-    videoEl.srcObject = localStream;
-    videoEl.muted = true;
-    slotEl.querySelector('.video-feed').classList.remove('hidden');
-    slotEl.querySelector('.empty-placeholder').classList.add('hidden');
-    slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
-    slotEl.querySelector('.name-pill').textContent = currentUsername;
-    slotEl.dataset.occupantId = currentUserId;
 
-    isMicOn = localStream.getAudioTracks()[0]?.enabled ?? true;
-    isCameraOn = localStream.getVideoTracks()[0]?.enabled ?? true;
+    // --- Update UI immediately ---
+    const newSlotEl = document.getElementById(`video-slot-${slotId}`);
     
-    const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
-    await setDoc(slotRef, { 
+    // Update new slot UI
+    if (localStream) {
+        const videoEl = newSlotEl.querySelector('video');
+        videoEl.srcObject = localStream;
+        videoEl.muted = true;
+        newSlotEl.querySelector('.video-feed').classList.remove('hidden');
+        newSlotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+    } else {
+        newSlotEl.querySelector('.video-feed').classList.add('hidden');
+        const avatarPlaceholder = newSlotEl.querySelector('.avatar-placeholder');
+        avatarPlaceholder.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+        avatarPlaceholder.classList.remove('hidden');
+    }
+    newSlotEl.querySelector('.empty-placeholder').classList.add('hidden');
+    newSlotEl.querySelector('.name-pill').textContent = currentUsername;
+    newSlotEl.dataset.occupantId = currentUserId;
+
+    // Reset old slot UI
+    if (oldSlotId) {
+        const oldSlotEl = document.getElementById(`video-slot-${oldSlotId}`);
+        if(oldSlotEl) resetVideoSlot(oldSlotEl);
+    }
+    
+    // --- Update Firestore ---
+    const batch = writeBatch(db);
+    
+    // Delete old document if it exists
+    if (oldSlotId) {
+        const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${oldSlotId}`);
+        batch.delete(oldSlotRef);
+    }
+
+    // Create new document
+    const newSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
+    const slotData = { 
       occupantId: currentUserId, 
       occupantName: currentUsername,
       occupantAvatar: currentUserAvatar,
       isCameraOff: !isCameraOn 
-    });
+    };
+    batch.set(newSlotRef, slotData);
+
+    await batch.commit();
 };
 
 const startPeerConnection = async (remoteUserId) => {
@@ -1287,7 +1267,7 @@ const setupVideoCallListeners = () => {
       videoCallListeners = [];
     }
     
-    const activeOccupants = new Map();
+    let activeOccupants = new Map();
 
     // --- Main Listener for Room State ---
     const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
@@ -1300,9 +1280,8 @@ const setupVideoCallListeners = () => {
         });
 
         // Handle departures
-        for (const occupantId of activeOccupants.keys()) {
+        for (const [occupantId, occupantData] of activeOccupants.entries()) {
             if (!newOccupants.has(occupantId)) {
-                const occupantData = activeOccupants.get(occupantId);
                 const slotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
                 resetVideoSlot(slotEl);
                 if (peerConnections[occupantId]) {
@@ -1316,33 +1295,55 @@ const setupVideoCallListeners = () => {
         for (const [occupantId, occupantData] of newOccupants.entries()) {
             if (occupantId === currentUserId) continue;
 
-            const slotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
-            if (!slotEl) continue;
+            const oldData = activeOccupants.get(occupantId);
+            const newSlotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
+            if (!newSlotEl) continue;
 
-            const isNew = !activeOccupants.has(occupantId);
-
-            slotEl.dataset.occupantId = occupantId;
-            slotEl.querySelector('.name-pill').textContent = occupantData.occupantName;
-            slotEl.querySelector('.empty-placeholder').classList.add('hidden');
-
-            if (occupantData.isCameraOff) {
-                slotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(occupantData.occupantName, occupantData.occupantAvatar);
-                slotEl.querySelector('.avatar-placeholder').classList.remove('hidden');
-                slotEl.querySelector('.video-feed').classList.add('hidden');
-                const video = slotEl.querySelector('video');
-                if (video.srcObject) video.srcObject = null;
-            } else {
-                slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+            // If user moved, move their video stream and reset their old slot
+            if (oldData && oldData.slotId !== occupantData.slotId) {
+                const oldSlotEl = document.getElementById(`video-slot-${oldData.slotId}`);
+                if (oldSlotEl) {
+                    const oldVideoEl = oldSlotEl.querySelector('video');
+                    if (oldVideoEl && oldVideoEl.srcObject) {
+                        const newVideoEl = newSlotEl.querySelector('video');
+                        newVideoEl.srcObject = oldVideoEl.srcObject;
+                        oldVideoEl.srcObject = null;
+                    }
+                    resetVideoSlot(oldSlotEl);
+                }
             }
             
-            if (isNew && myVideoSlotId && !peerConnections[occupantId] && currentUserId < occupantId) {
-                 startPeerConnection(occupantId);
+            // Update the new slot's UI
+            newSlotEl.dataset.occupantId = occupantId;
+            newSlotEl.querySelector('.name-pill').textContent = occupantData.occupantName;
+            newSlotEl.querySelector('.empty-placeholder').classList.add('hidden');
+
+            const newVideoEl = newSlotEl.querySelector('video');
+
+            if (occupantData.isCameraOff) {
+                newSlotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(occupantData.occupantName, occupantData.occupantAvatar);
+                newSlotEl.querySelector('.avatar-placeholder').classList.remove('hidden');
+                newSlotEl.querySelector('.video-feed').classList.add('hidden');
+                if (newVideoEl.srcObject) newVideoEl.srcObject = null;
+            } else {
+                newSlotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+                // If a stream exists (from a move), ensure video feed is visible
+                if (newVideoEl.srcObject) {
+                    newSlotEl.querySelector('.video-feed').classList.remove('hidden');
+                }
+            }
+            
+            // Initiate connection for new arrivals
+            const isNew = !activeOccupants.has(occupantId);
+            if (isNew && myVideoSlotId && !peerConnections[occupantId]) {
+                // To avoid both users initiating, the one with the "smaller" ID sends the offer
+                if (currentUserId < occupantId) {
+                    startPeerConnection(occupantId);
+                }
             }
         }
         
-        // Update active occupants state
-        activeOccupants.clear();
-        newOccupants.forEach((data, id) => activeOccupants.set(id, data));
+        activeOccupants = newOccupants;
     });
     videoCallListeners.push(unsubscribeSlots);
 
@@ -1396,7 +1397,7 @@ const hangUp = async (fullCleanup = true) => {
 
     if (myVideoSlotId) {
         const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
-        // The onSnapshot listener will handle resetting the UI element
+        // The onSnapshot listener will handle resetting the UI element for others
         await deleteDoc(slotRef).catch(err => console.error("Error deleting slot doc:", err));
         myVideoSlotId = null;
     }
@@ -1609,7 +1610,9 @@ const startApp = async () => {
 
 window.addEventListener('beforeunload', (e) => {
     if (myVideoSlotId) {
-        hangUp(false); // Use false to avoid stopping the stream which might not finish before unload
+        // This is a best-effort attempt. It might not always complete.
+        // The startup cleanup logic is the more reliable solution for stale slots.
+        hangUp(true); 
     }
 });
 
