@@ -95,13 +95,47 @@
         
         <!-- Global Top Navigation -->
         <div id="global-nav" class="bg-white/20 backdrop-blur-lg px-2 h-16 flex-shrink-0 z-10 flex justify-center items-center gap-2 border-b border-white/20">
-            <button id="nav-studio-btn" class="nav-btn flex-1 py-2 rounded-lg transition-colors text-sm font-semibold glass-button-gray text-gray-700">استدیو تماس</button>
-            <button id="nav-chat-btn" class="nav-btn flex-1 py-2 rounded-lg transition-colors text-sm font-semibold glass-button-blue text-white">چت</button>
+            <button id="nav-chat-btn" class="nav-btn flex-1 py-2 px-8 rounded-lg transition-colors text-sm font-semibold glass-button-blue text-white">چت</button>
+            <button id="nav-studio-btn" class="nav-btn flex-1 py-2 px-8 rounded-lg transition-colors text-sm font-semibold glass-button-gray text-gray-700">استدیو تماس</button>
         </div>
 
         <!-- Main Content Wrapper for Animation -->
         <div id="main-content-wrapper" class="w-full flex-1 relative z-0 min-h-0 overflow-hidden">
             <div id="main-content-slider" class="flex h-full w-[200%] transition-transform duration-300 ease-in-out">
+                <!-- Chat Container (width: 50%) -->
+                <div id="chat-container" class="w-1/2 h-full flex flex-col bg-transparent">
+                  <!-- Messages Container -->
+                  <div id="messages-container" class="flex-1 overflow-y-auto p-4 min-h-0">
+                    <div id="loading-spinner" class="text-center py-4 hidden">
+                        <svg class="animate-spin h-6 w-6 text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                    <ul id="messages-list" class="flex flex-col"></ul>
+                  </div>
+                  <!-- Scroll to Bottom Button -->
+                  <button id="scroll-to-bottom-btn" class="absolute bottom-24 right-6 bg-gray-500/50 backdrop-blur-lg text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-opacity duration-300 opacity-0 view-hidden">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                  </button>
+                  <!-- Message Input -->
+                  <div class="flex-shrink-0 h-16 px-2 bg-white/20 backdrop-blur-lg z-10 flex items-center border-t border-white/20">
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse w-full">
+                        <button type="button" id="send-button" class="flex-shrink-0 w-12 h-12 rounded-full transition-opacity disabled:opacity-40 bg-green-500 text-white flex items-center justify-center" disabled>
+                          <svg class="w-7 h-7" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 5 L5 15 L19 15 Z" fill="white"/>
+                          </svg>
+                        </button>
+                        <div class="flex-1 relative h-12">
+                            <textarea id="message-input" placeholder="پیام..." class="w-full bg-white/50 backdrop-blur-sm text-gray-800 border border-gray-300/50 rounded-2xl py-2.5 pl-12 pr-4 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
+                            <label for="file-input" class="absolute top-1/2 -translate-y-1/2 left-2 p-1 rounded-full transition-colors cursor-pointer persistent-hover-bg">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
+                                </svg>
+                                <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
+                            </label>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Video Call Container (width: 50%) -->
                 <div id="video-call-container" class="w-1/2 h-full flex flex-col bg-transparent">
                   <!-- Video Grid -->
@@ -132,40 +166,7 @@
                     </button>
                   </div>
                 </div>
-                
-                <!-- Chat Container (width: 50%) -->
-                <div id="chat-container" class="w-1/2 h-full flex flex-col bg-transparent">
-                  <!-- Messages Container -->
-                  <div id="messages-container" class="flex-1 overflow-y-auto p-4 min-h-0">
-                    <div id="loading-spinner" class="text-center py-4 hidden">
-                        <svg class="animate-spin h-6 w-6 text-blue-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </div>
-                    <ul id="messages-list" class="flex flex-col"></ul>
-                  </div>
-                  <!-- Scroll to Bottom Button -->
-                  <button id="scroll-to-bottom-btn" class="absolute bottom-24 right-6 bg-gray-500/50 backdrop-blur-lg text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-opacity duration-300 opacity-0 view-hidden">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
-                  </button>
-                  <!-- Message Input -->
-                  <div class="flex-shrink-0 h-16 px-2 bg-white/20 backdrop-blur-lg z-10 flex items-center">
-                    <div class="flex items-center space-x-2 rtl:space-x-reverse w-full">
-                        <button type="button" id="send-button" class="flex-shrink-0 w-12 h-12 rounded-full transition-opacity disabled:opacity-40 bg-green-500 text-white flex items-center justify-center" disabled>
-                          <svg class="w-7 h-7" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 5 L5 15 L19 15 Z" fill="white"/>
-                          </svg>
-                        </button>
-                        <div class="flex-1 relative h-12">
-                            <textarea id="message-input" placeholder="پیام..." class="w-full bg-white/50 backdrop-blur-sm text-gray-800 border border-gray-300/50 rounded-2xl py-2.5 pl-12 pr-4 focus:outline-none resize-none h-full overflow-y-auto" inputmode="text"></textarea>
-                            <label for="file-input" class="absolute top-1/2 -translate-y-1/2 left-2 p-1 rounded-full transition-colors cursor-pointer persistent-hover-bg">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3.375 3.375 0 1 1 18.374 9.5l-7.693 7.693a1.125 1.125 0 0 1-1.59-1.591l5.472-5.472" />
-                                </svg>
-                                <input type="file" id="file-input" class="hidden" accept="image/*,video/*,application/*,text/*"/>
-                            </label>
-                        </div>
-                    </div>
-                  </div>
-                </div>
+
             </div>
         </div>
 
