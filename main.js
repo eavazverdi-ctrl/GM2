@@ -168,33 +168,26 @@ const switchTab = async (tabName) => {
 
     // 1. Animate buttons
     const activeBtnClasses = ['bg-green-500/80', 'text-white'];
-    const inactiveBtnClasses = ['bg-white/30', 'text-gray-200'];
+    const inactiveBtnClasses = ['bg-white/20', 'text-gray-200', 'backdrop-blur-lg'];
 
     if (tabName === 'studio') {
-        studioBtn.style.order = 1;
         studioBtn.style.flexBasis = '50%';
-        chatBtn.style.order = 2;
         chatBtn.style.flexBasis = '35%';
-        settingsBtn.style.order = 3;
-        settingsBtn.style.flexBasis = '15%';
 
         studioBtn.classList.remove(...inactiveBtnClasses);
         studioBtn.classList.add(...activeBtnClasses);
         chatBtn.classList.remove(...activeBtnClasses);
         chatBtn.classList.add(...inactiveBtnClasses);
     } else { // chat becomes active
-        chatBtn.style.order = 1;
         chatBtn.style.flexBasis = '50%';
-        studioBtn.style.order = 2;
         studioBtn.style.flexBasis = '35%';
-        settingsBtn.style.order = 3;
-        settingsBtn.style.flexBasis = '15%';
 
         chatBtn.classList.remove(...inactiveBtnClasses);
         chatBtn.classList.add(...activeBtnClasses);
         studioBtn.classList.remove(...activeBtnClasses);
         studioBtn.classList.add(...inactiveBtnClasses);
     }
+    settingsBtn.style.flexBasis = '15%';
 
     // 2. Animate containers
     if (!isInitialLoad) {
@@ -249,28 +242,14 @@ const scrollToBottom = (behavior = 'auto') => {
   messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior });
 };
 
-const hashStringToColor = (str) => {
-    let hash = 0;
-    str = String(str);
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-    return "00000".substring(0, 6 - c.length) + c;
-};
-
 const generateAvatar = (name, url) => {
     if (url && url !== 'null' && url !== 'undefined') {
         return `<img src="${url}" class="w-full h-full object-cover" alt="${name || 'avatar'}"/>`;
     }
-    const initial = name ? name.charAt(0).toUpperCase() : '?';
-    const color = hashStringToColor(name || '');
-    return `
-        <div class="w-full h-full flex items-center justify-center text-white font-bold text-xl" style="background-color: #${color};">
-            ${initial}
-        </div>
-    `;
+    // Return the placeholder SVG HTML instead of the initial
+    return `<svg class="w-full h-full text-gray-400/80 p-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>`;
 };
+
 
 // --- Profile Caching ---
 const getUserProfile = async (userId) => {
@@ -1020,30 +999,16 @@ const findAndJoinEmptySlot = async (withMedia) => {
     
     let targetSlotId = -1;
 
-    if (!withMedia) {
-        // Prioritize small slots (3-6) for users without media
-        for (let i = 3; i <= NUM_VIDEO_SLOTS; i++) {
-            if (!occupiedSlots.has(i)) {
-                targetSlotId = i;
-                break;
-            }
-        }
-        // If small are full, check large slots (1-2)
-        if (targetSlotId === -1) {
-            for (let i = 1; i <= 2; i++) {
-                if (!occupiedSlots.has(i)) {
-                    targetSlotId = i;
-                    break;
-                }
-            }
-        }
-    } else {
-        // Normal check for anyone with media, find first available
-        for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
-          if (!occupiedSlots.has(i)) {
-            targetSlotId = i;
+    // Users with media get right column first (1,3,5), then left (2,4,6)
+    // Users without media get small-right (3,5), then small-left (4,6), then large-right (1), then large-left (2)
+    const searchOrder = withMedia 
+        ? [1, 3, 5, 2, 4, 6]
+        : [3, 5, 4, 6, 1, 2];
+    
+    for (const id of searchOrder) {
+        if (!occupiedSlots.has(id)) {
+            targetSlotId = id;
             break;
-          }
         }
     }
   
@@ -1122,11 +1087,11 @@ const initializeVideoUI = () => {
             <div class="name-pill absolute bottom-2 right-2 px-3 py-1 bg-white/20 backdrop-blur-lg text-gray-300 text-xs font-semibold rounded-full whitespace-nowrap"></div>
         </div>
         `;
-        slot.querySelector('.empty-placeholder').addEventListener('click', () => {
-            if(localStream) joinVideoSlot(slotId)
-            else alert('برای جابجایی نیاز به دسترسی دوربین و میکروفون دارید.');
-        });
     }
+    slot.querySelector('.empty-placeholder').addEventListener('click', () => {
+        if(localStream) joinVideoSlot(slotId)
+        else alert('برای جابجایی نیاز به دسترسی دوربین و میکروفون دارید.');
+    });
   });
   
   toggleMicBtn.disabled = true;
@@ -1137,40 +1102,71 @@ const initializeVideoUI = () => {
   toggleCameraBtn.classList.add('bg-white/40');
 };
 
+const reconnectToAllPeers = async () => {
+    // First, close all existing connections cleanly.
+    Object.values(peerConnections).forEach(pc => pc.close());
+    peerConnections = {};
+
+    // Now, find all other users and initiate new connections.
+    const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    try {
+        const slotsSnapshot = await getDocs(slotsRef);
+        for (const docSnap of slotsSnapshot.docs) {
+            const slotData = docSnap.data();
+            const remoteUserId = slotData.occupantId;
+            const remoteSlotId = parseInt(docSnap.id.split('_')[1]);
+
+            // Don't connect to self or users without video feed
+            if (remoteUserId !== currentUserId && !slotData.isCameraOff) {
+                await startPeerConnection(remoteUserId, remoteSlotId);
+            }
+        }
+    } catch (error) {
+        console.error("Error reconnecting to peers:", error);
+    }
+};
+
 const joinVideoSlot = async (slotId) => {
-  if (!localStream) {
-      alert("دسترسی به مدیا وجود ندارد. لطفا صفحه را رفرش کنید.");
-      return;
-  }
-  if (myVideoSlotId) {
-    if (confirm("شما در حال حاضر در تماس هستید. آیا می‌خواهید تماس فعلی را قطع کرده و به جایگاه جدیدی بپیوندید؟")) {
-        await hangUp(false);
-    } else {
+    if (!localStream) {
+        alert("دسترسی به مدیا وجود ندارد. لطفا صفحه را رفرش کنید.");
         return;
     }
-  }
+    if (myVideoSlotId === slotId) return; // Already in this slot.
+    
+    // If we are already in another slot, leave it first.
+    if (myVideoSlotId) {
+        const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+        await deleteDoc(oldSlotRef);
+        const oldSlotEl = document.getElementById(`video-slot-${myVideoSlotId}`);
+        if (oldSlotEl) {
+            const oldVideo = oldSlotEl.querySelector('video');
+            if (oldVideo && oldVideo.srcObject === localStream) {
+                oldVideo.srcObject = null;
+            }
+        }
+    }
 
-  myVideoSlotId = slotId;
-  const slotEl = document.getElementById(`video-slot-${slotId}`);
-  const videoEl = slotEl.querySelector('video');
-  videoEl.srcObject = localStream;
-  videoEl.muted = true;
-  slotEl.querySelector('.video-feed').classList.remove('hidden');
-  slotEl.querySelector('.empty-placeholder').classList.add('hidden');
-  slotEl.querySelector('.name-pill').textContent = currentUsername;
+    myVideoSlotId = slotId;
+    const slotEl = document.getElementById(`video-slot-${slotId}`);
+    const videoEl = slotEl.querySelector('video');
+    videoEl.srcObject = localStream;
+    videoEl.muted = true;
+    slotEl.querySelector('.video-feed').classList.remove('hidden');
+    slotEl.querySelector('.empty-placeholder').classList.add('hidden');
+    slotEl.querySelector('.name-pill').textContent = currentUsername;
 
-  isMicOn = true;
-  isCameraOn = true;
-  localStream.getAudioTracks()[0].enabled = true;
-  localStream.getVideoTracks()[0].enabled = true;
-  
-  const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
-  await setDoc(slotRef, { 
-    occupantId: currentUserId, 
-    occupantName: currentUsername,
-    occupantAvatar: currentUserAvatar,
-    isCameraOff: false 
-  });
+    isMicOn = localStream.getAudioTracks()[0]?.enabled ?? true;
+    isCameraOn = localStream.getVideoTracks()[0]?.enabled ?? true;
+    
+    const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
+    await setDoc(slotRef, { 
+      occupantId: currentUserId, 
+      occupantName: currentUsername,
+      occupantAvatar: currentUserAvatar,
+      isCameraOff: !isCameraOn 
+    });
+
+    await reconnectToAllPeers();
 };
 
 const startPeerConnection = async (remoteUserId, remoteSlotId) => {
@@ -1504,14 +1500,14 @@ const startApp = async () => {
         // Setup initial UI state without animations
         videoCallContainer.classList.add('view-hidden', 'opacity-0');
         chatContainer.classList.remove('view-hidden', 'opacity-0');
+        
         const activeBtnClasses = ['bg-green-500/80', 'text-white'];
-        const inactiveBtnClasses = ['bg-white/30', 'text-gray-200'];
-        navChatBtn.style.order = 1;
+        const inactiveBtnClasses = ['bg-white/20', 'text-gray-200', 'backdrop-blur-lg'];
+        
         navChatBtn.style.flexBasis = '50%';
-        navStudioBtn.style.order = 2;
         navStudioBtn.style.flexBasis = '35%';
-        settingsBtn.style.order = 3;
         settingsBtn.style.flexBasis = '15%';
+
         navChatBtn.classList.remove(...inactiveBtnClasses);
         navChatBtn.classList.add(...activeBtnClasses);
         navStudioBtn.classList.remove(...activeBtnClasses);
@@ -1519,7 +1515,13 @@ const startApp = async () => {
         
         showView('main'); // Hides modals and shows main app content
         updateSendButtonState();
-        switchTab('chat');
+        
+        // Directly enter the chat room on initial load
+        const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
+        if (roomDoc.exists()) {
+            enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
+        }
+        
         isInitialLoad = false;
 
     } else {
