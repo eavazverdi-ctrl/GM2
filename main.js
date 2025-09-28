@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
-  limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc
+  limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
@@ -25,9 +25,9 @@ const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
-const VIDEO_CALL_ROOM_NAME = 'استدیو تماس';
+const VIDEO_CALL_ROOM_NAME = 'استدیو';
 const GLOBAL_CHAT_ROOM_ID = '_ariana_global_chat_';
-const GLOBAL_CHAT_ROOM_NAME = 'چت';
+const GLOBAL_CHAT_ROOM_NAME = 'گفتگو';
 const NUM_VIDEO_SLOTS = 6;
 
 // --- Global State ---
@@ -273,22 +273,21 @@ const generateAvatar = (name, url) => {
 
 // --- Profile Caching ---
 const getUserProfile = async (userId) => {
-    if (userProfilesCache[userId]) {
-        return userProfilesCache[userId];
-    }
+    // Always try to fetch fresh data to ensure profile updates are reflected.
+    // Fallback to cache only if the network request fails.
     try {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
             const userData = userDoc.data();
-            userProfilesCache[userId] = userData; // Cache the result
+            userProfilesCache[userId] = userData; // Update cache with fresh data
             return userData;
         }
-        const fallback = { username: 'کاربر ناشناس', avatarUrl: null };
-        userProfilesCache[userId] = fallback;
-        return fallback;
+        // User document doesn't exist. Check cache for very old users or return fallback.
+        return userProfilesCache[userId] || { username: 'کاربر ناشناس', avatarUrl: null };
     } catch (error) {
         console.error(`Error fetching profile for user ${userId}:`, error);
-        return { username: 'کاربر', avatarUrl: null };
+        // On error (e.g., offline), fall back to cache to maintain functionality.
+        return userProfilesCache[userId] || { username: 'کاربر', avatarUrl: null };
     }
 };
 
@@ -1429,22 +1428,23 @@ const ensureGlobalChatRoomExists = async () => {
   }
 };
 
-const clearAllVideoSlots = async () => {
+const clearMyPreviousSlotOnStartup = async () => {
     const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    const q = query(slotsCol, where("occupantId", "==", currentUserId));
     try {
-        const snapshot = await getDocs(slotsCol);
-        if (snapshot.empty) return;
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
-        console.log("All previous video slots cleared.");
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => {
+                console.log(`Clearing stale video slot ${doc.id} for user ${currentUserId}`);
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
     } catch (error) {
-        console.error("Error clearing video slots:", error);
+        console.error("Error clearing previous video slot:", error);
     }
 };
-
 
 const listenForGlobalSettings = () => {
     const globalSettingsRef = doc(db, 'app_settings', 'global');
@@ -1507,6 +1507,9 @@ const startApp = async () => {
     }
     
     if (currentUsername) {
+        // Clear any stale video slots from previous sessions before starting UI
+        await clearMyPreviousSlotOnStartup();
+
         // Setup initial UI state without animations
         videoCallContainer.classList.add('view-hidden', 'opacity-0');
         chatContainer.classList.remove('view-hidden', 'opacity-0');
