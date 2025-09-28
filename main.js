@@ -2,14 +2,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDoc, doc, updateDoc,
-  limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc, where, collectionGroup
+  limit, getDocs, startAfter, writeBatch, setDoc, deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { FIREBASE_CONFIG } from './config.js';
 
 // --- App Initialization ---
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
-const roomsCollection = collection(db, 'rooms');
 
 // --- User Identity & Settings ---
 const APP_ACCESS_KEY = 'chat_app_access_v1';
@@ -27,9 +26,11 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB for non-image files
 const IMAGE_MAX_DIMENSION = 1280; // max width/height for compressed images
 const AVATAR_MAX_DIMENSION = 200; // max width/height for avatars
 const MESSAGES_PER_PAGE = 15;
-const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUf35gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAAD+q33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
+const DEFAULT_BACKGROUND_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIbGNtcwIQAABtbnRyUkdCIFhZWiAH4gADABQACQAOAB1hY3NwTVNGVAAAAABzYXdzY3RybAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWhhbmQAAAAAAAAAAAAAAAACaWgAAwAAAAYAAAByAAAAAmZoAAEAAAAMAAAAcgAAAAJpcwAAAAQAAAA0AABoY3BydAAAAUgAAABkY2hhZAAAAZAAAAsUdGV4dAAAAAABY29weXJpZ2h0IChjKSAyMDAwLCAgU0FNU1VOQyBFTEVDVFJPTklDUywgQ08uLCBMVEQuIEFsbCBSaWdodHMgUmVzZXJ2ZWQuCgAAWFlaIAAAAAAAAPNRAAEAAAABFsxYWVogAAAAAAAAAAAAAAAAAAAAAGN1cnYAAAAAAAAAAQIzAAD/7gAOQWRvYmUAZMAAAAAB/9sAhAABAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/ABEIBMADEAMBEQACEQEDEQH/xAC3AAEAAwEBAQEBAQAAAAAAAAADBAUGAgEABwgBAQADAQEBAQAAAAAAAAAAAAABAgMEBQYH/9oADAMBAAIBAgIQAAB+vxvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQAxjGQA-AAAAAAAAAAAAAAAAAAAAAAAAAADUf35gAAAAAAAAAAAAAAAAAAAAND8bAAAAAAAAAAAAAADq33oG1gAAAAAAAAAAAAAAA0M3xAAAAAAAAAAAAAAAAAAABp/nQAAAAAAAAAAAAAAAB1W99AAAAAAAAAAAAAAADxPbAAAAAAAAA5/z4AAAAAPg/H5AAAADlAAAAAAAAD8g+P5H2A5/lUAAAAH0gAAAAAAAADzHn/AB9IfSH0h9HkAAAAAAAAAAAD8g/IOf8/n/I+j5AAAAAAAAAAAAB+f5+T4+v8+f8+QAAAAAAAAAAAAH6PyD8/n8g/I+gAAAAAAAAAAAAA/IPyD8/n/H8g+QAAAAAAAAAAAAH4/kH6fP+D8n0AAAAAAAAAAAAAA/I/x/Afz/g/J9AAAAAAAAAAAAAH6/5P8Aj83yAAAAAAAAAD//Z';
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
 const VIDEO_CALL_ROOM_NAME = 'استدیو تماس';
+const GLOBAL_CHAT_ROOM_ID = '_ariana_global_chat_';
+const GLOBAL_CHAT_ROOM_NAME = 'چت';
 const NUM_VIDEO_SLOTS = 6;
 
 // --- Global State ---
@@ -77,21 +78,7 @@ const usernameInput = document.getElementById('username-input');
 const initialPasswordInput = document.getElementById('initial-password-input');
 const initialUserAvatarInput = document.getElementById('initial-user-avatar-input');
 const initialUserAvatarPreview = document.getElementById('initial-user-avatar-preview');
-const chatListContainer = document.getElementById('chat-list-container');
-const roomList = document.getElementById('room-list');
-const createRoomBtn = document.getElementById('create-room-btn');
 const settingsBtn = document.getElementById('settings-btn');
-const createRoomModal = document.getElementById('create-room-modal');
-const createRoomForm = document.getElementById('create-room-form');
-const newRoomNameInput = document.getElementById('new-room-name');
-const creatorPasswordInput = document.getElementById('creator-password-input');
-const cancelCreateRoomBtn = document.getElementById('cancel-create-room');
-const passwordModal = document.getElementById('password-modal');
-const passwordForm = document.getElementById('password-form');
-const passwordInput = document.getElementById('room-password-input');
-const passwordError = document.getElementById('password-error');
-const passwordModalRoomName = document.getElementById('password-modal-room-name');
-const cancelPasswordEntryBtn = document.getElementById('cancel-password-entry');
 const settingsModal = document.getElementById('settings-modal');
 const userSettingsForm = document.getElementById('user-settings-form');
 const userAvatarPreview = document.getElementById('user-avatar-preview');
@@ -107,11 +94,6 @@ const settingsOkBtn = document.getElementById('settings-ok-btn');
 const settingsCancelBtn = document.getElementById('settings-cancel-btn');
 const chatContainer = document.getElementById('chat-container');
 const chatBackground = document.getElementById('chat-background');
-const chatRoomName = document.getElementById('chat-room-name');
-const chatRoomAvatar = document.getElementById('chat-room-avatar');
-const chatHeaderInfo = document.getElementById('chat-header-info');
-const backToLobbyBtn = document.getElementById('back-to-lobby-btn');
-const chatSettingsBtn = document.getElementById('chat-settings-btn');
 const messagesContainer = document.getElementById('messages-container');
 const messagesList = document.getElementById('messages-list');
 const messageInput = document.getElementById('message-input');
@@ -119,22 +101,6 @@ const fileInput = document.getElementById('file-input');
 const sendButton = document.getElementById('send-button');
 const loadingSpinner = document.getElementById('loading-spinner');
 const scrollToBottomBtn = document.getElementById('scroll-to-bottom-btn');
-const chatSettingsModal = document.getElementById('chat-settings-modal');
-const cancelChatSettings = document.getElementById('cancel-chat-settings');
-const openDeleteChatModalBtn = document.getElementById('open-delete-chat-modal-btn');
-const changePasswordForm = document.getElementById('change-password-form');
-const newPasswordInput2 = document.getElementById('room-info-new-password-input-2');
-const currentPasswordInput2 = document.getElementById('room-info-current-password-input-2');
-const changePasswordStatus = document.getElementById('change-password-status');
-const deleteChatModal = document.getElementById('delete-chat-modal');
-const deleteChatForm = document.getElementById('delete-chat-form');
-const passwordForDeleteInput = document.getElementById('password-for-delete');
-const deleteChatStatus = document.getElementById('delete-chat-status');
-const removePasswordBtn = document.getElementById('remove-password-btn');
-const removePasswordModal = document.getElementById('remove-password-modal');
-const removePasswordForm = document.getElementById('remove-password-form');
-const passwordForRemoveInput = document.getElementById('password-for-remove');
-const removePasswordStatus = document.getElementById('remove-password-status');
 const viewAvatarModal = document.getElementById('view-avatar-modal');
 const viewAvatarDisplay = document.getElementById('view-avatar-display');
 const viewAvatarName = document.getElementById('view-avatar-name');
@@ -150,15 +116,6 @@ const filePreviewContainer = document.getElementById('file-preview-container');
 const fileConfirmStatus = document.getElementById('file-confirm-status');
 const cancelFileUploadBtn = document.getElementById('cancel-file-upload');
 const confirmFileUploadBtn = document.getElementById('confirm-file-upload');
-const roomInfoModal = document.getElementById('room-info-modal');
-const roomInfoForm = document.getElementById('room-info-form');
-const roomInfoAvatarPreview = document.getElementById('room-info-avatar-preview');
-const roomInfoAvatarInput = document.getElementById('room-info-avatar-input');
-const roomInfoBackgroundPreview = document.getElementById('room-info-background-preview');
-const roomInfoBackgroundPreviewText = document.getElementById('room-info-background-preview-text');
-const roomInfoBackgroundInput = document.getElementById('room-info-background-input');
-const roomInfoNameInput = document.getElementById('room-info-name-input');
-const roomInfoStatus = document.getElementById('room-info-status');
 // New Navigation Elements
 const navChatBtn = document.getElementById('nav-chat-btn');
 const navStudioBtn = document.getElementById('nav-studio-btn');
@@ -179,9 +136,8 @@ const videoBackgroundUploadStatus = document.getElementById('video-background-up
 // --- View Management ---
 const showView = (viewId) => {
   [
-    chatListContainer, chatContainer, usernameModal, createRoomModal, passwordModal, settingsModal,
-    chatSettingsModal, deleteChatModal, viewAvatarModal, changeUserAvatarInChatModal, roomInfoModal,
-    fileConfirmModal, videoCallContainer, removePasswordModal
+    chatContainer, usernameModal, settingsModal, viewAvatarModal, 
+    changeUserAvatarInChatModal, fileConfirmModal, videoCallContainer
   ].forEach(el => {
     if (el.id === viewId) {
       el.classList.remove('view-hidden');
@@ -196,11 +152,24 @@ const switchTab = async (tabName) => {
         if (currentRoomId === VIDEO_CALL_ROOM_ID) {
             await cleanUpVideoCall();
         }
-        showView('chat-list-container');
+        showView('chat-container');
         navChatBtn.classList.add('glass-button-blue', 'text-white');
         navChatBtn.classList.remove('glass-button-gray', 'text-gray-700');
         navStudioBtn.classList.add('glass-button-gray', 'text-gray-700');
         navStudioBtn.classList.remove('glass-button-blue', 'text-white');
+        
+        // Enter the global chat room if not already in it
+        if (currentRoomId !== GLOBAL_CHAT_ROOM_ID) {
+            try {
+                const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
+                if (roomDoc.exists()) {
+                    enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
+                }
+            } catch (error) {
+                console.error("Failed to enter global chat room:", error);
+            }
+        }
+
     } else if (tabName === 'studio') {
         if (messagesUnsubscribe) {
             messagesUnsubscribe();
@@ -418,7 +387,7 @@ settingsBtn.addEventListener('click', () => {
 
 settingsCancelBtn.addEventListener('click', () => {
     applyBackgroundSettings(initialSettingsState.staticBg || DEFAULT_BACKGROUND_BASE64);
-    const activeTabContainerId = videoCallContainer.classList.contains('view-hidden') ? 'chat-list-container' : 'video-call-container';
+    const activeTabContainerId = videoCallContainer.classList.contains('view-hidden') ? 'chat-container' : 'video-call-container';
     showView(activeTabContainerId);
 });
 
@@ -483,81 +452,13 @@ userSettingsForm.addEventListener('submit', async (e) => {
         } catch (error) { console.error("Error syncing user settings:", error); }
     }
     
-    const activeTabContainerId = videoCallContainer.classList.contains('view-hidden') ? 'chat-list-container' : 'video-call-container';
+    const activeTabContainerId = videoCallContainer.classList.contains('view-hidden') ? 'chat-container' : 'video-call-container';
     showView(activeTabContainerId);
 });
-
-
-// --- Lobby Logic ---
-const renderRooms = (rooms) => {
-  roomList.innerHTML = '';
-  if (rooms.length === 0) {
-    roomList.innerHTML = `<li class="text-center text-gray-500 p-4">هنوز گفتگویی ایجاد نشده است. اولین نفر باشید!</li>`;
-  }
-  rooms.forEach(room => {
-    const li = document.createElement('li');
-    li.className = 'bg-white/40 backdrop-blur-md p-3 rounded-xl shadow-sm hover:shadow-lg hover:bg-white/60 transition-all cursor-pointer flex items-center justify-between';
-    li.dataset.roomId = room.id;
-    
-    const roomName = room.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const avatarHTML = generateAvatar(room.name, room.avatarUrl);
-
-    li.innerHTML = `
-      <div class="flex items-center space-x-3 rtl:space-x-reverse">
-        <div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0">${avatarHTML}</div>
-        <span class="font-semibold text-lg text-gray-800">${roomName}</span>
-      </div>
-      ${room.password ? `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-gray-500">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-        </svg>
-      ` : ''}
-    `;
-    li.addEventListener('click', handleRoomClick);
-    roomList.appendChild(li);
-  });
-};
-
-const listenForRooms = () => {
-  const q = query(roomsCollection, orderBy('createdAt', 'desc'));
-  onSnapshot(q, (snapshot) => {
-    const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderRooms(rooms);
-  });
-};
-
-const handleRoomClick = async (e) => {
-  const roomEl = e.currentTarget;
-  const { roomId } = roomEl.dataset;
-  
-  if (roomId === VIDEO_CALL_ROOM_ID) {
-    switchTab('studio');
-    return;
-  }
-
-  const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-  if (!roomDoc.exists()) return;
-  const roomData = roomDoc.data();
-  
-  const accessGranted = localStorage.getItem(`room_access_${roomId}`);
-  
-  if (!roomData.password || accessGranted) {
-    enterChatRoom(roomId, roomData);
-  } else {
-    passwordError.classList.add('hidden');
-    passwordInput.value = '';
-    passwordModalRoomName.textContent = roomData.name;
-    passwordForm.dataset.roomId = roomId;
-    showView('password-modal');
-    passwordInput.focus();
-  }
-};
 
 // --- Chat Room Logic ---
 const enterChatRoom = (roomId, roomData) => {
   currentRoomId = roomId;
-  chatRoomName.textContent = roomData.name;
-  chatRoomAvatar.innerHTML = generateAvatar(roomData.name, roomData.avatarUrl);
   
   if (roomData.backgroundUrl) {
     chatBackground.style.backgroundImage = `url(${roomData.backgroundUrl})`;
@@ -1031,32 +932,6 @@ usernameForm.addEventListener('submit', async (e) => {
     } 
 });
 
-createRoomBtn.addEventListener('click', () => { createRoomForm.reset(); showView('create-room-modal'); newRoomNameInput.focus(); });
-cancelCreateRoomBtn.addEventListener('click', () => showView('chat-list-container'));
-
-createRoomForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); const name = newRoomNameInput.value.trim(); const creatorPassword = creatorPasswordInput.value;
-  if (creatorPassword !== CREATOR_PASSWORD) { alert('رمز سازنده اشتباه است.'); creatorPasswordInput.value = ''; creatorPasswordInput.focus(); return; }
-  if (!name) return;
-  try { await addDoc(roomsCollection, { name, password: null, createdAt: serverTimestamp(), avatarUrl: null, backgroundUrl: null }); showView('chat-list-container'); } catch (error) { console.error("Error creating room:", error); alert('خطا در ایجاد اتاق.'); }
-});
-
-passwordForm.addEventListener('submit', async (e) => {
-  e.preventDefault(); const { roomId } = e.currentTarget.dataset; const enteredPassword = passwordInput.value;
-  try {
-    const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-    if (roomDoc.exists() && roomDoc.data().password === enteredPassword) { 
-        localStorage.setItem(`room_access_${roomId}`, 'true'); 
-        enterChatRoom(roomId, roomDoc.data());
-    } else { 
-        passwordError.classList.remove('hidden'); 
-    }
-  } catch (error) { console.error("Error verifying password:", error); passwordError.textContent = 'خطای شبکه'; passwordError.classList.remove('hidden'); }
-});
-
-cancelPasswordEntryBtn.addEventListener('click', () => showView('chat-list-container'));
-backToLobbyBtn.addEventListener('click', () => { if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; } currentRoomId = null; chatBackground.style.backgroundImage = ''; showView('chat-list-container'); });
-
 const updateSendButtonState = () => {
     const hasText = messageInput.value.trim().length > 0; 
     sendButton.disabled = !hasText;
@@ -1091,221 +966,7 @@ messageInput.addEventListener('keydown', (e) => {
     }
 });
 
-// --- Chat Settings Listeners ---
-chatSettingsBtn.addEventListener('click', () => {
-    changePasswordForm.reset();
-    changePasswordStatus.textContent = '';
-    showView('chat-settings-modal');
-});
-cancelChatSettings.addEventListener('click', () => showView('chat-container'));
-
-openDeleteChatModalBtn.addEventListener('click', () => { 
-    deleteChatForm.reset(); 
-    deleteChatStatus.textContent = ''; 
-    showView('delete-chat-modal'); 
-});
-
-chatHeaderInfo.addEventListener('click', async () => {
-    if (!currentRoomId || currentRoomId === VIDEO_CALL_ROOM_ID) return;
-    roomInfoForm.reset();
-    roomInfoStatus.textContent = '';
-    roomInfoStatus.className = 'text-sm mt-2 text-center h-4';
-    
-    try {
-        const roomDoc = await getDoc(doc(db, 'rooms', currentRoomId));
-        if (!roomDoc.exists()) {
-            alert('اطلاعات گفتگو یافت نشد.');
-            return;
-        }
-        const roomData = roomDoc.data();
-        
-        roomInfoNameInput.value = roomData.name || '';
-        roomInfoAvatarPreview.innerHTML = generateAvatar(roomData.name, roomData.avatarUrl);
-        roomInfoBackgroundPreview.style.backgroundImage = roomData.backgroundUrl ? `url(${roomData.backgroundUrl})` : '';
-        roomInfoBackgroundPreviewText.classList.toggle('hidden', !!roomData.backgroundUrl);
-        
-        showView('room-info-modal');
-    } catch (error) {
-        console.error("Error fetching room details:", error);
-        alert('خطا در دریافت اطلاعات گفتگو.');
-    }
-});
-
-roomInfoAvatarInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (file) {
-        roomInfoAvatarPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover"/>`;
-    }
-});
-roomInfoBackgroundInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (file) {
-        roomInfoBackgroundPreview.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
-        roomInfoBackgroundPreviewText.classList.add('hidden');
-    }
-});
-
-roomInfoForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentRoomId) return;
-
-    const newName = roomInfoNameInput.value.trim();
-    const avatarFile = roomInfoAvatarInput.files[0];
-    const backgroundFile = roomInfoBackgroundInput.files[0];
-
-    roomInfoStatus.textContent = 'در حال پردازش...';
-    roomInfoStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
-    
-    try {
-        const roomRef = doc(db, 'rooms', currentRoomId);
-        const roomDoc = await getDoc(roomRef);
-        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-        const roomData = roomDoc.data();
-
-        const updates = {};
-        
-        if (newName && newName !== roomData.name) {
-            updates.name = newName;
-        }
-        if (avatarFile) {
-            updates.avatarUrl = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
-        }
-        if (backgroundFile) {
-            updates.backgroundUrl = await compressImage(backgroundFile, IMAGE_MAX_DIMENSION);
-        }
-        
-        if (Object.keys(updates).length > 0) {
-            await updateDoc(roomRef, updates);
-
-            if (updates.name) chatRoomName.textContent = updates.name;
-            if (updates.avatarUrl) chatRoomAvatar.innerHTML = generateAvatar(updates.name || roomData.name, updates.avatarUrl);
-            if (updates.backgroundUrl) chatBackground.style.backgroundImage = `url(${updates.backgroundUrl})`;
-
-            roomInfoStatus.textContent = 'تغییرات با موفقیت ذخیره شد.';
-            roomInfoStatus.classList.add('text-green-600');
-            setTimeout(() => showView('chat-container'), 1500);
-        } else {
-            roomInfoStatus.textContent = 'تغییری برای ذخیره وجود ندارد.';
-            roomInfoStatus.classList.add('text-yellow-600');
-            setTimeout(() => showView('chat-container'), 1000);
-        }
-
-    } catch (error) {
-        console.error("Error updating room info:", error);
-        roomInfoStatus.textContent = error.message || 'خطا در ذخیره تغییرات.';
-        roomInfoStatus.classList.add('text-red-600');
-    }
-});
-
-
-changePasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentRoomId) return;
-
-    const newPassword = newPasswordInput2.value;
-    const currentPassword = currentPasswordInput2.value;
-
-    if (!currentPassword) {
-        changePasswordStatus.textContent = 'رمز فعلی برای تایید لازم است.';
-        changePasswordStatus.className = 'text-sm mt-2 text-center h-4 text-red-600';
-        return;
-    }
-
-    changePasswordStatus.textContent = 'در حال پردازش...';
-    changePasswordStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
-
-    try {
-        const roomRef = doc(db, 'rooms', currentRoomId);
-        const roomDoc = await getDoc(roomRef);
-        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-        const roomData = roomDoc.data();
-
-        const correctPassword = roomData.password || CREATOR_PASSWORD;
-        if (currentPassword !== correctPassword) {
-            throw new Error("رمز فعلی اشتباه است.");
-        }
-
-        await updateDoc(roomRef, { password: newPassword || null });
-        localStorage.removeItem(`room_access_${currentRoomId}`);
-
-        changePasswordStatus.textContent = 'رمز با موفقیت تغییر کرد.';
-        changePasswordStatus.classList.add('text-green-600');
-        setTimeout(() => showView('chat-container'), 1500);
-
-    } catch (error) {
-        console.error("Error changing password:", error);
-        changePasswordStatus.textContent = error.message || 'خطا در تغییر رمز.';
-        changePasswordStatus.classList.add('text-red-600');
-    }
-});
-
-removePasswordBtn.addEventListener('click', () => {
-    removePasswordForm.reset();
-    removePasswordStatus.textContent = '';
-    showView('remove-password-modal');
-});
-
-removePasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!currentRoomId) return;
-    const password = passwordForRemoveInput.value;
-    removePasswordStatus.textContent = 'در حال بررسی رمز...';
-    removePasswordStatus.className = 'text-sm mt-2 text-center h-4 text-gray-700';
-
-    try {
-        const roomRef = doc(db, 'rooms', currentRoomId);
-        const roomDoc = await getDoc(roomRef);
-        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-        const roomData = roomDoc.data();
-        const correctPassword = roomData.password || CREATOR_PASSWORD;
-        if (password !== correctPassword) {
-            throw new Error("رمز فعلی اشتباه است.");
-        }
-        await updateDoc(roomRef, { password: null });
-        localStorage.removeItem(`room_access_${currentRoomId}`);
-        removePasswordStatus.textContent = 'رمز با موفقیت حذف شد.';
-        removePasswordStatus.classList.add('text-green-600');
-        setTimeout(() => showView('chat-container'), 1500);
-
-    } catch(error) {
-        console.error("Error removing password:", error);
-        removePasswordStatus.textContent = error.message || 'خطا در حذف رمز.';
-        removePasswordStatus.classList.add('text-red-600');
-    }
-});
-
-
-document.querySelectorAll('.cancel-btn').forEach(btn => {
-    const parentModal = btn.closest('.fixed');
-    if (!parentModal) return;
-    if (parentModal.id === 'delete-chat-modal' || parentModal.id === 'remove-password-modal') {
-        btn.addEventListener('click', () => showView('chat-settings-modal'));
-    } else if (parentModal.id === 'room-info-modal') {
-        btn.addEventListener('click', () => showView('chat-container'));
-    }
-});
-
-deleteChatForm.addEventListener('submit', async (e) => {
-    e.preventDefault(); if (!currentRoomId) return;
-    const password = passwordForDeleteInput.value;
-    deleteChatStatus.textContent = 'در حال بررسی رمز...'; deleteChatStatus.classList.remove('text-red-600', 'text-green-600');
-    try {
-        const roomRef = doc(db, 'rooms', currentRoomId); const roomDoc = await getDoc(roomRef);
-        if (!roomDoc.exists()) throw new Error("اتاق یافت نشد.");
-        const correctPassword = roomDoc.data().password || CREATOR_PASSWORD;
-        if (password !== correctPassword) { deleteChatStatus.textContent = 'رمز اشتباه است.'; deleteChatStatus.classList.add('text-red-600'); return; }
-        deleteChatStatus.textContent = 'در حال حذف پیام‌ها...'; deleteChatStatus.classList.add('text-yellow-600');
-        const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-        const snapshot = await getDocs(query(messagesCol));
-        for (let i = 0; i < snapshot.docs.length; i += 500) { const batch = writeBatch(db); const chunk = snapshot.docs.slice(i, i + 500); chunk.forEach(doc => batch.delete(doc.ref)); await batch.commit(); }
-        deleteChatStatus.textContent = 'تمام پیام‌ها حذف شدند.'; deleteChatStatus.classList.remove('text-yellow-600'); deleteChatStatus.classList.add('text-green-600');
-        messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">تمام پیام‌ها حذف شدند.</li>';
-        setTimeout(() => { showView('chat-container'); }, 1500);
-    } catch (error) { console.error("Error deleting chat:", error); deleteChatStatus.textContent = error.message || 'خطا در حذف گفتگو.'; deleteChatStatus.classList.add('text-red-600'); }
-});
-
 // --- Video Call Logic ---
-
 const resetVideoSlot = (slotEl) => {
     if(!slotEl) return;
     const video = slotEl.querySelector('video');
@@ -1720,6 +1381,24 @@ const ensureVideoCallRoomExists = async () => {
   }
 };
 
+const ensureGlobalChatRoomExists = async () => {
+  const chatRoomRef = doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID);
+  try {
+    const docSnap = await getDoc(chatRoomRef);
+    if (!docSnap.exists()) {
+      await setDoc(chatRoomRef, {
+        name: GLOBAL_CHAT_ROOM_NAME,
+        createdAt: serverTimestamp(),
+        password: null,
+        avatarUrl: null,
+        backgroundUrl: null
+      });
+    }
+  } catch(error) {
+    console.error("Could not ensure global chat room exists:", error);
+  }
+};
+
 
 const listenForGlobalSettings = () => {
     const globalSettingsRef = doc(db, 'app_settings', 'global');
@@ -1754,8 +1433,10 @@ const startApp = async () => {
   
   try {
     await ensureVideoCallRoomExists();
+    await ensureGlobalChatRoomExists();
   } catch(e) {
-    console.error("Fatal error during startup (ensureVideoCallRoomExists):", e);
+    console.error("Fatal error during startup (ensure rooms exist):", e);
+    document.body.innerHTML = '<h1>خطای راه اندازی برنامه</h1><p>لطفا صفحه را رفرش کنید.</p>';
     return;
   }
 
@@ -1780,9 +1461,8 @@ const startApp = async () => {
     }
     
     if (currentUsername) {
-        switchTab('chat');
-        listenForRooms();
         updateSendButtonState();
+        switchTab('chat');
     } else {
         showView('username-modal');
         usernameInput.focus();
