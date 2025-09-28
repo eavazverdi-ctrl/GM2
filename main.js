@@ -1021,15 +1021,16 @@ const resetVideoSlot = (slotEl) => {
     delete slotEl.dataset.occupantId;
 };
 
-const findAndJoinEmptySlot = async (withMedia) => {
+const findAndJoinEmptySlot = async (hasMedia) => {
     const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
     const slotsSnapshot = await getDocs(slotsRef);
     const occupiedSlots = new Set(slotsSnapshot.docs.map(d => parseInt(d.id.split('_')[1])));
     
     let targetSlotId = -1;
 
-    // New logic: Prioritize large slots (1, 2), then smaller slots
-    const searchOrder = [1, 2, 3, 4, 5, 6];
+    // Users with media can join any slot, prioritizing large ones.
+    // Users without media can only join small slots.
+    const searchOrder = hasMedia ? [1, 2, 3, 4, 5, 6] : [3, 4, 5, 6];
     
     for (const id of searchOrder) {
         if (!occupiedSlots.has(id)) {
@@ -1039,21 +1040,29 @@ const findAndJoinEmptySlot = async (withMedia) => {
     }
   
     if (targetSlotId !== -1) {
-        if (withMedia) {
+        if (hasMedia) {
           await joinVideoSlot(targetSlotId);
         } else {
           await joinVideoSlotWithoutMedia(targetSlotId);
         }
     } else {
-      alert("استدیو تماس پر است.");
+      alert("استدیو تماس پر است یا جای خالی مناسب شما وجود ندارد.");
       switchTab('chat');
     }
 };
 
 const joinVideoSlotWithoutMedia = async (slotId) => {
+    if (myVideoSlotId === slotId) return;
+
     if (myVideoSlotId) {
-        await hangUp(false);
+        const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+        await deleteDoc(oldSlotRef);
     }
+    
+    // Close old connections to force re-establishment after moving.
+    Object.values(peerConnections).forEach(pc => pc.close());
+    peerConnections = {};
+
     myVideoSlotId = slotId;
     const slotEl = document.getElementById(`video-slot-${slotId}`);
     
@@ -1063,6 +1072,7 @@ const joinVideoSlotWithoutMedia = async (slotId) => {
     avatarPlaceholder.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
     avatarPlaceholder.classList.remove('hidden');
     slotEl.querySelector('.name-pill').textContent = currentUsername;
+    slotEl.dataset.occupantId = currentUserId;
 
     const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
     await setDoc(slotRef, { 
@@ -1086,6 +1096,8 @@ const enterVideoCallRoom = async () => {
         toggleCameraBtn.classList.add('bg-green-500/80');
         toggleMicBtn.classList.remove('bg-white/40');
         toggleCameraBtn.classList.remove('bg-white/40');
+        isMicOn = true;
+        isCameraOn = true;
         await findAndJoinEmptySlot(true);
     } catch (err) {
         console.error("Error accessing media devices. Joining without media.", err);
@@ -1115,8 +1127,18 @@ const initializeVideoUI = () => {
         `;
     }
     slot.querySelector('.empty-placeholder').addEventListener('click', () => {
-        if(localStream) joinVideoSlot(slotId)
-        else alert('برای جابجایی نیاز به دسترسی دوربین و میکروفون دارید.');
+        if (localStream) { // User has media, can move anywhere
+            joinVideoSlot(slotId);
+        } else if (myVideoSlotId) { // User has no media, but is in the room
+            if (slotId > 2) { // Can only move to small slots
+                joinVideoSlotWithoutMedia(slotId);
+            } else {
+                alert('برای استفاده از کادرهای بزرگ نیاز به دسترسی دوربین و میکروفون دارید.');
+            }
+        } else {
+            // This case shouldn't happen if user is already in the room
+            alert('ابتدا باید به استدیو متصل شوید.');
+        }
     });
   });
   
@@ -1130,15 +1152,13 @@ const initializeVideoUI = () => {
 
 const joinVideoSlot = async (slotId) => {
     if (localStream === null) {
-        alert("دسترسی به مدیا وجود ندارد. لطفا صفحه را رفرش کنید.");
+        alert("دسترسی به دوربین و میکروفون وجود ندارد. لطفا صفحه را رفرش کنید.");
         return;
     }
     if (myVideoSlotId === slotId) return;
     
-    if (myVideoSlotId) {
-        const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
-        await deleteDoc(oldSlotRef);
-    }
+    // Hang up from the old slot before joining the new one
+    await hangUp(false);
 
     myVideoSlotId = slotId;
     const slotEl = document.getElementById(`video-slot-${slotId}`);
@@ -1149,6 +1169,7 @@ const joinVideoSlot = async (slotId) => {
     slotEl.querySelector('.empty-placeholder').classList.add('hidden');
     slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
     slotEl.querySelector('.name-pill').textContent = currentUsername;
+    slotEl.dataset.occupantId = currentUserId;
 
     isMicOn = localStream.getAudioTracks()[0]?.enabled ?? true;
     isCameraOn = localStream.getVideoTracks()[0]?.enabled ?? true;
@@ -1162,7 +1183,7 @@ const joinVideoSlot = async (slotId) => {
     });
 };
 
-const startPeerConnection = async (remoteUserId, remoteSlotId) => {
+const startPeerConnection = async (remoteUserId) => {
     const pc = createPeerConnection(remoteUserId);
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -1170,7 +1191,6 @@ const startPeerConnection = async (remoteUserId, remoteSlotId) => {
     const offersRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
     await addDoc(offersRef, { 
         from: currentUserId, 
-        fromSlot: myVideoSlotId,
         offer: { type: offer.type, sdp: offer.sdp } 
     });
 }
@@ -1195,6 +1215,7 @@ const createPeerConnection = (remoteUserId) => {
             }
             remoteVideo.srcObject.addTrack(event.track);
 
+            // Ensure video is visible if a track is received, overriding avatar
             slotEl.querySelector('.video-feed').classList.remove('hidden');
             slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
         }
@@ -1205,7 +1226,6 @@ const createPeerConnection = (remoteUserId) => {
             const signalingRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
             addDoc(signalingRef, { 
                 from: currentUserId, 
-                fromSlot: myVideoSlotId,
                 candidate: event.candidate.toJSON() 
             });
         }
@@ -1228,65 +1248,66 @@ const setupVideoCallListeners = () => {
       videoCallListeners.forEach(unsub => unsub());
       videoCallListeners = [];
     }
+    
+    const activeOccupants = new Map();
 
     // --- Main Listener for Room State ---
     const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
     const unsubscribeSlots = onSnapshot(slotsCol, async (snapshot) => {
-      const currentSlotOccupants = new Map(); // slotId -> {occupantId, occupantName, ...}
-      snapshot.forEach(docSnap => {
-          const slotData = docSnap.data();
-          const slotId = parseInt(docSnap.id.split('_')[1]);
-          currentSlotOccupants.set(slotId, slotData);
-      });
+        const newOccupants = new Map();
+        snapshot.forEach(docSnap => {
+            const slotData = docSnap.data();
+            const slotId = parseInt(docSnap.id.split('_')[1]);
+            newOccupants.set(slotData.occupantId, { ...slotData, slotId });
+        });
 
-      for (let slotId = 1; slotId <= NUM_VIDEO_SLOTS; slotId++) {
-          const slotEl = document.getElementById(`video-slot-${slotId}`);
-          if (!slotEl) continue;
+        // Handle departures
+        for (const occupantId of activeOccupants.keys()) {
+            if (!newOccupants.has(occupantId)) {
+                const occupantData = activeOccupants.get(occupantId);
+                const slotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
+                resetVideoSlot(slotEl);
+                if (peerConnections[occupantId]) {
+                    peerConnections[occupantId].close();
+                    delete peerConnections[occupantId];
+                }
+            }
+        }
+        
+        // Handle arrivals and updates
+        for (const [occupantId, occupantData] of newOccupants.entries()) {
+            if (occupantId === currentUserId) continue;
 
-          const newOccupantData = currentSlotOccupants.get(slotId);
-          const oldOccupantId = slotEl.dataset.occupantId;
-          
-          if (newOccupantData) {
-              const newOccupantId = newOccupantData.occupantId;
-              
-              if (oldOccupantId && oldOccupantId !== newOccupantId) {
-                  if(peerConnections[oldOccupantId]) {
-                      peerConnections[oldOccupantId].close();
-                      delete peerConnections[oldOccupantId];
-                  }
-              }
+            const slotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
+            if (!slotEl) continue;
 
-              slotEl.dataset.occupantId = newOccupantId;
-              slotEl.querySelector('.name-pill').textContent = newOccupantData.occupantName;
-              slotEl.querySelector('.empty-placeholder').classList.add('hidden');
+            const isNew = !activeOccupants.has(occupantId);
 
-              if (newOccupantId === currentUserId) continue;
+            slotEl.dataset.occupantId = occupantId;
+            slotEl.querySelector('.name-pill').textContent = occupantData.occupantName;
+            slotEl.querySelector('.empty-placeholder').classList.add('hidden');
 
-              if (newOccupantData.isCameraOff) {
-                slotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(newOccupantData.occupantName, newOccupantData.occupantAvatar);
+            if (occupantData.isCameraOff) {
+                slotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(occupantData.occupantName, occupantData.occupantAvatar);
                 slotEl.querySelector('.avatar-placeholder').classList.remove('hidden');
                 slotEl.querySelector('.video-feed').classList.add('hidden');
                 const video = slotEl.querySelector('video');
                 if (video.srcObject) video.srcObject = null;
-              } else {
+            } else {
                 slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
-              }
-              
-              if ((myVideoSlotId || localStream === null) && !peerConnections[newOccupantId] && currentUserId < newOccupantId) {
-                   startPeerConnection(newOccupantId, slotId);
-              }
-          } else {
-              if (oldOccupantId) {
-                  if(peerConnections[oldOccupantId]) {
-                      peerConnections[oldOccupantId].close();
-                      delete peerConnections[oldOccupantId];
-                  }
-                  resetVideoSlot(slotEl);
-              }
-          }
-      }
+            }
+            
+            if (isNew && myVideoSlotId && !peerConnections[occupantId] && currentUserId < occupantId) {
+                 startPeerConnection(occupantId);
+            }
+        }
+        
+        // Update active occupants state
+        activeOccupants.clear();
+        newOccupants.forEach((data, id) => activeOccupants.set(id, data));
     });
     videoCallListeners.push(unsubscribeSlots);
+
 
     // --- Signaling Listener for WebRTC ---
     const offersCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', currentUserId, 'offers');
@@ -1295,7 +1316,6 @@ const setupVideoCallListeners = () => {
             if (change.type === 'added') {
                 const data = change.doc.data();
                 const remoteUserId = data.from;
-                const remoteSlotId = data.fromSlot;
 
                 const pc = peerConnections[remoteUserId] || createPeerConnection(remoteUserId);
 
@@ -1306,7 +1326,6 @@ const setupVideoCallListeners = () => {
                     const answerRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
                     await addDoc(answerRef, { 
                         from: currentUserId, 
-                        fromSlot: myVideoSlotId,
                         answer: { type: answer.type, sdp: answer.sdp } 
                     });
                 } else if (data.answer) {
@@ -1315,7 +1334,9 @@ const setupVideoCallListeners = () => {
                     }
                 } else if (data.candidate) {
                     try {
-                      await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                      if (pc.remoteDescription) {
+                          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                      }
                     } catch (e) { console.error('Error adding received ice candidate', e); }
                 }
                 
@@ -1337,6 +1358,7 @@ const hangUp = async (fullCleanup = true) => {
 
     if (myVideoSlotId) {
         const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+        // The onSnapshot listener will handle resetting the UI element
         await deleteDoc(slotRef).catch(err => console.error("Error deleting slot doc:", err));
         myVideoSlotId = null;
     }
@@ -1344,8 +1366,8 @@ const hangUp = async (fullCleanup = true) => {
     if (fullCleanup) {
         toggleMicBtn.disabled = true;
         toggleCameraBtn.disabled = true;
-        toggleMicBtn.classList.remove('bg-green-500/80');
-        toggleCameraBtn.classList.remove('bg-green-500/80');
+        toggleMicBtn.classList.remove('bg-green-500/80', 'bg-white/40');
+        toggleCameraBtn.classList.remove('bg-green-500/80', 'bg-white/40');
         toggleMicBtn.classList.add('bg-white/40');
         toggleCameraBtn.classList.add('bg-white/40');
     }
