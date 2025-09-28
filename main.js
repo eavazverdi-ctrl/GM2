@@ -1029,11 +1029,8 @@ const findAndJoinEmptySlot = async (withMedia) => {
     
     let targetSlotId = -1;
 
-    // Users with media get right column first (1,3,5), then left (2,4,6)
-    // Users without media get small-right (3,5), then small-left (4,6), then large-right (1), then large-left (2)
-    const searchOrder = withMedia 
-        ? [1, 3, 5, 2, 4, 6]
-        : [3, 5, 4, 6, 1, 2];
+    // New logic: Prioritize large slots (1, 2), then smaller slots
+    const searchOrder = [1, 2, 3, 4, 5, 6];
     
     for (const id of searchOrder) {
         if (!occupiedSlots.has(id)) {
@@ -1114,7 +1111,7 @@ const initializeVideoUI = () => {
             <svg class="w-1/4 h-1/4 max-w-[64px] max-h-[64px] text-gray-400/80"><use href="#placeholder-person-svg" /></svg>
             <span class="text-white/70 text-sm mt-2 font-semibold">متصل شوید</span>
             </div>
-            <div class="name-pill absolute bottom-2 right-2 px-3 py-1 bg-black/30 backdrop-blur-lg text-white text-xs font-semibold rounded-full whitespace-nowrap"></div>
+            <div class="name-pill absolute bottom-2 right-2 px-3 py-0.5 bg-black/30 backdrop-blur-lg text-white text-[10px] font-semibold rounded-full whitespace-nowrap"></div>
         </div>
         `;
     }
