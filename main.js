@@ -37,7 +37,7 @@ const MESSAGES_PER_PAGE = 15;
 const VIDEO_CALL_ROOM_ID = '_ariana_video_call_room_';
 const VIDEO_CALL_ROOM_NAME = 'استدیو';
 const GLOBAL_CHAT_ROOM_ID = '_ariana_global_chat_';
-const GLOBAL_CHAT_ROOM_NAME = 'خودمونی ها';
+const GLOBAL_CHAT_ROOM_NAME = 'گفتگو';
 const NUM_VIDEO_SLOTS = 6;
 
 // --- Global State ---
