@@ -52,19 +52,6 @@
               background-color: rgb(209 213 219 / 0.6);
           }
       }
-
-      #app-background.animated-gradient {
-        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-      }
-
-      @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-
     </style>
 </head>
   <body class="bg-gray-200 font-sans font-size-md">
@@ -89,7 +76,7 @@
         <div id="main-content-wrapper" class="w-full flex-1 relative z-0 min-h-0 overflow-hidden">
                 
                 <!-- Video Call Container -->
-                <div id="video-call-container" class="w-full h-full absolute inset-0 flex flex-col bg-transparent transition-opacity duration-300">
+                <div id="video-call-container" class="w-full h-full absolute inset-0 flex flex-col bg-transparent">
                   <!-- Video Grid -->
                   <div id="video-grid-container" class="flex-1 grid grid-cols-2 grid-rows-4 p-2 gap-2 min-h-0">
                     <div id="video-slot-1" class="video-slot row-span-2"></div>
@@ -113,7 +100,7 @@
                 </div>
 
                 <!-- Chat Container -->
-                <div id="chat-container" class="w-full h-full absolute inset-0 flex flex-col bg-transparent transition-opacity duration-300">
+                <div id="chat-container" class="w-full h-full absolute inset-0 flex flex-col bg-transparent">
                   <!-- Messages Container -->
                   <div id="messages-container" class="flex-1 overflow-y-auto p-4 min-h-0">
                     <div id="loading-spinner" class="text-center py-4 hidden">

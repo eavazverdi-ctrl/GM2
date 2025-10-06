@@ -202,15 +202,9 @@ const switchTab = async (tabName) => {
     }
     settingsBtn.style.flexBasis = '15%';
 
-    // 2. Animate containers
-    if (!isInitialLoad) {
-        activeContainer.classList.add('opacity-0');
-        setTimeout(() => {
-            activeContainer.classList.add('view-hidden');
-            newContainer.classList.remove('view-hidden');
-            setTimeout(() => newContainer.classList.remove('opacity-0'), 20);
-        }, 300); // Match CSS transition duration
-    }
+    // 2. Switch containers instantly
+    activeContainer.classList.add('view-hidden');
+    newContainer.classList.remove('view-hidden');
 
     // 3. Handle room logic
     if (tabName === 'studio') {
@@ -232,7 +226,7 @@ const switchTab = async (tabName) => {
     }
     
     lastActiveViewId = newContainer.id;
-    setTimeout(() => { isSwitchingTabs = false; }, 500);
+    setTimeout(() => { isSwitchingTabs = false; }, 50); // Shorter timeout to prevent rapid clicking issues
 };
 
 navChatBtn.addEventListener('click', () => switchTab('chat'));
@@ -351,7 +345,7 @@ const applyBackgroundSettings = (staticBgData) => {
         appBackground.style.backgroundPosition = 'center';
     } else {
         appBackground.style.backgroundImage = ''; // Clear inline style
-        appBackground.classList.add('animated-gradient');
+        appBackground.classList.remove('animated-gradient');
     }
 };
 
@@ -612,33 +606,56 @@ const enterChatRoom = (roomId, roomData) => {
 };
 
 const loadAndListenForMessages = () => {
-  const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-  const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
-  
-  messagesUnsubscribe = onSnapshot(q, (snapshot) => {
-    if (snapshot.empty && messagesList.children.length === 0) {
-      messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
-      reachedEndOfMessages = true;
-      return;
-    }
-    const messages = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      timestamp: doc.data().timestamp?.toDate() ?? new Date(),
-    })).reverse();
-    const isInitialLoad = !oldestMessageDoc;
-    if (isInitialLoad || snapshot.docChanges().some(c => c.type === 'added')) {
-        renderMessages(messages, false, isInitialLoad);
-    }
-    if (snapshot.docs.length > 0) {
-        oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
-    } else {
-        reachedEndOfMessages = true;
-    }
-  }, error => {
-    console.error("Error listening to messages:", error);
-    messagesList.innerHTML = '<li class="text-center text-red-500 p-4">خطا در بارگذاری پیام‌ها.</li>';
-  });
+    const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+    const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
+
+    messagesUnsubscribe = onSnapshot(q, (snapshot) => {
+        if (snapshot.empty && messagesList.children.length === 0) {
+            messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
+            reachedEndOfMessages = true;
+            oldestMessageDoc = null;
+            return;
+        }
+
+        const isInitialLoad = !oldestMessageDoc;
+
+        if (isInitialLoad) {
+            const messages = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                timestamp: doc.data().timestamp?.toDate() ?? new Date(),
+            })).reverse();
+            renderMessages(messages, false, true);
+        } else {
+            const newMessages = [];
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const messageId = change.doc.id;
+                    if (!messagesList.querySelector(`li[data-message-id="${messageId}"]`)) {
+                        newMessages.push({
+                            id: messageId,
+                            ...change.doc.data(),
+                            timestamp: change.doc.data().timestamp?.toDate() ?? new Date(),
+                        });
+                    }
+                }
+            });
+
+            if (newMessages.length > 0) {
+                newMessages.sort((a, b) => a.timestamp - b.timestamp);
+                renderMessages(newMessages, false, false);
+            }
+        }
+
+        if (snapshot.docs.length > 0) {
+            oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+        } else {
+            reachedEndOfMessages = true;
+        }
+    }, error => {
+        console.error("Error listening to messages:", error);
+        messagesList.innerHTML = '<li class="text-center text-red-500 p-4">خطا در بارگذاری پیام‌ها.</li>';
+    });
 };
 
 const loadOlderMessages = async () => {
@@ -742,6 +759,7 @@ const renderMessages = async (messages, prepend = false, isInitialLoad = false) 
       const li = document.createElement('li');
       li.dataset.authorId = message.authorId;
       li.dataset.timestamp = message.timestamp.getTime();
+      li.dataset.messageId = message.id;
       
       let bubbleClasses, bubbleTailClass, nameAlignmentClass, nameColorClass, timeColorClass, liClasses;
       
@@ -1661,8 +1679,8 @@ const startApp = async () => {
   await clearMyPreviousSlotOnStartup();
 
   // Setup initial UI state without animations
-  videoCallContainer.classList.add('view-hidden', 'opacity-0');
-  chatContainer.classList.remove('view-hidden', 'opacity-0');
+  videoCallContainer.classList.add('view-hidden');
+  chatContainer.classList.remove('view-hidden');
   
   const activeBtnClasses = ['bg-green-500', 'text-white'];
   const inactiveBtnClasses = ['bg-white/20', 'text-black', 'backdrop-blur-lg'];
