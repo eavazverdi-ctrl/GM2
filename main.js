@@ -50,6 +50,7 @@ let currentGlassMode = 'off';
 let currentSendWithEnter = 'on';
 let currentStaticBackground = null;
 let messagesUnsubscribe = null;
+let userProfilesCache = {}; // Cache for user profiles { userId: { username, avatarUrl } }
 let lastActiveViewId = 'chat-container'; 
 
 // --- New Navigation/Animation State ---
@@ -140,9 +141,6 @@ const videoGridContainer = document.getElementById('video-grid-container');
 const videoControlsBar = document.getElementById('video-controls-bar');
 const toggleMicBtn = document.getElementById('toggle-mic-btn');
 const toggleCameraBtn = document.getElementById('toggle-camera-btn');
-
-// --- In-memory Caching for profiles ---
-const profileCache = new Map();
 
 
 // --- View Management ---
@@ -288,23 +286,25 @@ const generateAvatar = (name, url) => {
 
 // --- Profile Caching ---
 const getUserProfile = async (userId) => {
-    // 1. Check in-memory cache first
-    if (profileCache.has(userId)) {
-        return profileCache.get(userId);
+    // 1. Check cache first for immediate response
+    if (userProfilesCache[userId]) {
+        return userProfilesCache[userId];
     }
 
     // 2. If not in cache, fetch from Firestore
     try {
         const userDoc = await getDoc(doc(db, 'users', userId));
         if (userDoc.exists()) {
-            const userData = { userId, ...userDoc.data() };
+            const userData = userDoc.data();
             // 3. Store in cache for future use
-            profileCache.set(userId, userData);
+            userProfilesCache[userId] = userData;
             return userData;
         }
+        // Handle case where user document doesn't exist
         return { username: 'کاربر ناشناس', avatarUrl: null };
     } catch (error) {
         console.error(`Error fetching profile for user ${userId}:`, error);
+        // On error (e.g., offline), return a fallback to avoid crashing.
         return { username: 'کاربر', avatarUrl: null };
     }
 };
@@ -345,11 +345,13 @@ const applySendWithEnterSelection = (value) => {
 
 const applyBackgroundSettings = (staticBgData) => {
     if (staticBgData) {
+        appBackground.classList.remove('animated-gradient');
         appBackground.style.backgroundImage = `url(${staticBgData})`;
         appBackground.style.backgroundSize = 'cover';
         appBackground.style.backgroundPosition = 'center';
     } else {
-        appBackground.style.backgroundImage = ''; // Clear inline style to fallback to CSS class
+        appBackground.style.backgroundImage = ''; // Clear inline style
+        appBackground.classList.add('animated-gradient');
     }
 };
 
@@ -407,7 +409,7 @@ deleteAllMessagesBtn.addEventListener('click', async () => {
             snapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
             });
-            await batch.commit(); // Clear Firestore
+            await batch.commit();
             alert('تمام پیام‌ها با موفقیت حذف شدند.');
             messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
         } catch (error) {
@@ -459,25 +461,30 @@ clearStudioCacheBtn.addEventListener('click', async () => {
     }
 });
 
-const performHardUpdate = async () => {
-    updateStatusText.textContent = 'در حال به‌روزرسانی...';
-    updateStatusText.className = 'text-sm text-center h-4 text-blue-600';
-    if(settingsModal.classList.contains('view-hidden')) {
-        // This case is for automatic update on start
-        alert('نسخه جدیدی از برنامه نصب خواهد شد. برنامه مجددا راه‌اندازی می‌شود.');
-    } else {
-        // This case is for manual update from settings
-        updateAppBtn.disabled = true;
-        settingsOkBtn.disabled = true;
-        settingsCancelBtn.disabled = true;
+
+updateAppBtn.addEventListener('click', async () => {
+    const confirmation = confirm(
+        'این کار تمام اطلاعات برنامه (بجز پروفایل) را پاک کرده و آن را مجدداً بارگیری می‌کند تا آخرین نسخه را دریافت کنید. آیا مطمئن هستید؟'
+    );
+
+    if (!confirmation) {
+        return;
     }
 
+    updateStatusText.textContent = 'در حال به‌روزرسانی...';
+    updateStatusText.className = 'text-sm text-center h-4 text-blue-600';
+    updateAppBtn.disabled = true;
+    settingsOkBtn.disabled = true;
+    settingsCancelBtn.disabled = true;
+
     try {
+        // 1. Save essential user data
         const preservedUsername = localStorage.getItem(USERNAME_KEY);
         const preservedAvatar = localStorage.getItem(USER_AVATAR_KEY);
         const preservedUserId = localStorage.getItem(USER_ID_KEY);
         const preservedAccessKey = localStorage.getItem(APP_ACCESS_KEY);
 
+        // 2. Unregister all service workers
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
@@ -485,39 +492,29 @@ const performHardUpdate = async () => {
             }
         }
 
+        // 3. Clear all caches
         const cacheKeys = await caches.keys();
         await Promise.all(cacheKeys.map(key => caches.delete(key)));
-        
+
+        // 4. Clear localStorage
         localStorage.clear();
 
+        // 5. Restore essential user data
         if (preservedUsername) localStorage.setItem(USERNAME_KEY, preservedUsername);
         if (preservedAvatar) localStorage.setItem(USER_AVATAR_KEY, preservedAvatar);
         if (preservedUserId) localStorage.setItem(USER_ID_KEY, preservedUserId);
         if (preservedAccessKey) localStorage.setItem(APP_ACCESS_KEY, preservedAccessKey);
         
+        // 6. Reload the page from the server
         window.location.reload(true);
 
     } catch (error) {
         console.error('Hard update failed:', error);
-        const errorMsg = 'به‌روزرسانی ناموفق بود. لطفاً صفحه را رفرش کنید.';
-        if (!settingsModal.classList.contains('view-hidden')) {
-            updateStatusText.textContent = errorMsg;
-            updateStatusText.className = 'text-sm text-center h-4 text-red-500';
-            updateAppBtn.disabled = false;
-            settingsOkBtn.disabled = false;
-            settingsCancelBtn.disabled = false;
-        } else {
-            alert(errorMsg);
-        }
-    }
-};
-
-updateAppBtn.addEventListener('click', async () => {
-    const confirmation = confirm(
-        'این کار تمام اطلاعات برنامه (بجز پروفایل) را پاک کرده و آن را مجدداً بارگیری می‌کند تا آخرین نسخه را دریافت کنید. آیا مطمئن هستید؟'
-    );
-    if (confirmation) {
-        await performHardUpdate();
+        updateStatusText.textContent = 'به‌روزرسانی ناموفق بود. لطفاً صفحه را رفرش کنید.';
+        updateStatusText.className = 'text-sm text-center h-4 text-red-500';
+        updateAppBtn.disabled = false;
+        settingsOkBtn.disabled = false;
+        settingsCancelBtn.disabled = false;
     }
 });
 
@@ -565,912 +562,1139 @@ userSettingsForm.addEventListener('submit', async (e) => {
     const newUsername = changeUsernameInput.value.trim();
     const userUpdates = {};
 
-    let settingsChanged = false;
-
     if (newUsername && newUsername !== currentUsername) {
+        currentUsername = newUsername;
+        localStorage.setItem(USERNAME_KEY, newUsername);
         userUpdates.username = newUsername;
-        settingsChanged = true;
     }
-
-    if (currentUserAvatar !== localStorage.getItem(USER_AVATAR_KEY)) {
-        userUpdates.avatarUrl = currentUserAvatar;
-        settingsChanged = true;
-    }
-
-    try {
-        if (settingsChanged) {
-            await updateDoc(doc(db, 'users', currentUserId), userUpdates);
-            if(userUpdates.username) {
-                currentUsername = userUpdates.username;
-                localStorage.setItem(USERNAME_KEY, currentUsername);
-            }
-            if(userUpdates.avatarUrl) {
-                 localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar);
-            }
-            // Update profile cache
-            profileCache.set(currentUserId, { userId: currentUserId, username: currentUsername, avatarUrl: currentUserAvatar });
-        }
-
-        // Save other settings to localStorage
-        localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
-        localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
-        localStorage.setItem(SEND_WITH_ENTER_KEY, currentSendWithEnter);
-        
-        if(tempStaticBackground) {
-            currentStaticBackground = tempStaticBackground;
-            localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground);
-        }
-
-    } catch (error) {
-        console.error("Error saving settings:", error);
-        alert('خطا در ذخیره تنظیمات.');
-    } finally {
-        showView(lastActiveViewId);
-    }
-});
-
-
-// --- Video Call Logic ---
-
-const updateMediaButtonsUI = () => {
-    const micUse = toggleMicBtn.querySelector('use');
-    const camUse = toggleCameraBtn.querySelector('use');
-
-    micUse.setAttribute('href', isMicOn ? '#mic-on-svg' : '#mic-off-svg');
-    toggleMicBtn.classList.toggle('bg-red-500', !isMicOn);
-    toggleMicBtn.classList.toggle('bg-white/40', isMicOn);
-     
-    const hasAudioTrack = localStream && localStream.getAudioTracks().length > 0;
-    toggleMicBtn.disabled = !hasAudioTrack;
-
-    camUse.setAttribute('href', isCameraOn ? '#camera-on-svg' : '#camera-off-svg');
-    toggleCameraBtn.classList.toggle('bg-red-500', !isCameraOn);
-    toggleCameraBtn.classList.toggle('bg-white/40', isCameraOn);
     
-    const hasVideoTrack = localStream && localStream.getVideoTracks().length > 0;
-    toggleCameraBtn.disabled = !hasVideoTrack;
-};
+    userUpdates.avatarUrl = currentUserAvatar || null;
+    localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
 
-const toggleMediaTrack = (type, enabled) => {
-    if (localStream) {
-        const tracks = type === 'video' 
-            ? localStream.getVideoTracks() 
-            : localStream.getAudioTracks();
-        if (tracks.length > 0) {
-            tracks[0].enabled = enabled;
-        }
-    }
-};
-
-toggleMicBtn.addEventListener('click', () => {
-    if (toggleMicBtn.disabled) return;
-    isMicOn = !isMicOn;
-    toggleMediaTrack('audio', isMicOn);
-    updateMediaButtonsUI();
-});
-
-toggleCameraBtn.addEventListener('click', () => {
-    if (toggleCameraBtn.disabled) return;
-    isCameraOn = !isCameraOn;
-    toggleMediaTrack('video', isCameraOn);
-    updateMediaButtonsUI();
-});
-
-const setupLocalMedia = async () => {
-    try {
-        // Try with both video and audio
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        isMicOn = true;
-        isCameraOn = true;
-    } catch (error) {
-        console.warn("Could not get video and audio, trying audio only.", error);
+    localStorage.setItem(FONT_SIZE_KEY, currentFontSize);
+    localStorage.setItem(GLASS_MODE_KEY, currentGlassMode);
+    localStorage.setItem(SEND_WITH_ENTER_KEY, currentSendWithEnter);
+    
+    if (tempStaticBackground) {
         try {
-            // Fallback to audio only
-            localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            isMicOn = true;
-            isCameraOn = false;
-        } catch (audioError) {
-            console.error("Could not get any media devices.", audioError);
-            localStream = null;
-            isMicOn = false;
-            isCameraOn = false;
-            alert('دسترسی به دوربین و میکروفون ممکن نیست. شما به عنوان تماشاگر وارد می‌شوید.');
-        }
+            await setDoc(doc(db, 'app_settings', 'global'), { backgroundUrl: tempStaticBackground }, { merge: true });
+        } catch (error) { console.error("Error updating global background:", error); }
     }
-    updateMediaButtonsUI();
-};
 
-const updateVideoSlot = async (slotId, slotData) => {
-    const slotEl = document.getElementById(slotId);
-    if (!slotEl) return;
-
-    const userId = slotData.userId;
-    const { username, avatarUrl } = await getUserProfile(userId);
-
-    const setupNameButton = (container) => {
-        let nameBtn = container.querySelector('.name-btn');
-        if (!nameBtn) {
-            nameBtn = document.createElement('button');
-            nameBtn.className = 'name-btn bg-black/40 text-white text-sm px-2 py-1 rounded-lg backdrop-blur-sm z-10';
-            container.appendChild(nameBtn);
-        }
-        nameBtn.textContent = username;
-        return nameBtn;
-    };
-
-    if (userId === currentUserId) {
-        if (!localStream) return;
-        let videoEl = slotEl.querySelector('video');
-        if (!videoEl) {
-            slotEl.innerHTML = '';
-            videoEl = document.createElement('video');
-            videoEl.muted = true;
-            videoEl.playsInline = true;
-            videoEl.className = 'w-full h-full object-cover rounded-2xl bg-gray-800 transform -scale-x-100';
-            slotEl.appendChild(videoEl);
-            videoEl.srcObject = localStream;
-            videoEl.play().catch(e => console.error("Local video play failed", e));
-        }
-        const nameBtn = setupNameButton(slotEl);
-        nameBtn.classList.add('absolute', 'bottom-2', 'left-2');
-    } else { // Remote user
-        if (slotEl.dataset.userId === userId) {
-            const nameBtn = setupNameButton(slotEl); // User is already in this slot, just update name if needed
-            if (!nameBtn.classList.contains('absolute')) {
-                 nameBtn.classList.add('absolute', 'bottom-2', 'left-2');
-            }
-            return;
-        }
-
-        // New user for this slot, set up loading state
-        slotEl.innerHTML = '';
-        slotEl.dataset.userId = userId;
-        slotEl.className = 'video-slot bg-gray-700/50 rounded-2xl relative overflow-hidden flex flex-col items-center justify-center gap-2';
-        
-        const videoEl = document.createElement('video');
-        videoEl.playsInline = true;
-        videoEl.className = 'w-full h-full object-cover absolute inset-0 hidden';
-        slotEl.appendChild(videoEl);
-
-        const spinnerTemplate = document.getElementById('loading-spinner').querySelector('svg');
-        const spinner = spinnerTemplate.cloneNode(true);
-        spinner.classList.add('loading-spinner-video', 'w-10', 'h-10', 'text-white');
-        slotEl.appendChild(spinner);
-        
-        const nameBtn = setupNameButton(slotEl);
-        // nameBtn's position will be handled by flexbox for now
-
-        if (!peerConnections[userId]) {
-            const pc = new RTCPeerConnection(stunServers);
-            if (localStream) {
-                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            }
-
-            pc.ontrack = event => {
-                if (videoEl.srcObject) return; // Already handling stream
-                videoEl.srcObject = event.streams[0];
-                videoEl.play().catch(e => console.error("Remote video play failed", e));
-                
-                // Transition from loading to video
-                slotEl.classList.remove('flex', 'flex-col', 'items-center', 'justify-center', 'gap-2');
-                videoEl.classList.remove('hidden');
-                spinner.remove();
-                nameBtn.classList.add('absolute', 'bottom-2', 'left-2');
-            };
-
-            pc.onicecandidate = event => {
-                if (event.candidate) {
-                    const signalDoc = doc(collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling'));
-                    setDoc(signalDoc, {
-                        from: currentUserId,
-                        to: userId,
-                        candidate: event.candidate.toJSON()
-                    });
-                }
-            };
-            
-            peerConnections[userId] = pc;
-            // Create and send offer
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            const signalDoc = doc(collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling'));
-            await setDoc(signalDoc, {
-                from: currentUserId,
-                to: userId,
-                offer: { type: offer.type, sdp: offer.sdp }
-            });
-        }
-    }
-};
-
-const cleanUpVideoCall = async () => {
-    // Stop local media
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-    }
-    // Close peer connections
-    Object.values(peerConnections).forEach(pc => pc.close());
-    peerConnections = {};
-    // Unsubscribe from Firestore listeners
-    videoCallListeners.forEach(unsub => unsub());
-    videoCallListeners = [];
-    // Leave my slot
-    if (myVideoSlotId) {
+    if (Object.keys(userUpdates).length > 0) {
         try {
-            await deleteDoc(doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', myVideoSlotId));
-        } catch(e) { console.error("Error deleting my slot:", e); }
-        myVideoSlotId = null;
+            await setDoc(doc(db, 'users', currentUserId), userUpdates, { merge: true });
+            userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
+             // If user is in a video slot, update their avatar there too for real-time sync
+            if (myVideoSlotId) {
+                const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+                await updateDoc(slotRef, { occupantAvatar: currentUserAvatar });
+            }
+        } catch (error) { console.error("Error syncing user settings:", error); }
     }
-    // Clear video grid
-    document.querySelectorAll('.video-slot').forEach(el => {
-        el.innerHTML = '';
-        el.className = el.id.includes('1') || el.id.includes('2') ? 'video-slot row-span-2' : 'video-slot';
-        delete el.dataset.userId;
-    });
-};
-
-const setupPeerConnectionsForExistingUsers = async () => {
-    const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
-    const q = query(slotsRef, where('userId', '!=', currentUserId));
-    const snapshot = await getDocs(q);
-    snapshot.forEach(doc => {
-        const userId = doc.data().userId;
-        if (userId && !peerConnections[userId]) {
-            // The logic in updateVideoSlot will handle creating the peer connection
-            updateVideoSlot(doc.id, doc.data());
-        }
-    });
-};
-
-const enterVideoCallRoom = async () => {
-    if (currentRoomId === VIDEO_CALL_ROOM_ID) return;
-    currentRoomId = VIDEO_CALL_ROOM_ID;
-
-    await setupLocalMedia();
     
-    // Listen for slots
-    const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
-    const slotsUnsub = onSnapshot(slotsRef, (snapshot) => {
-        const occupiedSlots = new Set();
-        snapshot.docChanges().forEach((change) => {
-            const slotId = change.doc.id;
-            const slotData = change.doc.data();
-            occupiedSlots.add(slotId);
-            if (change.type === "added" || change.type === "modified") {
-                if (slotData.userId) {
-                    updateVideoSlot(slotId, slotData);
-                }
-            } else if (change.type === "removed") {
-                const slotEl = document.getElementById(slotId);
-                const removedUserId = slotData.userId;
-                if (slotEl) {
-                    slotEl.innerHTML = '';
-                    delete slotEl.dataset.userId;
-                }
-                if (peerConnections[removedUserId]) {
-                    peerConnections[removedUserId].close();
-                    delete peerConnections[removedUserId];
-                }
-            }
-        });
-        // Clear slots that are no longer in the collection
-        for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
-            const slotId = `video-slot-${i}`;
-            if (!occupiedSlots.has(slotId)) {
-                const slotEl = document.getElementById(slotId);
-                if (slotEl && slotEl.dataset.userId) {
-                    const removedUserId = slotEl.dataset.userId;
-                     if (peerConnections[removedUserId]) {
-                        peerConnections[removedUserId].close();
-                        delete peerConnections[removedUserId];
-                    }
-                    slotEl.innerHTML = '';
-                    delete slotEl.dataset.userId;
-                }
-            }
-        }
-    });
-    videoCallListeners.push(slotsUnsub);
-    
-    // Occupy a slot if we have media
-    if (localStream) {
-        const slotsSnapshot = await getDocs(slotsRef);
-        const occupiedSlotIds = new Set(slotsSnapshot.docs.map(d => d.id));
-        let emptySlotId = null;
-        for (let i = 1; i <= NUM_VIDEO_SLOTS; i++) {
-            const slotId = `video-slot-${i}`;
-            if (!occupiedSlotIds.has(slotId)) {
-                emptySlotId = slotId;
-                break;
-            }
-        }
-
-        if (emptySlotId) {
-            myVideoSlotId = emptySlotId;
-            const slotDoc = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', myVideoSlotId);
-            await setDoc(slotDoc, { userId: currentUserId, joinedAt: serverTimestamp() });
-            await setupPeerConnectionsForExistingUsers();
-        } else {
-            alert('استدیو پر است. شما به عنوان تماشاگر وارد می‌شوید.');
-            // Stop own media if spectator
-            if(localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-        }
-    }
-
-    // Listen for signaling
-    const signalingRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling');
-    const signalingQuery = query(signalingRef, where('to', '==', currentUserId));
-    const signalingUnsub = onSnapshot(signalingQuery, (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
-            if (change.type === 'added') {
-                const signal = change.doc.data();
-                const remoteUserId = signal.from;
-                
-                if (!peerConnections[remoteUserId]) {
-                    // This can happen if the offer arrives before the slot update
-                    // We can choose to ignore or pre-emptively create a connection
-                    console.warn(`Received signal from unknown user ${remoteUserId}. Awaiting slot update.`);
-                    return;
-                }
-
-                const pc = peerConnections[remoteUserId];
-                if (!pc) return;
-
-                if (signal.offer && !pc.currentRemoteDescription) {
-                    await pc.setRemoteDescription(new RTCSessionDescription(signal.offer));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    const signalDoc = doc(collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'signaling'));
-                    await setDoc(signalDoc, {
-                        from: currentUserId,
-                        to: remoteUserId,
-                        answer: { type: answer.type, sdp: answer.sdp }
-                    });
-                } else if (signal.answer && !pc.currentRemoteDescription) {
-                    await pc.setRemoteDescription(new RTCSessionDescription(signal.answer));
-                } else if (signal.candidate) {
-                    try {
-                        await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
-                    } catch (e) {
-                        console.error('Error adding received ICE candidate', e);
-                    }
-                }
-                // Delete signal doc after processing
-                await deleteDoc(change.doc.ref);
-            }
-        });
-    });
-    videoCallListeners.push(signalingUnsub);
-};
+    showView(lastActiveViewId);
+});
 
 // --- Chat Room Logic ---
 const enterChatRoom = (roomId, roomData) => {
-    if (currentRoomId === roomId) return;
-    currentRoomId = roomId;
+  currentRoomId = roomId;
+  
+  messagesList.innerHTML = '';
+  oldestMessageDoc = null;
+  isLoadingOlderMessages = false;
+  reachedEndOfMessages = false;
+  scrollToBottomBtn.classList.add('view-hidden', 'opacity-0');
+  
+  if (messagesUnsubscribe) messagesUnsubscribe();
 
-    if (messagesUnsubscribe) {
-        messagesUnsubscribe();
-    }
-    messagesList.innerHTML = '';
-    oldestMessageDoc = null;
-    reachedEndOfMessages = false;
-    
-    loadInitialMessages(roomId);
-
-    const messagesCol = collection(db, 'rooms', roomId, 'messages');
-    let q = query(messagesCol, orderBy('timestamp', 'desc'), limit(1));
-
-    messagesUnsubscribe = onSnapshot(q, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-                const messageData = change.doc.data();
-                if (!messageData.timestamp || messageData.timestamp.toMillis() > (oldestMessageDoc?.data().timestamp.toMillis() || 0)) {
-                    if (document.getElementById(`msg-${change.doc.id}`)) return;
-                    
-                    const wasScrolledToBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 150;
-                    appendMessage(change.doc.id, messageData);
-                    if (messageData.userId !== currentUserId) {
-                        // Logic for notifications could go here
-                    } else {
-                        sendSound.play().catch(e => console.log("sound play failed"));
-                    }
-                    if (wasScrolledToBottom) {
-                        scrollToBottom();
-                    }
-                }
-            }
-        });
-    });
+  loadAndListenForMessages();
 };
 
-const appendMessage = async (id, data, prepend = false) => {
-    if (!data.timestamp) return;
-
-    const { userId, text, fileUrl, fileType, fileName, timestamp } = data;
-    const { username, avatarUrl } = await getUserProfile(userId);
-    const messageDate = timestamp.toDate();
-    const isMe = userId === currentUserId;
-
-    const li = document.createElement('li');
-    li.id = `msg-${id}`;
-
-    // Date separator
-    const lastMessageEl = prepend ? messagesList.firstChild : messagesList.lastChild;
-    let needsDateSeparator = true;
-    if (lastMessageEl) {
-        const lastTimestamp = parseInt(lastMessageEl.dataset.timestamp, 10);
-        const lastDate = new Date(lastTimestamp);
-        if (lastDate.toDateString() === messageDate.toDateString()) {
-            needsDateSeparator = false;
-        }
+const loadAndListenForMessages = () => {
+  const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+  const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
+  
+  messagesUnsubscribe = onSnapshot(q, (snapshot) => {
+    if (snapshot.empty && messagesList.children.length === 0) {
+      messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
+      reachedEndOfMessages = true;
+      return;
     }
-    if (needsDateSeparator) {
-        const dateSeparator = document.createElement('li');
-        dateSeparator.className = 'text-center text-xs text-gray-500 my-4';
-        dateSeparator.innerHTML = formatDateSeparator(messageDate);
-        dateSeparator.dataset.timestamp = messageDate.getTime();
-        if (prepend) {
-            messagesList.prepend(dateSeparator);
-        } else {
-            messagesList.appendChild(dateSeparator);
-        }
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate() ?? new Date(),
+    })).reverse();
+    const isInitialLoad = !oldestMessageDoc;
+    if (isInitialLoad || snapshot.docChanges().some(c => c.type === 'added')) {
+        renderMessages(messages, false, isInitialLoad);
     }
-
-    let fileContent = '';
-    if (fileUrl && fileType) {
-        if (fileType.startsWith('image/')) {
-            fileContent = `<img src="${fileUrl}" alt="${fileName || 'image'}" class="mt-2 rounded-lg max-w-full h-auto cursor-pointer" onclick="window.open('${fileUrl}', '_blank')">`;
-        } else {
-            fileContent = `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="mt-2 block bg-gray-200 p-3 rounded-lg hover:bg-gray-300">
-                <div class="flex items-center gap-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-600 flex-shrink-0" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path></svg>
-                    <span class="truncate text-gray-800 font-medium">${fileName || 'فایل ضمیمه'}</span>
-                </div>
-            </a>`;
-        }
-    }
-
-    const messageHtml = `
-        <div class="flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}">
-            <div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 cursor-pointer user-avatar-trigger" data-user-id="${userId}" data-username="${username}">
-                ${generateAvatar(username, avatarUrl)}
-            </div>
-            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
-                <div class="px-4 py-2 rounded-2xl max-w-xs md:max-w-md ${isMe ? 'bg-green-400 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'}">
-                    <p class="font-bold text-sm mb-1 ${isMe ? 'text-right' : 'text-left'}">${isMe ? 'شما' : username}</p>
-                    <p class="message-text whitespace-pre-wrap break-words">${text || ''}</p>
-                    ${fileContent}
-                </div>
-                <span class="text-xs text-gray-500 mt-1">${formatTime(messageDate)}</span>
-            </div>
-        </div>
-    `;
-
-    li.innerHTML = messageHtml;
-    li.className = 'my-2';
-    li.dataset.timestamp = messageDate.getTime();
-    if (prepend) {
-        messagesList.prepend(li);
+    if (snapshot.docs.length > 0) {
+        oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
     } else {
-        messagesList.appendChild(li);
+        reachedEndOfMessages = true;
     }
+  }, error => {
+    console.error("Error listening to messages:", error);
+    messagesList.innerHTML = '<li class="text-center text-red-500 p-4">خطا در بارگذاری پیام‌ها.</li>';
+  });
 };
 
 const loadOlderMessages = async () => {
-    if (isLoadingOlderMessages || reachedEndOfMessages || !currentRoomId) return;
-
-    isLoadingOlderMessages = true;
-    loadingSpinner.classList.remove('hidden');
-
-    const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-    let q;
-    if (oldestMessageDoc) {
-        q = query(messagesCol, orderBy('timestamp', 'desc'), startAfter(oldestMessageDoc), limit(MESSAGES_PER_PAGE));
-    } else {
-        // This case should not be hit if initial load is handled separately
-        q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
+  if (isLoadingOlderMessages || reachedEndOfMessages || !oldestMessageDoc) return;
+  isLoadingOlderMessages = true;
+  loadingSpinner.classList.remove('hidden');
+  const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+  const q = query(messagesCol, orderBy('timestamp', 'desc'), startAfter(oldestMessageDoc), limit(MESSAGES_PER_PAGE));
+  try {
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      reachedEndOfMessages = true;
+      loadingSpinner.classList.add('hidden');
+      return;
     }
-
-    try {
-        const snapshot = await getDocs(q);
-        const oldScrollHeight = messagesContainer.scrollHeight;
-
-        if (snapshot.empty) {
-            reachedEndOfMessages = true;
-            if(messagesList.getElementsByTagName('li').length > 0) {
-                 messagesList.insertAdjacentHTML('afterbegin', '<li class="text-center text-gray-500 p-4">شما به ابتدای گفتگو رسیده‌اید.</li>');
-            } else {
-                 messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
-            }
-        } else {
-            snapshot.docs.forEach(doc => {
-                appendMessage(doc.id, doc.data(), true);
-            });
-            oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
-            messagesContainer.scrollTop = messagesContainer.scrollHeight - oldScrollHeight;
-        }
-    } catch (error) {
-        console.error("Error loading older messages: ", error);
-    } finally {
-        isLoadingOlderMessages = false;
-        loadingSpinner.classList.add('hidden');
-    }
+    const oldMessages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      timestamp: doc.data().timestamp?.toDate() ?? new Date(),
+    })).reverse();
+    oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+    const firstMessage = messagesList.firstChild;
+    const currentScrollHeight = messagesContainer.scrollHeight;
+    await renderMessages(oldMessages, true);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight - currentScrollHeight;
+  } catch(error) {
+    console.error("Error loading older messages:", error);
+  } finally {
+    isLoadingOlderMessages = false;
+    loadingSpinner.classList.add('hidden');
+  }
 };
 
-const loadInitialMessages = async (roomId) => {
-    messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">در حال بارگیری پیام‌ها...</li>';
-    
-    const messagesCol = collection(db, 'rooms', roomId, 'messages');
-    const q = query(messagesCol, orderBy('timestamp', 'desc'), limit(MESSAGES_PER_PAGE));
-    
-    try {
-        const snapshot = await getDocs(q);
-        messagesList.innerHTML = ''; 
-
-        if (snapshot.empty) {
-            messagesList.innerHTML = '<li class="text-center text-gray-500 p-4">هنوز پیامی در این گفتگو وجود ندارد.</li>';
-            return;
-        }
-            
-        const firestoreMessages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).reverse();
-        firestoreMessages.forEach(msg => appendMessage(msg.id, msg));
-            
-        oldestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
-        scrollToBottom();
-        
-    } catch (error) {
-        console.error("Error loading initial messages:", error);
-         messagesList.innerHTML = '<li class="text-center text-red-500 p-4">خطا در بارگیری پیام‌ها.</li>';
-    }
-};
-
-const compressImage = (file, maxSize) => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let { width, height } = img;
-
-                if (width > height) {
-                    if (width > maxSize) {
-                        height *= maxSize / width;
-                        width = maxSize;
-                    }
-                } else {
-                    if (height > maxSize) {
-                        width *= maxSize / height;
-                        height = maxSize;
-                    }
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
-            };
-            img.onerror = reject;
-        };
-        reader.onerror = reject;
-    });
-};
-
-
-const sendMessage = async () => {
-    const text = messageInput.value.trim();
-    if (text === '' && !fileToUpload) return;
-    
-    const originalText = text;
-    const originalFile = fileToUpload;
-
-    // Immediately clear input and disable send button
-    messageInput.value = '';
-    messageInput.style.height = 'auto';
-    sendButton.disabled = true;
-    fileToUpload = null;
-
-    try {
-        const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
-        const messageData = {
-            userId: currentUserId,
-            text: originalText,
-            timestamp: serverTimestamp(),
-        };
-
-        if (originalFile) {
-            // In a real app, you would upload to Firebase Storage here and get a URL.
-            // For simplicity, we'll use a data URL for images and a placeholder for other files.
-             if (originalFile.type.startsWith('image/')) {
-                messageData.fileUrl = await compressImage(originalFile, IMAGE_MAX_DIMENSION);
-            } else {
-                 messageData.fileUrl = URL.createObjectURL(originalFile); // This is temporary
-            }
-            messageData.fileType = originalFile.type;
-            messageData.fileName = originalFile.name;
-        }
-
-        await addDoc(messagesCol, messageData);
-
-    } catch (error) {
-        console.error("Error sending message: ", error);
-        alert('خطا در ارسال پیام.');
-        // Restore input if sending failed
-        messageInput.value = originalText;
-        fileToUpload = originalFile;
-        sendButton.disabled = false;
-    }
-};
-
-sendButton.addEventListener('click', sendMessage);
-
-messageInput.addEventListener('keydown', (e) => {
-    if (currentSendWithEnter === 'on' && e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
-messageInput.addEventListener('input', () => {
-    sendButton.disabled = messageInput.value.trim() === '' && !fileToUpload;
-    // Auto-resize textarea
-    messageInput.style.height = 'auto';
-    messageInput.style.height = (messageInput.scrollHeight) + 'px';
-});
-
-// --- File Handling ---
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Reset for next selection
-    fileInput.value = ''; 
-    
-    if (file.size > MAX_FILE_SIZE && !file.type.startsWith('image/')) {
-        alert(`فایل بزرگتر از 5MB است. حجم فایل: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-        return;
-    }
-    
-    fileToUpload = file;
-    filePreviewContainer.innerHTML = ''; // Clear previous preview
-
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.className = 'max-w-full max-h-48 object-contain';
-            filePreviewContainer.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-    } else {
-        filePreviewContainer.innerHTML = `<div class="text-center p-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-gray-500 mx-auto" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path></svg>
-            <p class="mt-2 text-gray-700 font-semibold truncate">${file.name}</p>
-        </div>`;
-    }
-    
-    fileConfirmStatus.textContent = "برای ارسال تایید کنید.";
-    showView('file-confirm-modal');
-});
-
-cancelFileUploadBtn.addEventListener('click', () => {
-    fileToUpload = null;
-    sendButton.disabled = messageInput.value.trim() === '';
-    showView(lastActiveViewId);
-});
-
-confirmFileUploadBtn.addEventListener('click', () => {
-    // File is already in fileToUpload, just need to enable send and close modal
-    sendButton.disabled = false;
-    showView(lastActiveViewId);
-    // Combine file with any text in the input and send
-    sendMessage();
-});
-
-
-// --- Scroll Handling ---
 messagesContainer.addEventListener('scroll', () => {
-    if (messagesContainer.scrollTop === 0) {
-        loadOlderMessages();
-    }
-    const isScrolled = messagesContainer.scrollHeight > messagesContainer.clientHeight &&
-                       messagesContainer.scrollTop < messagesContainer.scrollHeight - messagesContainer.clientHeight - 150;
-
-    if (isScrolled) {
-        scrollToBottomBtn.classList.remove('opacity-0', 'view-hidden');
-    } else {
-        scrollToBottomBtn.classList.add('opacity-0', 'view-hidden');
-    }
+  if (messagesContainer.scrollTop < 50) { loadOlderMessages(); }
+  const isScrolledUp = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight > 200;
+  scrollToBottomBtn.classList.remove('view-hidden');
+  scrollToBottomBtn.classList.toggle('opacity-0', !isScrolledUp);
 });
-scrollToBottomBtn.addEventListener('click', () => scrollToBottom('smooth'));
+scrollToBottomBtn.addEventListener('click', () => { scrollToBottom('smooth'); });
+
+const renderMessages = async (messages, prepend = false, isInitialLoad = false) => {
+  if (!prepend && messagesList.innerHTML.includes('هنوز پیامی')) { messagesList.innerHTML = ''; }
+  const fragment = document.createDocumentFragment();
+
+  const authorIds = [...new Set(messages.map(m => m.authorId).filter(id => !userProfilesCache[id]))];
+  if(authorIds.length > 0) {
+    await Promise.all(authorIds.map(id => getUserProfile(id)));
+  }
+
+  const glassModeClasses = {
+      'off': { user: 'bg-green-500', other: 'bg-white' },
+      'low': { user: 'bg-green-500/70', other: 'bg-white/70' },
+      'high': { user: 'bg-green-500/40', other: 'bg-white/40' }
+  };
+  const selectedModeClasses = glassModeClasses[currentGlassMode] || glassModeClasses['off'];
+
+  let lastDateStrInBatch = null;
+  let lastAuthorIdForMargin = null;
+
+  if (prepend) {
+      const firstOldMessageOnScreenEl = messagesList.querySelector('li[data-timestamp]');
+      if (firstOldMessageOnScreenEl) {
+          const lastNewMessage = messages[messages.length - 1];
+          const firstOldMessageDateStr = new Date(parseInt(firstOldMessageOnScreenEl.dataset.timestamp)).toDateString();
+          if (lastNewMessage && lastNewMessage.timestamp?.toDateString() === firstOldMessageDateStr) {
+              const separator = firstOldMessageOnScreenEl.previousElementSibling;
+              if (separator && separator.classList.contains('date-separator')) {
+                  separator.remove();
+              }
+          }
+      }
+  } else {
+      const allVisibleMsgs = messagesList.querySelectorAll('li[data-timestamp]');
+      if (allVisibleMsgs.length > 0) {
+          const lastVisibleMsg = allVisibleMsgs[allVisibleMsgs.length - 1];
+          lastDateStrInBatch = new Date(parseInt(lastVisibleMsg.dataset.timestamp)).toDateString();
+          const lastMsgAuthorEl = messagesList.querySelector('li[data-author-id]:last-child');
+          if (lastMsgAuthorEl) {
+            lastAuthorIdForMargin = lastMsgAuthorEl.dataset.authorId;
+          }
+      }
+  }
+
+  for (const message of messages) {
+      if (!message.timestamp) continue;
+      const messageDateStr = message.timestamp.toDateString();
+
+      if (messageDateStr !== lastDateStrInBatch) {
+          const li = document.createElement('li');
+          li.className = 'date-separator text-center my-3';
+          li.innerHTML = `<span class="inline-block bg-gray-400/30 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full px-3 py-1 text-center whitespace-nowrap">${formatDateSeparator(message.timestamp)}</span>`;
+          fragment.appendChild(li);
+          lastDateStrInBatch = messageDateStr;
+          lastAuthorIdForMargin = null; // Reset author on new day
+      }
+
+      const isUser = message.authorId === currentUserId;
+      const authorProfile = userProfilesCache[message.authorId] || { username: 'کاربر', avatarUrl: null };
+      
+      const li = document.createElement('li');
+      li.dataset.authorId = message.authorId;
+      li.dataset.timestamp = message.timestamp.getTime();
+      
+      let bubbleClasses, bubbleTailClass, nameAlignmentClass, nameColorClass, timeColorClass, liClasses;
+      
+      const senderName = (authorProfile.username || 'کاربر').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const authorAvatarForRender = authorProfile.avatarUrl;
+      const avatarHTML = generateAvatar(senderName, authorAvatarForRender);
+      const avatarContainer = `<div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm cursor-pointer" data-author-id="${message.authorId}" data-author-name="${senderName}" data-author-avatar-url="${authorAvatarForRender || ''}">${avatarHTML}</div>`;
+
+      if (isUser) { // User's messages on the RIGHT
+          liClasses = 'justify-start'; // Aligns to the right in RTL
+          bubbleClasses = `${selectedModeClasses.user} text-white`;
+          bubbleTailClass = 'rounded-br-none';
+          nameAlignmentClass = 'text-right pr-1';
+          nameColorClass = 'text-gray-200/90';
+          timeColorClass = 'text-gray-200/90';
+      } else { // Others' messages on the LEFT
+          liClasses = 'justify-end';
+          bubbleClasses = `${selectedModeClasses.other} text-black shadow`;
+          bubbleTailClass = 'rounded-bl-none';
+          nameAlignmentClass = 'text-left pl-1';
+          nameColorClass = 'text-gray-500 opacity-70';
+          timeColorClass = 'text-gray-500 opacity-70';
+      }
+      
+      const isConsecutive = message.authorId === lastAuthorIdForMargin;
+      const marginClass = isConsecutive ? 'mb-1' : 'mb-2';
+      
+      li.className = `flex items-start space-x-3 rtl:space-x-reverse ${marginClass} ${liClasses}`;
+      const nameHTML = !isUser ? `<div class="text-xs ${nameColorClass} ${nameAlignmentClass} leading-tight pt-1">${senderName}</div>` : '';
+
+      let messageContentHTML = '';
+
+      switch (message.type) {
+        case 'image':
+          messageContentHTML = `<div class="relative rounded-lg overflow-hidden"><img src="${message.fileDataUrl}" class="max-w-full h-auto" style="max-height: 300px; min-width: 150px;" alt="${message.fileName || 'Image'}"/><div class="absolute bottom-1 right-2 text-xs text-white bg-black/30 rounded px-1 flex items-center gap-1" dir="ltr">${formatTime(message.timestamp)}</div></div>`;
+          break;
+        case 'file':
+          const fileName = (message.fileName || 'فایل').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const timeHTML = `<span class="text-[11px]" dir="ltr">${formatTime(message.timestamp)}</span>`;
+          const fileMetaHTML = `<div class="absolute bottom-1.5 ${isUser ? 'left-2.5' : 'right-2.5'} flex items-center gap-1 text-gray-700">${timeHTML}</div>`;
+          messageContentHTML = `<a href="${message.fileDataUrl}" download="${fileName}" class="relative flex items-center space-x-2 rtl:space-x-reverse bg-gray-100/30 backdrop-blur-sm p-3 rounded-lg hover:bg-gray-100/50 min-w-[180px]"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 flex-shrink-0 text-gray-600"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg><span class="font-medium text-sm text-gray-800 break-all">${fileName}</span>${fileMetaHTML}</a>`;
+          break;
+        default: // text
+          const textContent = (message.text || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          const timeHTMLSpan = `<span class="text-[11px] ${timeColorClass} leading-tight" dir="ltr">${formatTime(message.timestamp)}</span>`;
+          const timeAlignmentClass = isUser ? 'text-left pl-1.5' : 'text-right pr-1.5';
+
+          messageContentHTML = `
+            <div class="px-2 py-0.5 rounded-2xl ${bubbleClasses} ${bubbleTailClass} backdrop-blur-md flex flex-col">
+              ${nameHTML}
+              <p class="whitespace-pre-wrap break-words break-all message-text self-stretch m-0">${textContent}</p>
+              <div class="w-full ${timeAlignmentClass} -mt-1 pb-0.5">${timeHTMLSpan}</div>
+            </div>`;
+      }
+      
+      const bubbleContainer = `<div class="flex flex-col max-w-xs lg:max-w-md">${messageContentHTML}</div>`;
+
+      if (isUser) {
+          li.innerHTML = avatarContainer + bubbleContainer;
+      } else {
+          li.innerHTML = bubbleContainer + avatarContainer;
+      }
+      fragment.appendChild(li);
+      lastAuthorIdForMargin = message.authorId;
+  }
+  
+  if (prepend && messages.length > 0) {
+    const firstOldMessageOnScreen = messagesList.querySelector('li[data-author-id]');
+    if (firstOldMessageOnScreen && firstOldMessageOnScreen.dataset.authorId === lastAuthorIdForMargin) {
+        const lastNewTimestamp = messages[messages.length - 1].timestamp;
+        const firstOldTimestamp = new Date(parseInt(firstOldMessageOnScreen.dataset.timestamp));
+        if (lastNewTimestamp.toDateString() === firstOldTimestamp.toDateString()) {
+            firstOldMessageOnScreen.classList.remove('mb-2');
+            firstOldMessageOnScreen.classList.add('mb-1');
+        }
+    }
+  }
 
 
-// --- User Profile/Avatar Modals ---
-messagesList.addEventListener('click', async (e) => {
-    const avatarTrigger = e.target.closest('.user-avatar-trigger');
-    if (!avatarTrigger) return;
+  if (prepend) { messagesList.prepend(fragment); } else { messagesList.appendChild(fragment); }
+  if (isInitialLoad || !prepend) { setTimeout(() => scrollToBottom(), 50); }
+};
+
+// --- Avatar Click Logic ---
+const showUserAvatar = (name, url) => {
+    viewAvatarName.textContent = name || 'کاربر';
+    viewAvatarDisplay.innerHTML = generateAvatar(name, url);
+    showView('view-avatar-modal');
+};
+
+messagesList.addEventListener('click', (e) => {
+    const avatarEl = e.target.closest('.message-avatar');
+    if (!avatarEl) return;
     
-    const userId = avatarTrigger.dataset.userId;
-    if (!userId) return;
+    const authorId = avatarEl.dataset.authorId;
+    const authorName = avatarEl.dataset.authorName;
+    const authorAvatarUrl = avatarEl.dataset.authorAvatarUrl;
 
-    if (userId === currentUserId) {
-        // Show modal to change own avatar
+    if (authorId === currentUserId) {
+        changeUserAvatarInChatForm.reset();
         userAvatarInChatPreview.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
-        userAvatarInChatInput.value = '';
         changeUserAvatarInChatStatus.textContent = '';
         showView('change-user-avatar-in-chat-modal');
     } else {
-        // Show modal to view other user's avatar
-        const { username, avatarUrl } = await getUserProfile(userId);
-        viewAvatarName.textContent = username;
-        viewAvatarDisplay.innerHTML = generateAvatar(username, avatarUrl);
-        showView('view-avatar-modal');
+        showUserAvatar(authorName, authorAvatarUrl);
     }
 });
 
 closeViewAvatarModalBtn.addEventListener('click', () => showView(lastActiveViewId));
-changeUserAvatarInChatModal.querySelector('.cancel-btn').addEventListener('click', () => showView(lastActiveViewId));
+document.querySelector('#change-user-avatar-in-chat-modal .cancel-btn').addEventListener('click', () => showView(lastActiveViewId));
 
 userAvatarInChatInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    try {
-        changeUserAvatarInChatStatus.textContent = 'در حال پردازش...';
-        const compressedAvatar = await compressImage(file, AVATAR_MAX_DIMENSION);
-        userAvatarInChatPreview.innerHTML = generateAvatar(currentUsername, compressedAvatar);
-        changeUserAvatarInChatStatus.textContent = 'برای ذخیره تایید را بزنید.';
-    } catch (error) {
-        console.error("Error compressing avatar in-chat:", error);
-        changeUserAvatarInChatStatus.textContent = 'خطا در پردازش تصویر.';
+    if (file) {
+        userAvatarInChatPreview.innerHTML = `<img src="${URL.createObjectURL(file)}" class="w-full h-full object-cover"/>`;
     }
 });
 
 changeUserAvatarInChatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const newAvatarDataUrl = userAvatarInChatPreview.querySelector('img')?.src;
-    if (!newAvatarDataUrl || newAvatarDataUrl === currentUserAvatar) {
-        showView(lastActiveViewId);
-        return;
-    }
+    const file = userAvatarInChatInput.files[0];
+    if (!file) { alert("لطفا یک عکس انتخاب کنید."); return; }
     
-    try {
-        changeUserAvatarInChatStatus.textContent = 'در حال ذخیره...';
-        currentUserAvatar = newAvatarDataUrl;
-        await updateDoc(doc(db, 'users', currentUserId), { avatarUrl: currentUserAvatar });
-        localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar);
-        profileCache.set(currentUserId, { userId: currentUserId, username: currentUsername, avatarUrl: currentUserAvatar });
-        showView(lastActiveViewId);
-        // We don't need to re-render all messages, new ones will have the new avatar.
-    } catch (error) {
-        console.error("Error updating avatar:", error);
-        changeUserAvatarInChatStatus.textContent = 'خطا در ذخیره.';
-    }
-});
-
-
-// --- App Initialization Logic ---
-const initApp = async () => {
-    // Automatic update check on startup
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then(reg => {
-            if (reg) {
-                reg.onupdatefound = () => {
-                    const installingWorker = reg.installing;
-                    installingWorker.onstatechange = () => {
-                        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                             if (confirm('نسخه جدیدی از برنامه موجود است. برای نصب، تایید کنید.')) {
-                                 installingWorker.postMessage({ action: 'SKIP_WAITING' });
-                                 performHardUpdate();
-                             }
-                        }
-                    };
-                };
-            }
-        });
-    }
-
-    // Check for saved user credentials
-    const savedAccess = localStorage.getItem(APP_ACCESS_KEY);
-    if (savedAccess === CREATOR_PASSWORD) {
-        currentUsername = localStorage.getItem(USERNAME_KEY);
-        currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY);
-        mainContentWrapper.classList.remove('view-hidden');
-        globalNav.classList.remove('view-hidden');
-    } else {
-        showView('username-modal');
-        return;
-    }
-
-    // Apply saved settings
-    currentFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
-    currentGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
-    currentSendWithEnter = localStorage.getItem(SEND_WITH_ENTER_KEY) || 'on';
-    currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
-
-    applyFontSize(currentFontSize);
-    applyGlassModeSelection(currentGlassMode);
-    applySendWithEnterSelection(currentSendWithEnter);
-    applyBackgroundSettings(currentStaticBackground);
-
-    // Initial setup
-    await switchTab('chat');
-    isInitialLoad = false;
-};
-
-usernameForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const password = initialPasswordInput.value;
-    const username = usernameInput.value.trim();
-
-    if (password !== CREATOR_PASSWORD) {
-        alert('رمز برنامه اشتباه است!');
-        return;
-    }
-    if (!username) {
-        alert('لطفا یک نام کاربری وارد کنید.');
-        return;
-    }
-    
-    let avatarDataUrl = null;
-    const avatarFile = initialUserAvatarInput.files[0];
-    if (avatarFile) {
-        try {
-            avatarDataUrl = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
-        } catch (error) {
-            console.error("Error compressing initial avatar:", error);
-            alert("خطا در پردازش تصویر پروفایل.");
-            return;
-        }
-    }
-
-    currentUsername = username;
-    currentUserAvatar = avatarDataUrl;
-
-    localStorage.setItem(APP_ACCESS_KEY, password);
-    localStorage.setItem(USERNAME_KEY, username);
-    if (avatarDataUrl) {
-        localStorage.setItem(USER_AVATAR_KEY, avatarDataUrl);
-    }
-
-    try {
-        await setDoc(doc(db, 'users', currentUserId), {
-            username: currentUsername,
-            avatarUrl: currentUserAvatar
-        }, { merge: true });
-        
-        profileCache.set(currentUserId, {userId: currentUserId, username: currentUsername, avatarUrl: currentUserAvatar});
-
-    } catch (error) {
-        console.error("Error saving user profile to Firestore:", error);
-    }
-    
-    showView(lastActiveViewId);
-    initApp(); // Re-initialize after login
-});
-
-initialUserAvatarInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    changeUserAvatarInChatStatus.textContent = 'در حال ذخیره...';
+    changeUserAvatarInChatStatus.classList.remove('text-red-600', 'text-green-600');
     try {
         const compressedAvatar = await compressImage(file, AVATAR_MAX_DIMENSION);
-        initialUserAvatarPreview.innerHTML = `<img src="${compressedAvatar}" class="w-full h-full object-cover">`;
+        currentUserAvatar = compressedAvatar;
+        localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+        
+        await setDoc(doc(db, 'users', currentUserId), { avatarUrl: currentUserAvatar }, { merge: true });
+        userProfilesCache[currentUserId] = { ...userProfilesCache[currentUserId], avatarUrl: currentUserAvatar };
+        
+        if (myVideoSlotId) {
+            const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+            await updateDoc(slotRef, { occupantAvatar: currentUserAvatar });
+        }
+
+        document.querySelectorAll(`.message-avatar[data-author-id="${currentUserId}"]`).forEach(el => {
+            el.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+            el.dataset.authorAvatarUrl = currentUserAvatar || '';
+        });
+
+        changeUserAvatarInChatStatus.textContent = 'عکس با موفقیت ذخیره شد.';
+        changeUserAvatarInChatStatus.classList.add('text-green-600');
+        setTimeout(() => showView(lastActiveViewId), 1500);
+
+    } catch(error) {
+        console.error("Error changing user avatar in chat:", error);
+        changeUserAvatarInChatStatus.textContent = 'خطا در ذخیره عکس.';
+        changeUserAvatarInChatStatus.classList.add('text-red-600');
+    } finally {
+        submitBtn.disabled = false;
+    }
+});
+
+
+// --- File Handling & Image Compression ---
+const compressImage = (file, maxDimension) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > height) {
+                    if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; }
+                } else {
+                    if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.85));
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
+const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !currentRoomId) return;
+
+    fileToUpload = file;
+    fileInput.value = '';
+
+    filePreviewContainer.innerHTML = '';
+    fileConfirmStatus.textContent = 'برای ارسال تایید کنید.';
+    fileConfirmStatus.className = 'text-sm text-center h-4 mb-4 text-gray-700';
+
+    if (file.type.startsWith('image/')) {
+        const previewUrl = URL.createObjectURL(file);
+        filePreviewContainer.innerHTML = `<img src="${previewUrl}" class="max-w-full max-h-full object-contain" alt="Preview"/>`;
+    } else {
+        filePreviewContainer.innerHTML = `
+            <div class="text-center text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 mx-auto text-gray-500"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                <p class="font-semibold mt-2 break-all">${file.name}</p>
+            </div>
+        `;
+    }
+
+    showView('file-confirm-modal');
+};
+
+const uploadConfirmedFile = async () => {
+    if (!fileToUpload || !currentRoomId) return;
+
+    const file = fileToUpload;
+    const isImage = file.type.startsWith('image/');
+    let fileDataUrl;
+    
+    confirmFileUploadBtn.disabled = true;
+    cancelFileUploadBtn.disabled = true;
+    fileConfirmStatus.textContent = 'در حال ارسال...';
+    
+    const tempId = `temp_${Date.now()}`;
+    if (isImage) {
+        const previewUrl = URL.createObjectURL(file);
+        const tempLi = document.createElement('li');
+        tempLi.id = tempId;
+        tempLi.className = 'flex items-start space-x-3 rtl:space-x-reverse mb-2 justify-start opacity-50';
+        tempLi.innerHTML = `
+            <div class="message-avatar w-10 h-10 flex-shrink-0 rounded-full overflow-hidden self-end bg-white/30 backdrop-blur-sm">${generateAvatar(currentUsername, currentUserAvatar)}</div>
+            <div class="flex flex-col max-w-xs lg:max-w-md">
+                <div class="relative rounded-lg overflow-hidden">
+                    <img src="${previewUrl}" class="max-w-full h-auto" style="max-height: 300px;" />
+                    <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <svg class="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                </div>
+            </div>`;
+        messagesList.appendChild(tempLi);
+        scrollToBottom('smooth');
+    }
+
+    try {
+        if (isImage) {
+            fileDataUrl = await compressImage(file, IMAGE_MAX_DIMENSION);
+        } else {
+            if (file.size > MAX_FILE_SIZE) { 
+                fileConfirmStatus.textContent = `حجم فایل نباید بیشتر از 5 مگابایت باشد.`;
+                fileConfirmStatus.classList.add('text-red-600');
+                fileToUpload = null;
+                confirmFileUploadBtn.disabled = false;
+                cancelFileUploadBtn.disabled = false;
+                return;
+             }
+            fileDataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsDataURL(file);
+            });
+        }
+        const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+        await addDoc(messagesCol, { type: isImage ? 'image' : 'file', fileName: file.name, fileDataUrl, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
+        showView(lastActiveViewId);
+        setTimeout(() => scrollToBottom('smooth'), 150);
+    } catch (error) { 
+        console.error("Error processing/uploading file:", error); 
+        fileConfirmStatus.textContent = 'خطا در ارسال فایل.';
+        fileConfirmStatus.classList.add('text-red-600');
+    } finally {
+        if (isImage) {
+            const tempEl = document.getElementById(tempId);
+            if(tempEl) tempEl.remove();
+        }
+        fileToUpload = null;
+        confirmFileUploadBtn.disabled = false;
+        cancelFileUploadBtn.disabled = false;
+    }
+};
+
+fileInput.addEventListener('change', handleFileSelect);
+cancelFileUploadBtn.addEventListener('click', () => {
+    fileToUpload = null;
+    showView(lastActiveViewId);
+});
+confirmFileUploadBtn.addEventListener('click', uploadConfirmedFile);
+
+// --- Event Listeners & App Flow ---
+initialUserAvatarInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            initialUserAvatarPreview.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover" />`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+
+usernameForm.addEventListener('submit', async (e) => { 
+    e.preventDefault(); 
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
+    const newUsername = usernameInput.value.trim(); 
+    const password = initialPasswordInput.value;
+    const avatarFile = initialUserAvatarInput.files[0];
+
+    if (password !== CREATOR_PASSWORD) {
+        alert('رمز ورود به برنامه اشتباه است.');
+        initialPasswordInput.value = '';
+        initialPasswordInput.focus();
+        submitBtn.disabled = false;
+        return;
+    }
+
+    if (newUsername) { 
+        try {
+            let compressedAvatar = null;
+            if (avatarFile) {
+                compressedAvatar = await compressImage(avatarFile, AVATAR_MAX_DIMENSION);
+            }
+            
+            localStorage.setItem(APP_ACCESS_KEY, 'true');
+            localStorage.setItem(USERNAME_KEY, newUsername);
+            localStorage.setItem(USER_AVATAR_KEY, compressedAvatar || '');
+
+            await setDoc(doc(db, 'users', currentUserId), { 
+                username: newUsername,
+                avatarUrl: compressedAvatar 
+            }, { merge: true });
+
+            startApp(); 
+        } catch (error) {
+            console.error("Error processing avatar or creating user:", error);
+            alert('خطا در پردازش عکس یا ساخت کاربر.');
+            submitBtn.disabled = false;
+        }
+    } else {
+        submitBtn.disabled = false;
+    }
+});
+
+const updateSendButtonState = () => {
+    const hasText = messageInput.value.trim().length > 0; 
+    sendButton.disabled = !hasText;
+};
+
+const sendMessage = async () => {
+    const text = messageInput.value.trim();
+    if (!text || !currentRoomId) return;
+
+    const tempInput = messageInput.value;
+    messageInput.value = '';
+    updateSendButtonState();
+    messageInput.focus();
+
+    try {
+        const messagesCol = collection(db, 'rooms', currentRoomId, 'messages');
+        await addDoc(messagesCol, { type: 'text', text, authorId: currentUserId, authorName: currentUsername, authorAvatar: currentUserAvatar, timestamp: serverTimestamp() });
+        sendSound.play().catch(err => console.error("Audio play failed:", err));
     } catch (error) {
-        console.error("Error processing initial avatar preview:", error);
+        console.error("Error sending message:", error);
+        messageInput.value = tempInput;
+        updateSendButtonState();
+    }
+};
+
+sendButton.addEventListener('click', sendMessage);
+messageInput.addEventListener('input', updateSendButtonState);
+messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && currentSendWithEnter === 'on') {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+// --- Video Call Logic ---
+const resetVideoSlot = (slotEl) => {
+    if(!slotEl) return;
+    const video = slotEl.querySelector('video');
+    if (video && video.srcObject) {
+        // Don't stop tracks, just clear the srcObject
+        // The stream might be needed elsewhere if it's a remote stream
+        video.srcObject = null;
+    }
+    slotEl.querySelector('.video-feed').classList.add('hidden');
+    slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+    slotEl.querySelector('.empty-placeholder').classList.remove('hidden');
+    slotEl.querySelector('.name-pill').textContent = '';
+    delete slotEl.dataset.occupantId;
+};
+
+const findAndJoinEmptySlot = async () => {
+    const slotsRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    const slotsSnapshot = await getDocs(slotsRef);
+    const occupiedSlots = new Set(slotsSnapshot.docs.map(d => parseInt(d.id.split('_')[1])));
+    
+    let targetSlotId = -1;
+    const hasMedia = !!localStream;
+
+    // Users with media can join any slot, prioritizing large ones.
+    // Users without media can only join small slots.
+    const searchOrder = hasMedia ? [1, 2, 3, 4, 5, 6] : [3, 4, 5, 6];
+    
+    for (const id of searchOrder) {
+        if (!occupiedSlots.has(id)) {
+            targetSlotId = id;
+            break;
+        }
+    }
+  
+    if (targetSlotId !== -1) {
+        await joinVideoSlot(targetSlotId);
+    } else {
+      alert("استدیو تماس پر است یا جای خالی مناسب شما وجود ندارد.");
+      switchTab('chat');
+    }
+};
+
+const enterVideoCallRoom = async () => {
+    currentRoomId = VIDEO_CALL_ROOM_ID;
+    initializeVideoUI();
+    setupVideoCallListeners();
+
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        isMicOn = true;
+        isCameraOn = true;
+        toggleMicBtn.disabled = false;
+        toggleCameraBtn.disabled = false;
+        toggleMicBtn.classList.add('bg-green-500/80');
+        toggleCameraBtn.classList.add('bg-green-500/80');
+        toggleMicBtn.classList.remove('bg-white/40');
+        toggleCameraBtn.classList.remove('bg-white/40');
+    } catch (err) {
+        console.error("Error accessing media devices. Joining without media.", err);
+        localStream = null;
+        isMicOn = false;
+        isCameraOn = false;
+        toggleMicBtn.disabled = true;
+        toggleCameraBtn.disabled = true;
+    }
+    await findAndJoinEmptySlot();
+};
+
+const initializeVideoUI = () => {
+  document.querySelectorAll('.video-slot').forEach((slot, index) => {
+    const slotId = index + 1;
+    if (slot.innerHTML.trim() === '') { // Only initialize if empty
+        slot.innerHTML = `
+        <div class="relative w-full h-full bg-white/10 backdrop-blur-3xl rounded-2xl overflow-hidden flex items-center justify-center">
+            <video class="video-feed w-full h-full object-cover hidden transform -scale-x-100" autoplay playsinline></video>
+            <div class="avatar-placeholder absolute inset-0 w-full h-full hidden flex items-center justify-center"></div>
+            <div class="empty-placeholder absolute inset-0 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300 hover:bg-black/10">
+            <svg class="w-1/4 h-1/4 max-w-[64px] max-h-[64px] text-gray-400/80"><use href="#placeholder-person-svg" /></svg>
+            <span class="text-white/70 text-sm mt-2 font-semibold">متصل شوید</span>
+            </div>
+            <div class="name-pill absolute bottom-2 right-2 px-3 py-0.5 bg-black/30 backdrop-blur-lg text-white text-[10px] font-semibold rounded-full whitespace-nowrap"></div>
+        </div>
+        `;
+        slot.querySelector('.empty-placeholder').addEventListener('click', () => {
+            joinVideoSlot(slotId);
+        });
+    }
+  });
+  
+  toggleMicBtn.disabled = true;
+  toggleCameraBtn.disabled = true;
+  toggleMicBtn.classList.remove('bg-green-500/80');
+  toggleCameraBtn.classList.remove('bg-green-500/80');
+  toggleMicBtn.classList.add('bg-white/40');
+  toggleCameraBtn.classList.add('bg-white/40');
+};
+
+const joinVideoSlot = async (slotId) => {
+    if (myVideoSlotId === slotId) return;
+
+    if (!localStream && slotId <= 2) {
+        alert('برای استفاده از کادرهای بزرگ نیاز به دسترسی دوربین و میکروفون دارید.');
+        return;
+    }
+
+    const oldSlotId = myVideoSlotId;
+    myVideoSlotId = slotId;
+
+    // --- Update UI immediately ---
+    const newSlotEl = document.getElementById(`video-slot-${slotId}`);
+    
+    // Update new slot UI
+    if (localStream) {
+        const videoEl = newSlotEl.querySelector('video');
+        videoEl.srcObject = localStream;
+        videoEl.muted = true;
+        newSlotEl.querySelector('.video-feed').classList.remove('hidden');
+        newSlotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+    } else {
+        newSlotEl.querySelector('.video-feed').classList.add('hidden');
+        const avatarPlaceholder = newSlotEl.querySelector('.avatar-placeholder');
+        avatarPlaceholder.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+        avatarPlaceholder.classList.remove('hidden');
+    }
+    newSlotEl.querySelector('.empty-placeholder').classList.add('hidden');
+    newSlotEl.querySelector('.name-pill').textContent = currentUsername;
+    newSlotEl.dataset.occupantId = currentUserId;
+
+    // Reset old slot UI
+    if (oldSlotId) {
+        const oldSlotEl = document.getElementById(`video-slot-${oldSlotId}`);
+        if(oldSlotEl) resetVideoSlot(oldSlotEl);
+    }
+    
+    // --- Update Firestore ---
+    const batch = writeBatch(db);
+    
+    // Delete old document if it exists
+    if (oldSlotId) {
+        const oldSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${oldSlotId}`);
+        batch.delete(oldSlotRef);
+    }
+
+    // Create new document
+    const newSlotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${slotId}`);
+    const slotData = { 
+      occupantId: currentUserId, 
+      occupantName: currentUsername,
+      occupantAvatar: currentUserAvatar,
+      isCameraOff: !isCameraOn 
+    };
+    batch.set(newSlotRef, slotData);
+
+    await batch.commit();
+};
+
+const startPeerConnection = async (remoteUserId) => {
+    const pc = createPeerConnection(remoteUserId);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    const offersRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+    await addDoc(offersRef, { 
+        from: currentUserId, 
+        offer: { type: offer.type, sdp: offer.sdp } 
+    });
+}
+
+const createPeerConnection = (remoteUserId) => {
+    if (peerConnections[remoteUserId]) {
+       peerConnections[remoteUserId].close();
+    }
+
+    const pc = new RTCPeerConnection(stunServers);
+    
+    if (localStream) {
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    }
+
+    pc.ontrack = event => {
+        const slotEl = document.querySelector(`div[id^="video-slot-"][data-occupant-id="${remoteUserId}"]`);
+        if (slotEl) {
+            const remoteVideo = slotEl.querySelector('video');
+            if (!remoteVideo.srcObject) {
+                remoteVideo.srcObject = new MediaStream();
+            }
+            remoteVideo.srcObject.addTrack(event.track);
+
+            // Ensure video is visible if a track is received, overriding avatar
+            slotEl.querySelector('.video-feed').classList.remove('hidden');
+            slotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+        }
+    };
+    
+    pc.onicecandidate = event => {
+        if (event.candidate) {
+            const signalingRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+            addDoc(signalingRef, { 
+                from: currentUserId, 
+                candidate: event.candidate.toJSON() 
+            });
+        }
+    };
+    
+    pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'disconnected' || pc.connectionState === 'closed' || pc.connectionState === 'failed') {
+            pc.close();
+            delete peerConnections[remoteUserId];
+        }
+    };
+
+    peerConnections[remoteUserId] = pc;
+    return pc;
+};
+
+
+const setupVideoCallListeners = () => {
+    if (videoCallListeners.length > 0) {
+      videoCallListeners.forEach(unsub => unsub());
+      videoCallListeners = [];
+    }
+    
+    let activeOccupants = new Map();
+
+    // --- Main Listener for Room State ---
+    const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    const unsubscribeSlots = onSnapshot(slotsCol, async (snapshot) => {
+        const newOccupants = new Map();
+        snapshot.forEach(docSnap => {
+            const slotData = docSnap.data();
+            const slotId = parseInt(docSnap.id.split('_')[1]);
+            newOccupants.set(slotData.occupantId, { ...slotData, slotId });
+        });
+
+        // Handle departures
+        for (const [occupantId, occupantData] of activeOccupants.entries()) {
+            if (!newOccupants.has(occupantId)) {
+                const slotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
+                resetVideoSlot(slotEl);
+                if (peerConnections[occupantId]) {
+                    peerConnections[occupantId].close();
+                    delete peerConnections[occupantId];
+                }
+            }
+        }
+        
+        // Handle arrivals and updates
+        for (const [occupantId, occupantData] of newOccupants.entries()) {
+            if (occupantId === currentUserId) continue;
+
+            const oldData = activeOccupants.get(occupantId);
+            const newSlotEl = document.getElementById(`video-slot-${occupantData.slotId}`);
+            if (!newSlotEl) continue;
+
+            // If user moved, move their video stream and reset their old slot
+            if (oldData && oldData.slotId !== occupantData.slotId) {
+                const oldSlotEl = document.getElementById(`video-slot-${oldData.slotId}`);
+                if (oldSlotEl) {
+                    const oldVideoEl = oldSlotEl.querySelector('video');
+                    if (oldVideoEl && oldVideoEl.srcObject) {
+                        const newVideoEl = newSlotEl.querySelector('video');
+                        newVideoEl.srcObject = oldVideoEl.srcObject;
+                        oldVideoEl.srcObject = null;
+                    }
+                    resetVideoSlot(oldSlotEl);
+                }
+            }
+            
+            // Update the new slot's UI
+            newSlotEl.dataset.occupantId = occupantId;
+            newSlotEl.querySelector('.name-pill').textContent = occupantData.occupantName;
+            newSlotEl.querySelector('.empty-placeholder').classList.add('hidden');
+
+            const newVideoEl = newSlotEl.querySelector('video');
+
+            if (occupantData.isCameraOff) {
+                newSlotEl.querySelector('.avatar-placeholder').innerHTML = generateAvatar(occupantData.occupantName, occupantData.occupantAvatar);
+                newSlotEl.querySelector('.avatar-placeholder').classList.remove('hidden');
+                newSlotEl.querySelector('.video-feed').classList.add('hidden');
+                if (newVideoEl.srcObject) newVideoEl.srcObject = null;
+            } else {
+                newSlotEl.querySelector('.avatar-placeholder').classList.add('hidden');
+                // If a stream exists (from a move), ensure video feed is visible
+                if (newVideoEl.srcObject) {
+                    newSlotEl.querySelector('.video-feed').classList.remove('hidden');
+                }
+            }
+            
+            // Initiate connection for new arrivals
+            const isNew = !activeOccupants.has(occupantId);
+            if (isNew && myVideoSlotId && !peerConnections[occupantId]) {
+                // To avoid both users initiating, the one with the "smaller" ID sends the offer
+                if (currentUserId < occupantId) {
+                    startPeerConnection(occupantId);
+                }
+            }
+        }
+        
+        activeOccupants = newOccupants;
+    });
+    videoCallListeners.push(unsubscribeSlots);
+
+
+    // --- Signaling Listener for WebRTC ---
+    const offersCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', currentUserId, 'offers');
+    const unsubscribeSignaling = onSnapshot(query(offersCol), async (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+            if (change.type === 'added') {
+                const data = change.doc.data();
+                const remoteUserId = data.from;
+
+                const pc = peerConnections[remoteUserId] || createPeerConnection(remoteUserId);
+
+                if (data.offer) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    const answerRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', remoteUserId, 'offers');
+                    await addDoc(answerRef, { 
+                        from: currentUserId, 
+                        answer: { type: answer.type, sdp: answer.sdp } 
+                    });
+                } else if (data.answer) {
+                    if (pc.signalingState !== 'stable') {
+                        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    }
+                } else if (data.candidate) {
+                    try {
+                      if (pc.remoteDescription) {
+                          await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                      }
+                    } catch (e) { console.error('Error adding received ice candidate', e); }
+                }
+                
+                await deleteDoc(change.doc.ref);
+            }
+        }
+    });
+    videoCallListeners.push(unsubscribeSignaling);
+};
+
+const hangUp = async (fullCleanup = true) => {
+    if (fullCleanup && localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
+
+    Object.values(peerConnections).forEach(pc => pc.close());
+    peerConnections = {};
+
+    if (myVideoSlotId) {
+        const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+        // The onSnapshot listener will handle resetting the UI element for others
+        await deleteDoc(slotRef).catch(err => console.error("Error deleting slot doc:", err));
+        myVideoSlotId = null;
+    }
+    
+    if (fullCleanup) {
+        toggleMicBtn.disabled = true;
+        toggleCameraBtn.disabled = true;
+        toggleMicBtn.classList.remove('bg-green-500/80', 'bg-white/40');
+        toggleCameraBtn.classList.remove('bg-green-500/80', 'bg-white/40');
+        toggleMicBtn.classList.add('bg-white/40');
+        toggleCameraBtn.classList.add('bg-white/40');
+    }
+};
+
+const cleanUpVideoCall = async () => {
+    await hangUp(true);
+    videoCallListeners.forEach(unsub => unsub());
+    videoCallListeners = [];
+    currentRoomId = null;
+    
+    try {
+        const offersRef = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'users', currentUserId, 'offers');
+        const offerSnapshot = await getDocs(offersRef);
+        const batch = writeBatch(db);
+        offerSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+    } catch(err) { console.error("Error cleaning up signaling docs:", err); }
+};
+
+toggleMicBtn.addEventListener('click', () => {
+    if (!localStream) return;
+    isMicOn = !isMicOn;
+    localStream.getAudioTracks()[0].enabled = isMicOn;
+    toggleMicBtn.classList.toggle('bg-green-500/80', isMicOn);
+    toggleMicBtn.classList.toggle('bg-white/40', !isMicOn);
+});
+
+toggleCameraBtn.addEventListener('click', async () => {
+    if (!localStream || !myVideoSlotId) return;
+    isCameraOn = !isCameraOn;
+    localStream.getVideoTracks()[0].enabled = isCameraOn;
+    
+    const slotEl = document.getElementById(`video-slot-${myVideoSlotId}`);
+    slotEl.querySelector('.video-feed').classList.toggle('hidden', !isCameraOn);
+    const avatarPlaceholder = slotEl.querySelector('.avatar-placeholder');
+    avatarPlaceholder.innerHTML = generateAvatar(currentUsername, currentUserAvatar);
+    avatarPlaceholder.classList.toggle('hidden', isCameraOn);
+    
+    toggleCameraBtn.classList.toggle('bg-green-500/80', isCameraOn);
+    toggleCameraBtn.classList.toggle('bg-white/40', !isCameraOn);
+
+    const slotRef = doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', `slot_${myVideoSlotId}`);
+    await updateDoc(slotRef, { isCameraOff: !isCameraOn });
+});
+
+
+// --- App Entry Point ---
+const ensureVideoCallRoomExists = async () => {
+  const videoRoomRef = doc(db, 'rooms', VIDEO_CALL_ROOM_ID);
+  try {
+    const docSnap = await getDoc(videoRoomRef);
+    if (!docSnap.exists()) {
+      await setDoc(videoRoomRef, {
+        name: VIDEO_CALL_ROOM_NAME,
+        createdAt: serverTimestamp(),
+        password: null,
+        avatarUrl: null,
+      });
+    }
+  } catch(error) {
+    console.error("Could not ensure video call room exists:", error);
+  }
+};
+
+const ensureGlobalChatRoomExists = async () => {
+  const chatRoomRef = doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID);
+  try {
+    const docSnap = await getDoc(chatRoomRef);
+    if (!docSnap.exists()) {
+      await setDoc(chatRoomRef, {
+        name: GLOBAL_CHAT_ROOM_NAME,
+        createdAt: serverTimestamp(),
+        password: null,
+        avatarUrl: null,
+      });
+    }
+  } catch(error) {
+    console.error("Could not ensure global chat room exists:", error);
+  }
+};
+
+const clearMyPreviousSlotOnStartup = async () => {
+    const slotsCol = collection(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots');
+    const q = query(slotsCol, where("occupantId", "==", currentUserId));
+    try {
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => {
+                console.log(`Clearing stale video slot ${doc.id} for user ${currentUserId}`);
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
+    } catch (error) {
+        console.error("Error clearing previous video slot:", error);
+    }
+};
+
+const listenForGlobalSettings = () => {
+    const globalSettingsRef = doc(db, 'app_settings', 'global');
+    onSnapshot(globalSettingsRef, (docSnap) => {
+        let newBackground = null;
+        if (docSnap.exists()) {
+            newBackground = docSnap.data().backgroundUrl;
+        }
+        if (newBackground !== currentStaticBackground) {
+            currentStaticBackground = newBackground;
+            applyBackgroundSettings(currentStaticBackground);
+            localStorage.setItem(STATIC_BACKGROUND_KEY, currentStaticBackground || '');
+        }
+    });
+};
+
+const startApp = async () => {
+  // First, check if the user has logged in before.
+  const appAccessGranted = localStorage.getItem(APP_ACCESS_KEY);
+
+  if (!appAccessGranted) {
+    // If not, show the login modal and stop here.
+    showView('username-modal');
+    usernameInput.focus();
+    return;
+  }
+
+  // --- If access is granted, proceed to load the app directly ---
+
+  // Load and apply settings
+  const storedFontSize = localStorage.getItem(FONT_SIZE_KEY) || 'md';
+  const storedGlassMode = localStorage.getItem(GLASS_MODE_KEY) || 'off';
+  currentSendWithEnter = localStorage.getItem(SEND_WITH_ENTER_KEY) || 'on';
+  applyFontSize(storedFontSize);
+  applyGlassModeSelection(storedGlassMode);
+  applySendWithEnterSelection(currentSendWithEnter);
+
+  // Load and apply background
+  currentStaticBackground = localStorage.getItem(STATIC_BACKGROUND_KEY);
+  applyBackgroundSettings(currentStaticBackground);
+  listenForGlobalSettings();
+  
+  // Ensure backend rooms exist
+  try {
+    await ensureVideoCallRoomExists();
+    await ensureGlobalChatRoomExists();
+  } catch(e) {
+    console.error("Fatal error during startup (ensure rooms exist):", e);
+    document.body.innerHTML = '<h1>خطای راه اندازی برنامه</h1><p>لطفا صفحه را رفرش کنید.</p>';
+    return;
+  }
+
+  // Load user profile, relying on localStorage as the source of truth
+  try {
+    const userDoc = await getDoc(doc(db, 'users', currentUserId));
+    if (userDoc.exists()) {
+        const userData = userDoc.data();
+        currentUsername = userData.username || localStorage.getItem(USERNAME_KEY);
+        currentUserAvatar = userData.avatarUrl || localStorage.getItem(USER_AVATAR_KEY) || null;
+        userProfilesCache[currentUserId] = { username: currentUsername, avatarUrl: currentUserAvatar };
+        localStorage.setItem(USERNAME_KEY, currentUsername);
+        localStorage.setItem(USER_AVATAR_KEY, currentUserAvatar || '');
+    } else {
+        // User not found in Firestore, use local data.
+        currentUsername = localStorage.getItem(USERNAME_KEY);
+        currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
+    }
+  } catch (error) {
+    // Firestore is unavailable, use local data.
+    console.error("Error fetching user profile, using local data:", error);
+    currentUsername = localStorage.getItem(USERNAME_KEY);
+    currentUserAvatar = localStorage.getItem(USER_AVATAR_KEY) || null;
+  }
+  
+  // Clear any stale video slots from previous sessions before starting UI
+  await clearMyPreviousSlotOnStartup();
+
+  // Setup initial UI state without animations
+  videoCallContainer.classList.add('view-hidden', 'opacity-0');
+  chatContainer.classList.remove('view-hidden', 'opacity-0');
+  
+  const activeBtnClasses = ['bg-green-500', 'text-white'];
+  const inactiveBtnClasses = ['bg-white/20', 'text-black', 'backdrop-blur-lg'];
+  
+  navChatBtn.style.flexBasis = '50%';
+  navStudioBtn.style.flexBasis = '35%';
+  settingsBtn.style.flexBasis = '15%';
+
+  navChatBtn.classList.remove(...inactiveBtnClasses, 'backdrop-blur-lg');
+  navChatBtn.classList.add(...activeBtnClasses);
+  navStudioBtn.classList.remove(...activeBtnClasses);
+  navStudioBtn.classList.add(...inactiveBtnClasses);
+  
+  showView('main'); // Hides modals and shows main app content
+  updateSendButtonState();
+  
+  // Directly enter the chat room on initial load
+  const roomDoc = await getDoc(doc(db, 'rooms', GLOBAL_CHAT_ROOM_ID));
+  if (roomDoc.exists()) {
+      enterChatRoom(GLOBAL_CHAT_ROOM_ID, roomDoc.data());
+  }
+  
+  isInitialLoad = false;
+};
+
+window.addEventListener('beforeunload', (e) => {
+    if (myVideoSlotId) {
+        // This is a best-effort attempt. It might not always complete.
+        // The startup cleanup logic is the more reliable solution for stale slots.
+        hangUp(true); 
     }
 });
 
 
-document.addEventListener('DOMContentLoaded', initApp);
-window.addEventListener('beforeunload', async () => {
-    if (currentRoomId === VIDEO_CALL_ROOM_ID && myVideoSlotId) {
-       await deleteDoc(doc(db, 'videoRooms', VIDEO_CALL_ROOM_ID, 'slots', myVideoSlotId));
-    }
-});
+startApp();
